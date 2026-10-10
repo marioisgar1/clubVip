@@ -1,0 +1,102 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <div class="page-header">
+            <span class="page-icon"><i class="pi pi-chart-line"></i></span>
+            <h2>#{msg['menu.report.profit']}</h2>
+            <span class="page-subtitle">#{msg['pos.report.profit.subtitle']}</span>
+        </div>
+
+        <h:form id="form">
+            <div class="card">
+                <p:toolbar styleClass="mb-2">
+                    <p:toolbarGroup>
+                        <span class="field-inline">
+                            <label>#{msg['pos.report.from']}</label>
+                            <p:datePicker value="#{reportProfitMb.from}" pattern="dd/MM/yyyy" showIcon="true" style="width:150px"/>
+                        </span>
+                        <span class="field-inline ml-2">
+                            <label>#{msg['pos.report.to']}</label>
+                            <p:datePicker value="#{reportProfitMb.to}" pattern="dd/MM/yyyy" showIcon="true" style="width:150px"/>
+                        </span>
+                        <p:commandButton value="#{msg['pos.report.generate']}" icon="pi pi-search"
+                                         actionListener="#{reportProfitMb.generate}" update="@form :messages"
+                                         styleClass="ui-button-primary ml-2" style="margin-top:1.1rem"/>
+                    </p:toolbarGroup>
+                </p:toolbar>
+
+                <h:panelGroup id="results" layout="block">
+                    <h:panelGroup rendered="#{not empty reportProfitMb.report}" layout="block">
+                        <div class="kpi-grid">
+                            <div class="kpi-card kpi-ink">
+                                <span class="kpi-label">#{msg['pos.report.netProfit']}</span>
+                                <span class="kpi-value" style="#{reportProfitMb.report.netProfit lt 0 ? 'color:#F08A96' : ''}">#{sessionMb.fmtMoney(reportProfitMb.report.netProfit)}</span>
+                                <span class="kpi-hint">#{reportProfitMb.marginPercent}% #{msg['pos.report.margin']} &#183; #{reportProfitMb.report.salesCount} #{msg['pos.report.salesCount']}</span>
+                            </div>
+                            <div class="kpi-card">
+                                <span class="kpi-label">#{msg['pos.report.revenue']}</span>
+                                <span class="kpi-value">#{sessionMb.fmtMoney(reportProfitMb.report.revenue)}</span>
+                                <span class="kpi-hint">#{msg['pos.report.discounts']}: #{sessionMb.fmtMoney(reportProfitMb.report.discountsGiven)}</span>
+                            </div>
+                            <div class="kpi-card">
+                                <span class="kpi-label">#{msg['pos.report.cogs']}</span>
+                                <span class="kpi-value">#{sessionMb.fmtMoney(reportProfitMb.report.cogs)}</span>
+                                <span class="kpi-hint">#{msg['pos.report.cogs.hint']}</span>
+                            </div>
+                            <div class="kpi-card">
+                                <span class="kpi-label">#{msg['pos.report.commissions']}</span>
+                                <span class="kpi-value">#{sessionMb.fmtMoney(reportProfitMb.report.cardCommissions)}</span>
+                                <span class="kpi-hint">#{msg['pos.report.commissions.hint']}</span>
+                            </div>
+                            <div class="kpi-card">
+                                <span class="kpi-label">#{msg['pos.report.venueCost']}</span>
+                                <span class="kpi-value">#{sessionMb.fmtMoney(reportProfitMb.report.venueCost)}</span>
+                                <span class="kpi-hint">#{msg['pos.report.venueCost.hint']}</span>
+                            </div>
+                        </div>
+
+                        <h3 class="section-title"><i class="pi pi-map-marker gold"></i>&#160;#{msg['pos.report.byVenue']}
+                            <span class="muted" style="font-family:var(--vip-font-body);font-size:.85rem">&#160;#{msg['pos.report.byVenue.hint']}</span></h3>
+                        <h:panelGroup rendered="#{reportProfitMb.hasVenues}" layout="block" styleClass="pos-chart-box mb-2">
+                            <p:barChart model="#{reportProfitMb.venueChart}" style="width:100%;height:100%"/>
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{not reportProfitMb.hasVenues}" layout="block" styleClass="empty-state">
+                            <i class="pi pi-chart-bar"></i>#{msg['msg.noData']}
+                        </h:panelGroup>
+                        <p:dataTable var="v" value="#{reportProfitMb.report.venues}" reflow="true" stripedRows="true"
+                                     rendered="#{reportProfitMb.hasVenues}" emptyMessage="#{msg['msg.noData']}">
+                            <p:column headerText="#{msg['pos.report.venue']}" style="min-width:14rem">
+                                <span style="font-weight:600">#{reportProfitMb.venueTitle(v)}</span>
+                                <h:outputText value="#{msg['pos.report.noVenueExpense']}" rendered="#{not v.hasExpense}"
+                                              styleClass="badge badge-muted" style="margin-left:.4rem"/>
+                                <span class="muted" style="display:block">#{reportProfitMb.venueSubtitle(v)}</span>
+                            </p:column>
+                            <p:column headerText="#{msg['pos.report.salesCount']}" sortBy="#{v.salesCount}" width="80" styleClass="text-right">#{v.salesCount}</p:column>
+                            <p:column headerText="#{msg['pos.report.revenue']}" sortBy="#{v.revenue}" width="110" styleClass="text-right">#{sessionMb.fmtMoney(v.revenue)}</p:column>
+                            <p:column headerText="#{msg['pos.report.cogs']}" sortBy="#{v.cogs}" width="110" styleClass="text-right"><span class="muted">#{sessionMb.fmtMoney(v.cogs)}</span></p:column>
+                            <p:column headerText="#{msg['pos.report.commissions']}" sortBy="#{v.commissions}" width="100" styleClass="text-right"><span class="muted">#{sessionMb.fmtMoney(v.commissions)}</span></p:column>
+                            <p:column headerText="#{msg['pos.report.discounts']}" sortBy="#{v.discounts}" width="100" styleClass="text-right"><span class="muted">#{sessionMb.fmtMoney(v.discounts)}</span></p:column>
+                            <p:column headerText="#{msg['pos.report.venueCost']}" sortBy="#{v.venueCost}" width="110" styleClass="text-right">
+                                <h:outputText value="#{sessionMb.fmtMoney(v.venueCost)}" rendered="#{v.venueCost gt 0}" styleClass="muted"/>
+                                <h:outputText value="—" rendered="#{v.venueCost le 0}" styleClass="muted"/>
+                            </p:column>
+                            <p:column headerText="#{msg['pos.report.netProfit']}" sortBy="#{v.netProfit}" width="130" styleClass="text-right">
+                                <strong style="color:#{v.netProfit ge 0 ? 'var(--vip-success)' : 'var(--vip-danger)'}">#{sessionMb.fmtMoney(v.netProfit)}</strong>
+                                <h:panelGroup rendered="#{not empty v.marginPercent}" styleClass="muted" layout="block" style="font-size:.75rem">
+                                    <h:outputText value="#{v.marginPercent}"><f:convertNumber minFractionDigits="1" maxFractionDigits="1"/></h:outputText>% #{msg['pos.report.margin']}
+                                </h:panelGroup>
+                            </p:column>
+                        </p:dataTable>
+                    </h:panelGroup>
+                    <h:panelGroup rendered="#{empty reportProfitMb.report}" layout="block" styleClass="empty-state">
+                        <i class="pi pi-chart-line"></i>#{msg['msg.noData']}
+                    </h:panelGroup>
+                </h:panelGroup>
+            </div>
+        </h:form>
+    </ui:define>
+</ui:composition>

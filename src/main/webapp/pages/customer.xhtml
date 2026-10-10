@@ -1,0 +1,252 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <div class="page-header">
+            <span class="page-icon"><i class="pi pi-users"></i></span>
+            <h2>#{msg['op.customer.title']}</h2>
+        </div>
+
+        <div class="kpi-grid">
+            <div class="kpi-card kpi-ink">
+                <span class="kpi-label">#{msg['op.customer.kpi.total']}</span>
+                <span class="kpi-value">#{empty customerMb.stats.total ? 0 : customerMb.stats.total}</span>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-label">#{msg['op.customer.kpi.newWeek']}</span>
+                <span class="kpi-value">#{empty customerMb.stats.newThisWeek ? 0 : customerMb.stats.newThisWeek}</span>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-label">#{msg['op.customer.kpi.inactive']}</span>
+                <span class="kpi-value">#{empty customerMb.stats.inactive ? 0 : customerMb.stats.inactive}</span>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-label">#{msg['op.customer.kpi.birthdaysToday']}</span>
+                <span class="kpi-value">#{empty customerMb.stats.birthdaysToday ? 0 : customerMb.stats.birthdaysToday}</span>
+                <span class="kpi-hint">#{empty customerMb.stats.birthdaysMonth ? 0 : customerMb.stats.birthdaysMonth} #{msg['op.customer.kpi.birthdaysMonth']}</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <h:form id="form">
+                <p:toolbar>
+                    <p:toolbarGroup>
+                        <p:commandButton value="#{msg['op.customer.new']}" icon="pi pi-user-plus" rendered="#{sessionMb.admin}"
+                                         process="@this" actionListener="#{customerMb.prepareNew}" update=":customerForm" oncomplete="PF('customerDlg').show()"/>
+                        <p:commandButton icon="pi pi-refresh" title="#{msg['action.refresh']}" process="@this" actionListener="#{customerMb.refresh}"
+                                         update="@form :messages" styleClass="ui-button-secondary ml-2"/>
+                    </p:toolbarGroup>
+                    <p:toolbarGroup align="right">
+                        <p:commandButton value="#{msg['op.appointment.new']}" icon="pi pi-calendar-plus" rendered="#{sessionMb.admin}"
+                                         process="@this" actionListener="#{bookingMb.openNew}" update=":bookingForm :messages"
+                                         oncomplete="PF('bookingDlg').show()" styleClass="ui-button-secondary"/>
+                    </p:toolbarGroup>
+                </p:toolbar>
+
+                <p:tabView id="tabs" styleClass="mt-2">
+                    <p:tab title="#{msg['op.customer.tab.all']} (#{customerMb.customers.size()})">
+                        <div class="flex gap-2 mb-2">
+                            <p:inputText value="#{customerMb.search}" placeholder="#{msg['op.customer.search']}" style="width:320px;max-width:100%"
+                                         onkeydown="if(event.key==='Enter'){PF('searchBtn').jq.click();return false;}"/>
+                            <p:commandButton widgetVar="searchBtn" icon="pi pi-search" value="#{msg['action.search']}"
+                                             actionListener="#{customerMb.searchCustomers}" update=":form:tabs:tblAll :messages"
+                                             styleClass="ui-button-secondary"/>
+                        </div>
+                        <ui:include src="/WEB-INF/includes/customerTable.xhtml">
+                            <ui:param name="tableId" value="tblAll"/>
+                            <ui:param name="list" value="#{customerMb.customers}"/>
+                            <ui:param name="mode" value="all"/>
+                        </ui:include>
+                    </p:tab>
+                    <p:tab title="#{msg['op.customer.tab.inactive']} (#{customerMb.inactive.size()})" rendered="#{sessionMb.admin}">
+                        <div class="flex-between wrap gap-2 mb-2">
+                            <span class="muted">#{msg['op.customer.inactive.hint']}</span>
+                            <p:commandButton value="#{msg['op.action.sendAll']}" icon="pi pi-whatsapp" type="button"
+                                             onclick="PF('reactivateDlg').show()" rendered="#{not empty customerMb.inactive}"
+                                             styleClass="ui-button-whatsapp"/>
+                        </div>
+                        <ui:include src="/WEB-INF/includes/customerTable.xhtml">
+                            <ui:param name="tableId" value="tblInactive"/>
+                            <ui:param name="list" value="#{customerMb.inactive}"/>
+                            <ui:param name="mode" value="inactive"/>
+                        </ui:include>
+                    </p:tab>
+                    <p:tab title="#{msg['op.customer.tab.birthdays']} (#{customerMb.birthdays.size()})" rendered="#{sessionMb.admin}">
+                        <div class="flex wrap gap-2 mb-2" style="align-items:flex-end">
+                            <span class="field-inline"><label>#{msg['op.customer.month']}</label>
+                                <p:selectOneMenu value="#{customerMb.month}" style="width:150px">
+                                    <f:selectItems value="#{customerMb.months}"/>
+                                    <p:ajax listener="#{customerMb.loadBirthdays}" update=":form:tabs:tblBirthday :messages"/>
+                                </p:selectOneMenu></span>
+                            <span class="field-inline"><label>#{msg['op.customer.day']}</label>
+                                <p:selectOneMenu value="#{customerMb.day}" style="width:90px">
+                                    <f:selectItems value="#{customerMb.days}"/>
+                                    <p:ajax listener="#{customerMb.loadBirthdays}" update=":form:tabs:tblBirthday :messages"/>
+                                </p:selectOneMenu></span>
+                            <span class="field-inline" style="flex:1;min-width:220px"><label>#{msg['op.customer.promo']}</label>
+                                <p:inputText value="#{customerMb.promo}" placeholder="#{msg['op.customer.promo.hint']}" style="width:100%"/></span>
+                        </div>
+                        <ui:include src="/WEB-INF/includes/customerTable.xhtml">
+                            <ui:param name="tableId" value="tblBirthday"/>
+                            <ui:param name="list" value="#{customerMb.birthdays}"/>
+                            <ui:param name="mode" value="birthday"/>
+                        </ui:include>
+                    </p:tab>
+                    <p:tab title="#{msg['op.customer.tab.new']} (#{customerMb.newCustomers.size()})" rendered="#{sessionMb.admin}">
+                        <ui:include src="/WEB-INF/includes/customerTable.xhtml">
+                            <ui:param name="tableId" value="tblNew"/>
+                            <ui:param name="list" value="#{customerMb.newCustomers}"/>
+                            <ui:param name="mode" value="new"/>
+                        </ui:include>
+                    </p:tab>
+                </p:tabView>
+            </h:form>
+        </div>
+
+        <!-- new walk-in customer -->
+        <p:dialog header="#{msg['op.customer.new']}" widgetVar="customerDlg" modal="true" responsive="true" width="520"
+                  appendTo="@(body)" closeOnEscape="true">
+            <h:form id="customerForm">
+                <div class="form-grid">
+                    <div class="field required span-2"><label>#{msg['lbl.fullName']}</label>
+                        <p:inputText value="#{customerMb.newCustomer.fullName}" required="true" requiredMessage="#{msg['lbl.fullName']}: #{msg['msg.required']}"/></div>
+                    <div class="field required"><label>#{msg['lbl.phone']}</label>
+                        <p:inputText value="#{customerMb.newCustomer.phone}" required="true" requiredMessage="#{msg['lbl.phone']}: #{msg['msg.required']}"/></div>
+                    <div class="field"><label>#{msg['op.lbl.age']}</label>
+                        <p:inputNumber value="#{customerMb.newCustomer.age}" decimalPlaces="0" minValue="0" maxValue="120"/></div>
+                    <div class="field"><label>#{msg['op.customer.birthDay']}</label>
+                        <p:selectOneMenu value="#{customerMb.newCustomer.birthDay}">
+                            <f:selectItem itemLabel="-" itemValue="#{null}" noSelectionOption="true"/>
+                            <f:selectItems value="#{customerMb.days}"/>
+                        </p:selectOneMenu></div>
+                    <div class="field"><label>#{msg['op.customer.birthMonth']}</label>
+                        <p:selectOneMenu value="#{customerMb.newCustomer.birthMonth}">
+                            <f:selectItem itemLabel="-" itemValue="#{null}" noSelectionOption="true"/>
+                            <f:selectItems value="#{customerMb.months}"/>
+                        </p:selectOneMenu></div>
+                    <div class="field"><label>#{msg['lbl.email']}</label>
+                        <p:inputText value="#{customerMb.newCustomer.email}"/></div>
+                    <div class="field span-2"><label>#{msg['op.customer.notes']}</label>
+                        <p:inputTextarea value="#{customerMb.newCustomer.notes}" rows="2" autoResize="false"/></div>
+                </div>
+                <div class="flex gap-2" style="justify-content:flex-end">
+                    <p:commandButton value="#{msg['action.cancel']}" type="button" onclick="PF('customerDlg').hide()" styleClass="ui-button-secondary"/>
+                    <p:commandButton value="#{msg['action.save']}" icon="pi pi-save" actionListener="#{customerMb.saveCustomer}"
+                                     update="@form :form :messages"/>
+                </div>
+            </h:form>
+        </p:dialog>
+
+        <!-- reactivate all: one WhatsApp conversation at a time -->
+        <p:dialog header="#{msg['op.customer.reactivateAll']}" widgetVar="reactivateDlg" modal="true" responsive="true" width="560"
+                  appendTo="@(body)" closeOnEscape="true">
+            <h:form id="reactivateForm">
+                <p class="muted" style="margin-top:0">#{msg['op.customer.reactivateAll.hint']}</p>
+                <ul class="birthday-list" style="max-height:60vh;overflow:auto">
+                    <ui:repeat var="c" value="#{customerMb.inactive}">
+                        <li>
+                            <span class="avatar">#{sessionMb.initialsOf(c.fullName)}</span>
+                            <span class="who"><span class="name">#{c.fullName}</span>
+                                <span class="muted">#{c.phone} &#183; #{c.monthsInactive} #{msg['op.customer.monthsInactive']}</span></span>
+                            <p:commandButton icon="pi pi-whatsapp" value="#{msg['op.action.reactivate']}" actionListener="#{customerMb.whatsapp(c, 'REACTIVATION')}"
+                                             process="@this" update=":messages" rendered="#{not empty c.phone}" styleClass="ui-button-whatsapp"/>
+                        </li>
+                    </ui:repeat>
+                </ul>
+            </h:form>
+        </p:dialog>
+
+        <!-- customer file (expediente) -->
+        <p:dialog header="#{msg['op.customer.file']}" widgetVar="customerFileDlg" modal="true" responsive="true" width="960"
+                  appendTo="@(body)" closeOnEscape="true" fitViewport="true">
+            <h:form id="customerFileForm">
+                <h:panelGroup rendered="#{not empty customerMb.file and not empty customerMb.file.customer}">
+                    <div class="flex wrap gap-2 mb-2">
+                        <span class="avatar avatar-lg">#{sessionMb.initialsOf(customerMb.file.customer.fullName)}</span>
+                        <span>
+                            <span style="font-size:1.2rem;font-weight:600;display:block">#{customerMb.file.customer.fullName}</span>
+                            <span class="muted">
+                                <h:outputText value="#{customerMb.file.customer.age} #{msg['op.lbl.years']} &#183; " rendered="#{not empty customerMb.file.customer.age}"/>
+                                #{msg['op.lbl.birthday']} #{customerMb.birthdayLabel(customerMb.file.customer)} &#183;
+                                #{customerMb.file.customer.phone}
+                                <h:outputText value=" &#183; #{customerMb.file.customer.email}" rendered="#{not empty customerMb.file.customer.email}"/>
+                                &#183; #{msg['op.lbl.customerSince']}
+                                <h:outputText value="#{customerMb.file.customer.firstVisitAt}"><f:convertDateTime pattern="dd/MM/yyyy" timeZone="America/Mexico_City"/></h:outputText>
+                            </span>
+                        </span>
+                        <span style="margin-left:auto">
+                            <p:commandButton icon="pi pi-whatsapp" value="#{msg['action.whatsapp']}" actionListener="#{customerMb.whatsapp(customerMb.file.customer, 'GENERIC')}"
+                                             process="@this" update=":messages" rendered="#{not empty customerMb.file.customer.phone}" styleClass="ui-button-whatsapp"/>
+                            <p:commandButton icon="pi pi-calendar-plus" value="#{msg['op.action.book']}" actionListener="#{bookingMb.openForCustomer(customerMb.file.customer)}"
+                                             process="@this" update=":bookingForm :messages" oncomplete="PF('customerFileDlg').hide();PF('bookingDlg').show()"
+                                             rendered="#{sessionMb.admin}" styleClass="ml-2"/>
+                        </span>
+                    </div>
+                    <h:panelGroup rendered="#{not empty customerMb.file.customer.notes}" styleClass="muted mb-2" layout="block">
+                        <i class="pi pi-comment"></i> #{customerMb.file.customer.notes}</h:panelGroup>
+
+                    <div class="kpi-grid">
+                        <div class="kpi-card"><span class="kpi-label">#{msg['op.customer.services']}</span>
+                            <span class="kpi-value">#{empty customerMb.file.customer.visitsCount ? 0 : customerMb.file.customer.visitsCount}</span></div>
+                        <div class="kpi-card"><span class="kpi-label">#{msg['op.customer.totalSpent']}</span>
+                            <span class="kpi-value">#{sessionMb.fmtMoney(customerMb.file.customer.totalSpent)}</span></div>
+                        <div class="kpi-card"><span class="kpi-label">#{msg['op.customer.avgTicket']}</span>
+                            <span class="kpi-value">#{sessionMb.fmtMoney(customerMb.file.customer.averageTicket)}</span></div>
+                        <div class="kpi-card"><span class="kpi-label">#{msg['op.customer.loyalty']}</span>
+                            <span class="kpi-value">#{customerMb.loyaltyLabel(customerMb.file.customer)}</span>
+                            <span class="kpi-hint">
+                                <h:outputText value="#{customerMb.file.card.programName} &#183; #{customerMb.file.card.rewardsAvailable} #{msg['op.customer.rewardsAvailable']}"
+                                              rendered="#{not empty customerMb.file.card}"/>
+                                <h:outputText value="-" rendered="#{empty customerMb.file.card}"/>
+                            </span></div>
+                    </div>
+
+                    <p:tabView>
+                        <p:tab title="#{msg['op.customer.history']} (#{customerMb.file.history.size()})">
+                            <p:dataTable var="a" value="#{customerMb.file.history}" rowKey="#{a.id}" emptyMessage="#{msg['msg.noData']}"
+                                         paginator="true" rows="10" paginatorAlwaysVisible="false" reflow="true" stripedRows="true">
+                                <p:column headerText="#{msg['lbl.date']}" width="130">#{sessionMb.fmtDay(a.date)} #{a.startTime}</p:column>
+                                <p:column headerText="#{msg['lbl.service']}">#{a.serviceName}</p:column>
+                                <p:column headerText="#{msg['op.lbl.attendedBy']}">#{a.employeeName}</p:column>
+                                <p:column headerText="#{msg['op.lbl.preNotes']}"><span class="small">#{a.preNotes}</span></p:column>
+                                <p:column headerText="#{msg['op.lbl.postNotes']}"><span class="small">#{a.postNotes}</span>
+                                    <h:panelGroup rendered="#{not empty a.recommendation}" styleClass="muted small" layout="block">#{a.recommendation}</h:panelGroup></p:column>
+                                <p:column headerText="#{msg['op.lbl.amount']}" width="100" styleClass="text-right">#{sessionMb.fmtMoney(a.total)}</p:column>
+                                <p:column headerText="#{msg['lbl.status']}" width="110">
+                                    <span class="#{customerMb.statusBadge(a.appointmentStatus)}">#{msg['status.'.concat(a.appointmentStatus)]}</span></p:column>
+                            </p:dataTable>
+                        </p:tab>
+                        <p:tab title="#{msg['op.customer.reviews']} (#{customerMb.file.reviews.size()})">
+                            <p:dataTable var="r" value="#{customerMb.file.reviews}" rowKey="#{r.id}" emptyMessage="#{msg['msg.noData']}" reflow="true">
+                                <p:column headerText="#{msg['lbl.date']}" width="110">
+                                    <h:outputText value="#{r.createdAt}"><f:convertDateTime pattern="dd/MM/yyyy" timeZone="America/Mexico_City"/></h:outputText></p:column>
+                                <p:column headerText="#{msg['lbl.service']}">#{r.serviceName} <span class="muted">#{r.employeeName}</span></p:column>
+                                <p:column headerText="#{msg['op.lbl.rating']}" width="110"><span class="stars">#{customerMb.stars(r.rating)}</span></p:column>
+                                <p:column headerText="#{msg['op.lbl.comment']}">#{r.comment}
+                                    <h:panelGroup rendered="#{not empty r.reply}" styleClass="muted small" layout="block">#{msg['op.lbl.reply']}: #{r.reply}</h:panelGroup></p:column>
+                            </p:dataTable>
+                        </p:tab>
+                        <p:tab title="#{msg['op.customer.benefits']} (#{customerMb.file.benefits.size()})">
+                            <p:dataTable var="b" value="#{customerMb.file.benefits}" rowKey="#{b.id}" emptyMessage="#{msg['msg.noData']}" reflow="true">
+                                <p:column headerText="#{msg['op.lbl.benefitType']}" width="140">#{b.benefitType}</p:column>
+                                <p:column headerText="#{msg['lbl.description']}">#{b.description}
+                                    <h:outputText value=" (#{b.discountPercent}%)" rendered="#{not empty b.discountPercent}"/></p:column>
+                                <p:column headerText="#{msg['op.lbl.validUntil']}" width="110">#{sessionMb.fmtDay(b.validUntil)}</p:column>
+                                <p:column headerText="#{msg['lbl.status']}" width="130">
+                                    <h:outputText value="#{msg['op.lbl.redeemed']}" styleClass="badge badge-success" rendered="#{not empty b.redeemedAt}"/>
+                                    <h:outputText value="#{msg['status.ACTIVE']}" styleClass="badge badge-info" rendered="#{empty b.redeemedAt}"/></p:column>
+                            </p:dataTable>
+                        </p:tab>
+                    </p:tabView>
+                </h:panelGroup>
+            </h:form>
+        </p:dialog>
+
+        <ui:include src="/WEB-INF/includes/bookingDialog.xhtml">
+            <ui:param name="owner" value="#{customerMb}"/>
+        </ui:include>
+    </ui:define>
+</ui:composition>

@@ -1,0 +1,220 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <div class="page-header">
+            <span class="page-icon"><i class="pi pi-sync"></i></span>
+            <h2>#{msg['menu.sale.exchange']}</h2>
+            <span class="page-subtitle">#{msg['pos.exchange.subtitle']}</span>
+        </div>
+
+        <h:form id="form">
+            <!-- STEP 1: find the original ticket -->
+            <div class="card">
+                <h3 class="section-title"><span class="pos-step">1</span>#{msg['pos.exchange.step1']}</h3>
+                <div class="pos-scan-row">
+                    <div class="field pos-scan-field">
+                        <label for="form:folio">#{msg['pos.exchange.byFolio']}</label>
+                        <div class="ui-inputgroup">
+                            <p:inputText id="folio" value="#{saleExchangeMb.folio}" styleClass="pos-scan-input" autocomplete="off"
+                                         placeholder="#{msg['pos.exchange.folioHint']}"
+                                         onkeydown="if(event.key==='Enter'){PF('findBtn').jq.click();return false;}"/>
+                            <p:commandButton widgetVar="findBtn" icon="pi pi-search" value="#{msg['action.search']}"
+                                             actionListener="#{saleExchangeMb.findSale}" process="@this folio"
+                                             update="@form :messages" styleClass="ui-button-primary"/>
+                        </div>
+                    </div>
+                    <div class="field pos-search-field">
+                        <label>#{msg['pos.exchange.byDate']}</label>
+                        <div class="flex gap-2 wrap">
+                            <p:datePicker value="#{saleExchangeMb.from}" pattern="dd/MM/yyyy" showIcon="true" style="width:150px"/>
+                            <p:datePicker value="#{saleExchangeMb.to}" pattern="dd/MM/yyyy" showIcon="true" style="width:150px"/>
+                            <p:commandButton icon="pi pi-calendar" title="#{msg['action.search']}"
+                                             actionListener="#{saleExchangeMb.searchByDate}" process="@this @parent"
+                                             update=":form:candidatesTable :messages" styleClass="ui-button-secondary"/>
+                        </div>
+                    </div>
+                </div>
+
+                <p:dataTable id="candidatesTable" var="c" value="#{saleExchangeMb.candidates}" paginator="true" rows="8"
+                             paginatorAlwaysVisible="false" emptyMessage="#{msg['pos.exchange.noCandidates']}" reflow="true"
+                             stripedRows="true" styleClass="mt-2">
+                    <p:column headerText="#{msg['pos.lbl.folio']}" sortBy="#{c.folio}" width="110"><strong>#{c.folio}</strong></p:column>
+                    <p:column headerText="#{msg['lbl.date']}" sortBy="#{c.saleDate}" width="140">#{saleExchangeMb.fmtStamp(c.saleDate)}</p:column>
+                    <p:column headerText="#{msg['lbl.customer']}">#{c.customerName}</p:column>
+                    <p:column headerText="#{msg['pos.lbl.saleLocation']}">#{c.saleLocationName}</p:column>
+                    <p:column headerText="#{msg['pos.lbl.paymentMethod']}">#{c.paymentMethodName}</p:column>
+                    <p:column headerText="#{msg['lbl.total']}" width="110" styleClass="text-right"><strong>#{sessionMb.fmtMoney(c.total)}</strong></p:column>
+                    <p:column style="width:9rem;text-align:center">
+                        <p:commandButton value="#{msg['pos.exchange.select']}" icon="pi pi-check"
+                                         actionListener="#{saleExchangeMb.selectSale(c)}" process="@this"
+                                         update="@form :messages" styleClass="ui-button-primary ui-button-sm"/>
+                    </p:column>
+                </p:dataTable>
+
+                <h:panelGroup rendered="#{not empty saleExchangeMb.originSale}" layout="block" styleClass="pos-origin mt-2">
+                    <span class="pos-result-folio">#{saleExchangeMb.originSale.folio}</span>
+                    <span class="muted">#{saleExchangeMb.fmtStamp(saleExchangeMb.originSale.saleDate)}
+                        <h:outputText value=" &#183; #{saleExchangeMb.originSale.customerName}" rendered="#{not empty saleExchangeMb.originSale.customerName}"/>
+                        <h:outputText value=" &#183; #{saleExchangeMb.originSale.saleLocationName}" rendered="#{not empty saleExchangeMb.originSale.saleLocationName}"/>
+                        &#183; #{msg['lbl.total']} <strong>#{sessionMb.fmtMoney(saleExchangeMb.originSale.total)}</strong></span>
+                </h:panelGroup>
+            </div>
+
+            <h:panelGroup rendered="#{not empty saleExchangeMb.originSale}" layout="block">
+                <div class="pos-layout">
+                    <div class="pos-left">
+                        <!-- STEP 2: what comes back -->
+                        <div class="card">
+                            <h3 class="section-title"><span class="pos-step">2</span>#{msg['pos.exchange.step2']}</h3>
+                            <p:dataTable id="returnTable" var="r" value="#{saleExchangeMb.returnItems}" reflow="true"
+                                         emptyMessage="#{msg['pos.exchange.nothingReturnable']}">
+                                <p:column headerText="#{msg['lbl.description']}">
+                                    <span style="font-weight:600">#{r.description}</span>
+                                    <span class="muted" style="display:block">#{r.barcode}</span>
+                                </p:column>
+                                <p:column headerText="#{msg['pos.lbl.unitPrice']}" style="width:7rem" styleClass="text-right">#{sessionMb.fmtMoney(r.unitPrice)}</p:column>
+                                <p:column headerText="#{msg['pos.exchange.available']}" style="width:6rem;text-align:center">#{r.returnableQuantity}</p:column>
+                                <p:column headerText="#{msg['pos.exchange.qtyToReturn']}" style="width:7rem">
+                                    <p:inputNumber value="#{r.quantity}" decimalPlaces="0" minValue="0" maxValue="#{r.returnableQuantity}" styleClass="pos-cart-num">
+                                        <p:ajax event="change" update=":form:returnTable :form:balance"/>
+                                    </p:inputNumber>
+                                </p:column>
+                                <p:column headerText="#{msg['pos.exchange.restock']}" style="width:9rem;text-align:center">
+                                    <p:selectBooleanCheckbox value="#{r.restock}">
+                                        <p:ajax update=":form:returnTable"/>
+                                    </p:selectBooleanCheckbox>
+                                    <h:outputText value="#{msg['pos.exchange.restockHint']}" styleClass="muted" style="display:block" rendered="#{not r.restock}"/>
+                                </p:column>
+                                <p:column headerText="#{msg['pos.exchange.reason']}" style="width:10rem">
+                                    <p:inputText value="#{r.reason}" maxlength="150" styleClass="pos-cart-num"/>
+                                </p:column>
+                                <p:column headerText="#{msg['pos.exchange.credit']}" style="width:7rem" styleClass="text-right">
+                                    <strong>#{sessionMb.fmtMoney(r.computedCredit)}</strong>
+                                </p:column>
+                            </p:dataTable>
+                        </div>
+
+                        <!-- STEP 3: what they take instead -->
+                        <div class="card">
+                            <h3 class="section-title"><span class="pos-step">3</span>#{msg['pos.exchange.step3']}</h3>
+                            <div class="field">
+                                <label for="form:barcode"><i class="pi pi-qrcode gold"></i>&#160;#{msg['pos.sale.scan']}</label>
+                                <div class="ui-inputgroup">
+                                    <p:inputText id="barcode" value="#{saleExchangeMb.barcode}" styleClass="pos-scan-input" autocomplete="off"
+                                                 placeholder="#{msg['pos.lbl.barcode']}"
+                                                 onkeydown="if(event.key==='Enter'){PF('scanBtn').jq.click();return false;}"/>
+                                    <p:commandButton widgetVar="scanBtn" icon="pi pi-plus" title="#{msg['pos.sale.add']}"
+                                                     actionListener="#{saleExchangeMb.scan}" process="@this barcode"
+                                                     update=":form:cartTable :form:balance :form:barcode :messages"
+                                                     oncomplete="document.getElementById('form:barcode').focus()" styleClass="ui-button-primary"/>
+                                </div>
+                            </div>
+                            <p:dataTable id="cartTable" var="it" value="#{saleExchangeMb.cart}" emptyMessage="#{msg['pos.sale.cartEmpty']}" reflow="true">
+                                <p:column headerText="#{msg['lbl.description']}">
+                                    <span style="font-weight:600">#{it.description}</span>
+                                    <span class="muted" style="display:block">#{it.barcode}</span>
+                                </p:column>
+                                <p:column headerText="#{msg['lbl.quantity']}" style="width:6.5rem">
+                                    <p:inputNumber value="#{it.quantity}" decimalPlaces="0" minValue="1" styleClass="pos-cart-num">
+                                        <p:ajax event="change" update=":form:cartTable :form:balance"/>
+                                    </p:inputNumber>
+                                </p:column>
+                                <p:column headerText="#{msg['pos.lbl.unitPrice']}" style="width:9rem">
+                                    <p:inputNumber value="#{it.unitPrice}" decimalPlaces="2" minValue="0" symbol="$ " styleClass="pos-cart-num">
+                                        <p:ajax event="change" update=":form:cartTable :form:balance"/>
+                                    </p:inputNumber>
+                                </p:column>
+                                <p:column headerText="#{msg['lbl.total']}" style="width:8rem" styleClass="text-right">
+                                    <strong>#{sessionMb.fmtMoney(it.computedLineTotal)}</strong>
+                                </p:column>
+                                <p:column style="width:3.5rem;text-align:center">
+                                    <p:commandButton icon="pi pi-trash" title="#{msg['action.delete']}"
+                                                     actionListener="#{saleExchangeMb.removeFromCart(it)}" process="@this"
+                                                     update=":form:cartTable :form:balance"
+                                                     styleClass="ui-button-rounded ui-button-text ui-button-danger"/>
+                                </p:column>
+                            </p:dataTable>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT: running balance and register -->
+                    <div class="pos-right">
+                        <p:outputPanel id="balance">
+                            <div class="card">
+                                <h3 class="section-title"><i class="pi pi-wallet gold"></i>&#160;#{msg['pos.exchange.balance']}</h3>
+                                <div class="field">
+                                    <label for="form:location">#{msg['pos.lbl.saleLocation']}</label>
+                                    <p:selectOneMenu id="location" value="#{saleExchangeMb.saleLocationId}" styleClass="w-100">
+                                        <f:selectItem itemLabel="#{msg['lbl.select']}" itemValue="#{null}" noSelectionOption="true"/>
+                                        <f:selectItems value="#{saleExchangeMb.saleLocations}" var="sl" itemLabel="#{sl.name}" itemValue="#{sl.id}"/>
+                                    </p:selectOneMenu>
+                                </div>
+                                <div class="field">
+                                    <label for="form:payment">#{msg['pos.lbl.paymentMethod']}</label>
+                                    <p:selectOneMenu id="payment" value="#{saleExchangeMb.paymentMethodId}" styleClass="w-100">
+                                        <f:selectItem itemLabel="#{msg['lbl.select']}" itemValue="#{null}" noSelectionOption="true"/>
+                                        <f:selectItems value="#{saleExchangeMb.paymentMethods}" var="pm" itemLabel="#{pm.name}" itemValue="#{pm.id}"/>
+                                    </p:selectOneMenu>
+                                </div>
+                                <div class="totals-box">
+                                    <div class="totals-row"><span>#{msg['pos.exchange.credit']}</span><span>#{sessionMb.fmtMoney(saleExchangeMb.creditAmount)}</span></div>
+                                    <div class="totals-row"><span>#{msg['pos.exchange.newAmount']}</span><span>#{sessionMb.fmtMoney(saleExchangeMb.newAmount)}</span></div>
+                                    <div class="totals-row grand-total">
+                                        <span>#{saleExchangeMb.creditLeft ? msg['pos.exchange.creditLeft'] : msg['pos.exchange.toPay']}</span>
+                                        <span>#{sessionMb.fmtMoney(saleExchangeMb.creditLeft ? saleExchangeMb.creditLeftOver : saleExchangeMb.amountToPay)}</span>
+                                    </div>
+                                </div>
+                                <h:panelGroup rendered="#{saleExchangeMb.creditLeft}" layout="block" styleClass="pos-warn mt-2">
+                                    <i class="pi pi-exclamation-triangle"></i>&#160;#{msg['pos.exchange.forfeitWarn']}
+                                </h:panelGroup>
+                                <div class="pos-actions">
+                                    <p:commandButton value="#{msg['pos.exchange.register']}" icon="pi pi-check"
+                                                     actionListener="#{saleExchangeMb.registerExchange}" update="@form :messages"
+                                                     styleClass="ui-button-success pos-sell-btn"/>
+                                    <p:commandButton value="#{msg['action.cancel']}" icon="pi pi-times"
+                                                     actionListener="#{saleExchangeMb.reset}" process="@this" update="@form"
+                                                     styleClass="ui-button-secondary w-100"/>
+                                </div>
+                            </div>
+                        </p:outputPanel>
+                    </div>
+                </div>
+            </h:panelGroup>
+
+            <!-- Summary of the exchange just registered -->
+            <h:panelGroup rendered="#{not empty saleExchangeMb.lastResult}" layout="block" styleClass="card">
+                <h3 class="section-title"><i class="pi pi-check-circle gold"></i>&#160;#{msg['pos.exchange.lastResult']}</h3>
+                <div class="kpi-grid">
+                    <div class="kpi-card kpi-ink">
+                        <span class="kpi-label">#{msg['pos.lbl.folio']}</span>
+                        <span class="kpi-value">#{saleExchangeMb.lastResult.folio}</span>
+                        <span class="kpi-hint">#{msg['pos.exchange.originSale']}: #{saleExchangeMb.lastResult.originFolio}</span>
+                    </div>
+                    <div class="kpi-card">
+                        <span class="kpi-label">#{msg['pos.exchange.credit']}</span>
+                        <span class="kpi-value">#{sessionMb.fmtMoney(saleExchangeMb.lastResult.creditAmount)}</span>
+                        <span class="kpi-hint">#{msg['pos.exchange.newAmount']}: #{sessionMb.fmtMoney(saleExchangeMb.lastResult.newAmount)}</span>
+                    </div>
+                    <div class="kpi-card">
+                        <span class="kpi-label">#{msg['pos.exchange.collected']}</span>
+                        <span class="kpi-value">#{sessionMb.fmtMoney(saleExchangeMb.lastResult.amountToPay)}</span>
+                        <span class="kpi-hint">#{msg['pos.exchange.forfeited']}: #{sessionMb.fmtMoney(saleExchangeMb.lastResult.forfeitedCredit)}</span>
+                    </div>
+                </div>
+            </h:panelGroup>
+        </h:form>
+
+        <script type="text/javascript">
+        //<![CDATA[
+        window.addEventListener('load', function () {
+            var el = document.getElementById('form:barcode') || document.getElementById('form:folio');
+            if (el) { el.focus(); }
+        });
+        //]]>
+        </script>
+    </ui:define>
+</ui:composition>

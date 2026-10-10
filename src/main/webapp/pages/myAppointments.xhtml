@@ -1,0 +1,29 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <div class="card">
+            <div class="page-header">
+                <span class="page-icon"><i class="pi pi-calendar-times"></i></span>
+                <h2>#{msg['op.my.title']}</h2>
+                <span class="page-subtitle">#{myAppointmentsMb.dateLabel}</span>
+            </div>
+            <h:form id="form">
+                <ui:include src="/WEB-INF/includes/appointmentList.xhtml">
+                    <ui:param name="owner" value="#{myAppointmentsMb}"/>
+                    <ui:param name="showEmployee" value="#{false}"/>
+                </ui:include>
+            </h:form>
+        </div>
+
+        <ui:include src="/WEB-INF/includes/appointmentDialogs.xhtml">
+            <ui:param name="owner" value="#{myAppointmentsMb}"/>
+        </ui:include>
+        <ui:include src="/WEB-INF/includes/bookingDialog.xhtml">
+            <ui:param name="owner" value="#{myAppointmentsMb}"/>
+        </ui:include>
+    </ui:define>
+</ui:composition>

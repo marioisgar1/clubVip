@@ -1,0 +1,310 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui">
+    <!-- Shared appointment dialogs. Expects <ui:param name="owner" value="#{pageBean}"/> (a Refreshable)
+         and the owner page's main form to have id="form". -->
+
+    <!-- ============================ DETAIL ============================ -->
+    <p:dialog header="#{msg['op.appointment.detail']}" widgetVar="apptDetailDlg" modal="true" responsive="true"
+              width="820" appendTo="@(body)" closeOnEscape="true" fitViewport="true">
+        <h:form id="apptDetailForm">
+            <p:outputPanel id="detailPanel">
+                <h:panelGroup rendered="#{not empty appointmentActionsMb.selected}">
+                    <div class="flex-between wrap gap-2 mb-2">
+                        <div>
+                            <span style="font-size:1.15rem;font-weight:600">#{appointmentActionsMb.selected.serviceName}</span>
+                            <span class="muted"> &#183; #{sessionMb.fmtDay(appointmentActionsMb.selected.date)}
+                                #{appointmentActionsMb.selected.startTime} - #{appointmentActionsMb.selected.endTime}
+                                &#183; #{appointmentActionsMb.selected.employeeName}</span>
+                        </div>
+                        <span class="#{appointmentActionsMb.statusBadge(appointmentActionsMb.selected.appointmentStatus)}">
+                            #{msg['status.'.concat(appointmentActionsMb.selected.appointmentStatus)]}</span>
+                    </div>
+
+                    <div class="form-grid">
+                        <!-- customer summary -->
+                        <div class="totals-box">
+                            <div class="flex gap-2 mb-2">
+                                <span class="avatar">#{sessionMb.initialsOf(appointmentActionsMb.selected.customerName)}</span>
+                                <span>
+                                    <span style="font-weight:600;display:block">#{appointmentActionsMb.selected.customerName}</span>
+                                    <span class="muted">#{appointmentActionsMb.selected.customerPhone}</span>
+                                </span>
+                            </div>
+                            <div class="totals-row small"><span class="muted">#{msg['op.lbl.age']}</span>
+                                <span><h:outputText value="#{appointmentActionsMb.selected.customerAge} #{msg['op.lbl.years']}" rendered="#{not empty appointmentActionsMb.selected.customerAge}"/>
+                                      <h:outputText value="-" rendered="#{empty appointmentActionsMb.selected.customerAge}"/></span></div>
+                            <div class="totals-row small"><span class="muted">#{msg['op.lbl.birthday']}</span>
+                                <span>#{empty appointmentActionsMb.selected.customerBirthday ? '-' : appointmentActionsMb.selected.customerBirthday}</span></div>
+                            <div class="totals-row small"><span class="muted">#{msg['op.lbl.visits']}</span>
+                                <span>#{empty appointmentActionsMb.selected.customerVisits ? 0 : appointmentActionsMb.selected.customerVisits}</span></div>
+                            <div class="totals-row small"><span class="muted">#{msg['op.lbl.customerSince']}</span>
+                                <span><h:outputText value="#{appointmentActionsMb.selected.customerSince}">
+                                    <f:convertDateTime pattern="dd/MM/yyyy" timeZone="America/Mexico_City"/></h:outputText></span></div>
+                        </div>
+
+                        <!-- previous visit + products -->
+                        <div>
+                            <div class="field">
+                                <label>#{msg['op.lbl.previousVisit']}</label>
+                                <h:panelGroup rendered="#{appointmentActionsMb.hasPreviousVisit}">
+                                    <span class="muted">#{sessionMb.fmtDay(appointmentActionsMb.selected.previousVisitDate)}</span>
+                                    <div>#{appointmentActionsMb.selected.previousPostNotes}</div>
+                                </h:panelGroup>
+                                <h:panelGroup rendered="#{not appointmentActionsMb.hasPreviousVisit}" styleClass="muted">
+                                    #{msg['op.lbl.noPreviousVisit']}</h:panelGroup>
+                            </div>
+                            <div class="field">
+                                <label>#{msg['op.lbl.reservedProducts']} (#{appointmentActionsMb.productsCount})</label>
+                                <h:panelGroup rendered="#{empty appointmentActionsMb.selected.items}" styleClass="muted">-</h:panelGroup>
+                                <ul style="margin:0;padding-left:1.1rem">
+                                    <ui:repeat var="it" value="#{appointmentActionsMb.selected.items}">
+                                        <li>#{it.quantity} &#215; #{it.productName}
+                                            <span class="muted">#{sessionMb.fmtMoney(it.lineTotal)}</span></li>
+                                    </ui:repeat>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- pre notes -->
+                        <div class="field span-2">
+                            <label>#{msg['op.lbl.preNotes']}</label>
+                            <p:inputTextarea value="#{appointmentActionsMb.selected.preNotes}" rows="2" autoResize="false"
+                                             disabled="#{not appointmentActionsMb.canClose}"/>
+                            <div class="flex-between mt-2">
+                                <span class="muted">#{msg['lbl.total']}: <b>#{sessionMb.fmtMoney(appointmentActionsMb.selected.total)}</b>
+                                    <h:outputText value=" &#183; #{msg['op.lbl.alreadyPaid']}" rendered="#{appointmentActionsMb.alreadyPaid}"/></span>
+                                <p:commandButton value="#{msg['op.action.savePreNotes']}" icon="pi pi-save"
+                                                 actionListener="#{appointmentActionsMb.savePreNotes}" update=":messages"
+                                                 rendered="#{sessionMb.admin and appointmentActionsMb.canClose}"
+                                                 styleClass="ui-button-secondary ui-button-flat"/>
+                            </div>
+                        </div>
+                        <h:panelGroup rendered="#{not empty appointmentActionsMb.selected.postNotes}" styleClass="field span-2" layout="block">
+                            <label>#{msg['op.lbl.postNotes']}</label>
+                            <div>#{appointmentActionsMb.selected.postNotes}</div>
+                            <h:panelGroup rendered="#{not empty appointmentActionsMb.selected.recommendation}" styleClass="muted" layout="block">
+                                #{msg['op.lbl.recommendation']}: #{appointmentActionsMb.selected.recommendation}</h:panelGroup>
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{not empty appointmentActionsMb.selected.cancelledReason}" styleClass="field span-2" layout="block">
+                            <label>#{msg['op.cancel.reason']}</label>
+                            <div>#{appointmentActionsMb.selected.cancelledReason}</div>
+                        </h:panelGroup>
+                    </div>
+
+                    <!-- actions -->
+                    <div class="flex wrap gap-2 mt-2">
+                        <p:commandButton value="#{msg['op.action.start']}" icon="pi pi-play"
+                                         actionListener="#{appointmentActionsMb.start(owner)}"
+                                         update=":apptDetailForm :form :messages" rendered="#{appointmentActionsMb.canStart}"
+                                         styleClass="ui-button-info"/>
+                        <p:commandButton value="#{msg['op.action.close']}" icon="pi pi-check"
+                                         actionListener="#{appointmentActionsMb.prepareClose}" process="@this"
+                                         update=":apptCloseForm" oncomplete="PF('apptCloseDlg').show()"
+                                         rendered="#{appointmentActionsMb.canClose}" styleClass="ui-button-success"/>
+                        <p:commandButton value="#{msg['op.action.reminder']}" icon="pi pi-whatsapp"
+                                         actionListener="#{appointmentActionsMb.reminder(owner)}" process="@this"
+                                         update=":apptDetailForm :form :messages" rendered="#{appointmentActionsMb.canRemind}"
+                                         styleClass="ui-button-whatsapp"/>
+                        <p:commandButton value="#{msg['op.action.reassign']}" icon="pi pi-users"
+                                         onclick="PF('apptReassignDlg').show()" type="button"
+                                         rendered="#{sessionMb.admin and appointmentActionsMb.canReassign}"
+                                         styleClass="ui-button-secondary"/>
+                        <p:commandButton value="#{msg['op.action.noShow']}" icon="pi pi-user-minus"
+                                         actionListener="#{appointmentActionsMb.noShow(owner)}" process="@this"
+                                         update=":apptDetailForm :form :messages" rendered="#{appointmentActionsMb.canNoShow}"
+                                         styleClass="ui-button-warning">
+                            <p:confirm header="#{msg['action.confirm']}" message="#{msg['op.action.noShow']}?" icon="pi pi-exclamation-triangle"/>
+                        </p:commandButton>
+                        <p:commandButton value="#{msg['op.action.cancelAppt']}" icon="pi pi-times"
+                                         onclick="PF('apptCancelDlg').show()" type="button"
+                                         rendered="#{appointmentActionsMb.canCancel}" styleClass="ui-button-danger"/>
+                    </div>
+                </h:panelGroup>
+            </p:outputPanel>
+            <p:confirmDialog global="true" showEffect="fade" hideEffect="fade" responsive="true">
+                <p:commandButton value="#{msg['action.yes']}" type="button" styleClass="ui-confirmdialog-yes" icon="pi pi-check"/>
+                <p:commandButton value="#{msg['action.no']}" type="button" styleClass="ui-confirmdialog-no ui-button-secondary" icon="pi pi-times"/>
+            </p:confirmDialog>
+        </h:form>
+    </p:dialog>
+
+    <!-- ============================ CANCEL (reason) ============================ -->
+    <p:dialog header="#{msg['op.cancel.title']}" widgetVar="apptCancelDlg" modal="true" responsive="true"
+              width="420" appendTo="@(body)" closeOnEscape="true">
+        <h:form id="apptCancelForm">
+            <div class="field">
+                <label>#{msg['op.cancel.reason']}</label>
+                <p:inputTextarea value="#{appointmentActionsMb.cancelReason}" rows="3" autoResize="false"/>
+            </div>
+            <div class="flex gap-2" style="justify-content:flex-end">
+                <p:commandButton value="#{msg['action.back']}" type="button" onclick="PF('apptCancelDlg').hide()"
+                                 styleClass="ui-button-secondary"/>
+                <p:commandButton value="#{msg['op.action.cancelAppt']}" icon="pi pi-times"
+                                 actionListener="#{appointmentActionsMb.cancel(owner)}"
+                                 update=":apptDetailForm :form :messages" styleClass="ui-button-danger"/>
+            </div>
+        </h:form>
+    </p:dialog>
+
+    <!-- ============================ REASSIGN (admin) ============================ -->
+    <p:dialog header="#{msg['op.reassign.title']}" widgetVar="apptReassignDlg" modal="true" responsive="true"
+              width="420" appendTo="@(body)" closeOnEscape="true" rendered="#{sessionMb.admin}">
+        <h:form id="apptReassignForm">
+            <div class="field">
+                <label>#{msg['op.reassign.employee']}</label>
+                <p:selectOneMenu value="#{appointmentActionsMb.reassignEmployeeId}">
+                    <f:selectItem itemLabel="#{msg['lbl.select']}" itemValue="#{null}" noSelectionOption="true"/>
+                    <f:selectItems value="#{appointmentActionsMb.employees}" var="e" itemLabel="#{e.fullName}" itemValue="#{e.id}"/>
+                </p:selectOneMenu>
+            </div>
+            <div class="flex gap-2" style="justify-content:flex-end">
+                <p:commandButton value="#{msg['action.back']}" type="button" onclick="PF('apptReassignDlg').hide()"
+                                 styleClass="ui-button-secondary"/>
+                <p:commandButton value="#{msg['op.action.reassign']}" icon="pi pi-users"
+                                 actionListener="#{appointmentActionsMb.reassign(owner)}"
+                                 update=":apptDetailForm :form :messages"/>
+            </div>
+        </h:form>
+    </p:dialog>
+
+    <!-- ============================ CLOSE ============================ -->
+    <p:dialog header="#{msg['op.close.title']}" widgetVar="apptCloseDlg" modal="true" responsive="true"
+              width="860" appendTo="@(body)" closeOnEscape="true" fitViewport="true">
+        <h:form id="apptCloseForm">
+            <h:panelGroup rendered="#{not empty appointmentActionsMb.selected}">
+                <div class="mb-2">
+                    <b>#{appointmentActionsMb.selected.customerName}</b>
+                    <span class="muted"> &#183; #{appointmentActionsMb.selected.serviceName} &#183;
+                        #{sessionMb.fmtDay(appointmentActionsMb.selected.date)} #{appointmentActionsMb.selected.startTime}</span>
+                </div>
+                <div class="form-grid">
+                    <div>
+                        <div class="field">
+                            <label>#{msg['op.lbl.postNotes']}</label>
+                            <p:inputTextarea value="#{appointmentActionsMb.closeForm.postNotes}" rows="4" autoResize="false"/>
+                        </div>
+                        <div class="field">
+                            <label>#{msg['op.lbl.recommendation']}</label>
+                            <p:inputTextarea value="#{appointmentActionsMb.closeForm.recommendation}" rows="2" autoResize="false"/>
+                        </div>
+
+                        <div class="field">
+                            <label>#{msg['op.lbl.reservedProducts']}</label>
+                            <h:panelGroup rendered="#{empty appointmentActionsMb.closeItems}" styleClass="muted">-</h:panelGroup>
+                            <p:dataTable id="closeItems" var="it" value="#{appointmentActionsMb.closeItems}"
+                                         rendered="#{not empty appointmentActionsMb.closeItems}" styleClass="small">
+                                <p:column headerText="#{msg['op.lbl.deliver']}" width="80" styleClass="text-center">
+                                    <p:selectBooleanCheckbox value="#{it.delivered}">
+                                        <p:ajax update=":apptCloseForm:totals"/>
+                                    </p:selectBooleanCheckbox>
+                                </p:column>
+                                <p:column headerText="#{msg['lbl.name']}">#{it.productName}
+                                    <span class="muted">#{sessionMb.fmtMoney(it.unitPrice)}</span></p:column>
+                                <p:column headerText="#{msg['lbl.quantity']}" width="110">
+                                    <p:spinner value="#{it.quantity}" min="1" max="99" size="3">
+                                        <p:ajax update=":apptCloseForm:totals"/>
+                                    </p:spinner>
+                                </p:column>
+                            </p:dataTable>
+                        </div>
+
+                        <h:panelGroup rendered="#{appointmentActionsMb.selected.rewardAvailable}" styleClass="field" layout="block">
+                            <p:selectBooleanCheckbox value="#{appointmentActionsMb.closeForm.applyReward}"
+                                                     itemLabel="#{msg['op.lbl.applyReward']}">
+                                <p:ajax update=":apptCloseForm:totals"/>
+                            </p:selectBooleanCheckbox>
+                        </h:panelGroup>
+
+                        <div class="field">
+                            <label>#{msg['op.lbl.paymentMethod']}</label>
+                            <p:selectOneButton value="#{appointmentActionsMb.closeForm.paymentMethod}"
+                                               rendered="#{not appointmentActionsMb.alreadyPaid}">
+                                <f:selectItem itemValue="CASH" itemLabel="#{msg['op.pay.CASH']}"/>
+                                <f:selectItem itemValue="CARD" itemLabel="#{msg['op.pay.CARD']}"/>
+                                <f:selectItem itemValue="TRANSFER" itemLabel="#{msg['op.pay.TRANSFER']}"/>
+                            </p:selectOneButton>
+                            <h:panelGroup rendered="#{appointmentActionsMb.alreadyPaid}" styleClass="badge badge-success">
+                                #{msg['op.lbl.alreadyPaid']}</h:panelGroup>
+                        </div>
+                    </div>
+
+                    <div>
+                        <p:outputPanel id="totals" styleClass="totals-box">
+                            <div class="totals-row"><span>#{msg['op.totals.service']}</span>
+                                <span>#{sessionMb.fmtMoney(appointmentActionsMb.serviceTotal)}</span></div>
+                            <div class="totals-row"><span>#{msg['op.totals.products']}
+                                <span class="muted">(#{appointmentActionsMb.deliveredUnits})</span></span>
+                                <span>#{sessionMb.fmtMoney(appointmentActionsMb.productsTotal)}</span></div>
+                            <div class="totals-row"><span>#{msg['op.totals.reward']}</span>
+                                <span class="discount">
+                                    <h:outputText value="-#{sessionMb.fmtMoney(appointmentActionsMb.rewardTotal)}"
+                                                  rendered="#{not appointmentActionsMb.rewardPendingCalculation}"/>
+                                    <h:outputText value="#{msg['op.totals.rewardOnClose']}" styleClass="muted"
+                                                  rendered="#{appointmentActionsMb.rewardPendingCalculation}"/>
+                                </span></div>
+                            <div class="totals-row grand-total"><span>#{msg['op.totals.total']}</span>
+                                <span>#{sessionMb.fmtMoney(appointmentActionsMb.grandTotal)}</span></div>
+                        </p:outputPanel>
+
+                        <div class="mt-3">
+                            <span class="kpi-label">#{msg['op.effects.title']}</span>
+                            <ul class="attention-list small">
+                                <li><span><i class="pi pi-box muted"></i>&#160;#{msg['op.effects.inventory']}</span></li>
+                                <li><span><i class="pi pi-money-bill muted"></i>&#160;#{msg['op.effects.commission']}</span></li>
+                                <li><span><i class="pi pi-star muted"></i>&#160;#{msg['op.effects.stamp']}</span></li>
+                                <li><span><i class="pi pi-comments muted"></i>&#160;#{msg['op.effects.review']}</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-2 mt-2" style="justify-content:flex-end">
+                    <p:commandButton value="#{msg['action.back']}" type="button" onclick="PF('apptCloseDlg').hide()"
+                                     styleClass="ui-button-secondary"/>
+                    <p:commandButton value="#{msg['op.close.confirm']}" icon="pi pi-check"
+                                     actionListener="#{appointmentActionsMb.close(owner)}"
+                                     update=":apptCloseForm :apptResultForm :form :messages" styleClass="ui-button-success"/>
+                </div>
+            </h:panelGroup>
+        </h:form>
+    </p:dialog>
+
+    <!-- ============================ RESULT ============================ -->
+    <p:dialog header="#{msg['op.result.title']}" widgetVar="apptResultDlg" modal="true" responsive="true"
+              width="480" appendTo="@(body)" closeOnEscape="true">
+        <h:form id="apptResultForm">
+            <h:panelGroup rendered="#{not empty appointmentActionsMb.result}">
+                <div class="empty-state" style="padding:.5rem 0 1rem">
+                    <i class="pi pi-check-circle"></i>
+                    <b>#{appointmentActionsMb.result.appointment.customerName}</b>
+                    <span class="muted" style="display:block">#{appointmentActionsMb.result.appointment.serviceName}
+                        &#183; #{sessionMb.fmtMoney(appointmentActionsMb.result.appointment.total)}</span>
+                </div>
+                <div class="totals-box">
+                    <div class="totals-row"><span>#{msg['op.result.commission']}</span>
+                        <span>#{sessionMb.fmtMoney(appointmentActionsMb.result.commissionAmount)}</span></div>
+                    <div class="totals-row"><span>#{msg['op.result.inventory']}</span>
+                        <span>#{empty appointmentActionsMb.result.inventoryUnits ? 0 : appointmentActionsMb.result.inventoryUnits}</span></div>
+                    <div class="totals-row"><span>#{msg['op.result.stamps']}</span>
+                        <span>#{empty appointmentActionsMb.result.stampsAfter ? 0 : appointmentActionsMb.result.stampsAfter}
+                            / #{empty appointmentActionsMb.result.stampsRequired ? 0 : appointmentActionsMb.result.stampsRequired}</span></div>
+                    <h:panelGroup rendered="#{appointmentActionsMb.result.pointsAdded gt 0}" styleClass="totals-row" layout="block">
+                        <span>#{msg['op.result.points']}</span><span>+#{appointmentActionsMb.result.pointsAdded}</span></h:panelGroup>
+                    <h:panelGroup rendered="#{appointmentActionsMb.result.rewardEarned}" styleClass="totals-row grand-total" layout="block">
+                        <span><i class="pi pi-gift"></i>&#160;#{msg['op.result.rewardEarned']}</span></h:panelGroup>
+                </div>
+                <div class="flex gap-2 mt-3" style="justify-content:flex-end">
+                    <p:commandButton value="#{msg['action.close']}" type="button" onclick="PF('apptResultDlg').hide()"
+                                     styleClass="ui-button-secondary"/>
+                    <p:commandButton value="#{msg['op.result.askReview']}" icon="pi pi-whatsapp"
+                                     actionListener="#{appointmentActionsMb.askReview}" update=":messages"
+                                     rendered="#{not empty appointmentActionsMb.result.reviewMessage}"
+                                     styleClass="ui-button-whatsapp"/>
+                </div>
+            </h:panelGroup>
+        </h:form>
+    </p:dialog>
+</ui:composition>

@@ -1,0 +1,83 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <div class="card">
+            <div class="page-header">
+                <span class="page-icon"><i class="pi pi-credit-card"></i></span>
+                <h2>#{msg['rel.subscription.title']}</h2>
+                <span class="page-subtitle">#{msg['rel.subscription.subtitle']}</span>
+            </div>
+
+            <h:form id="form">
+                <p:dataTable id="table" var="b" value="#{subscriptionMb.affiliates}" rows="15" paginator="true"
+                             paginatorPosition="bottom" paginatorAlwaysVisible="false" reflow="true" stripedRows="true"
+                             emptyMessage="#{msg['msg.noData']}" rowKey="#{b.id}" widgetVar="subTable"
+                             filteredValue="#{subscriptionMb.filtered}" globalFilterOnly="true">
+                    <f:facet name="header">
+                        <div class="flex-between">
+                            <span class="muted">#{msg['rel.subscription.list']}</span>
+                            <p:inputText onkeyup="PF('subTable').filter()" placeholder="#{msg['action.search']}"/>
+                        </div>
+                    </f:facet>
+                    <p:column headerText="#{msg['rel.affiliate.business']}" sortBy="#{b.name}" filterBy="#{b.name}">
+                        <span style="font-weight:600">#{b.name}</span>
+                        <h:panelGroup rendered="#{b.verificationStatus eq 'VERIFIED'}" styleClass="verified-badge" title="#{msg['lbl.verified']}">&#10004;</h:panelGroup>
+                        <div class="muted">#{b.categoryName} &#183; #{b.city}</div>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.owner']}" sortBy="#{b.ownerName}" filterBy="#{b.ownerName}">
+                        #{b.ownerName}
+                        <div class="muted">#{b.contactPhone}</div>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.verified']}" width="120" sortBy="#{b.verificationStatus}">
+                        <span class="#{b.verificationStatus eq 'VERIFIED' ? 'badge badge-success' : (b.verificationStatus eq 'REJECTED' ? 'badge badge-danger' : 'badge badge-warning')}">
+                            #{msg['status.'.concat(b.verificationStatus)]}
+                        </span>
+                    </p:column>
+                    <p:column headerText="#{msg['rel.affiliate.subscription']}" width="130" sortBy="#{b.subscriptionStatus}" filterBy="#{b.subscriptionStatus}">
+                        <h:outputText rendered="#{not empty b.subscriptionStatus}" styleClass="#{subscriptionMb.subscriptionBadge(b.subscriptionStatus)}"
+                                      value="#{msg['status.'.concat(b.subscriptionStatus)]}"/>
+                        <h:outputText rendered="#{empty b.subscriptionStatus}" styleClass="badge badge-muted" value="-"/>
+                    </p:column>
+                    <p:column headerText="#{msg['rel.subscription.until']}" width="130" sortBy="#{b.subscriptionUntil}">
+                        <span class="#{subscriptionMb.isExpired(b) ? 'discount' : ''}">#{sessionMb.fmtDay(b.subscriptionUntil)}</span>
+                        <h:panelGroup rendered="#{subscriptionMb.isExpired(b)}" layout="block" styleClass="small discount">#{msg['rel.subscription.expired']}</h:panelGroup>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.actions']}" width="80" styleClass="text-right">
+                        <p:commandButton icon="pi pi-pencil" title="#{msg['rel.subscription.edit']}"
+                                         actionListener="#{subscriptionMb.prepareEdit(b)}" update=":form:subscriptionDialog"
+                                         oncomplete="PF('subscriptionDialog').show()" styleClass="ui-button-rounded ui-button-text"/>
+                    </p:column>
+                </p:dataTable>
+
+                <p:dialog id="subscriptionDialog" header="#{msg['rel.subscription.edit']}" widgetVar="subscriptionDialog" modal="true"
+                          width="440" resizable="false" responsive="true">
+                    <p><strong>#{subscriptionMb.selected.name}</strong> &#183; <span class="muted">#{subscriptionMb.selected.ownerName}</span></p>
+                    <div class="field required">
+                        <label>#{msg['lbl.status']}</label>
+                        <p:selectOneMenu value="#{subscriptionMb.subscription.subscriptionStatus}" style="width:100%">
+                            <f:selectItem itemValue="TRIAL" itemLabel="#{msg['status.TRIAL']}"/>
+                            <f:selectItem itemValue="ACTIVE" itemLabel="#{msg['status.ACTIVE']}"/>
+                            <f:selectItem itemValue="SUSPENDED" itemLabel="#{msg['status.SUSPENDED']}"/>
+                            <f:selectItem itemValue="CANCELLED" itemLabel="#{msg['status.CANCELLED']}"/>
+                        </p:selectOneMenu>
+                    </div>
+                    <div class="field">
+                        <label>#{msg['rel.subscription.until']}</label>
+                        <p:datePicker value="#{subscriptionMb.until}" pattern="dd/MM/yyyy" showIcon="true" style="width:100%"/>
+                        <span class="hint">#{msg['rel.subscription.until.hint']}</span>
+                    </div>
+                    <f:facet name="footer">
+                        <p:commandButton value="#{msg['action.save']}" icon="pi pi-check" action="#{subscriptionMb.save}"
+                                         update="subscriptionDialog table :messages"/>
+                        <p:commandButton value="#{msg['action.cancel']}" icon="pi pi-times" type="button"
+                                         onclick="PF('subscriptionDialog').hide()" styleClass="ui-button-secondary"/>
+                    </f:facet>
+                </p:dialog>
+            </h:form>
+        </div>
+    </ui:define>
+</ui:composition>

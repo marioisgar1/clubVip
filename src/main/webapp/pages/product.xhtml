@@ -1,0 +1,325 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <div class="card">
+            <div class="page-header">
+                <span class="page-icon"><i class="pi pi-shopping-bag"></i></span>
+                <h2>#{msg['menu.catalog.product']}</h2>
+                <span class="page-subtitle">#{msg['cat.product.subtitle']}</span>
+            </div>
+
+            <h:form id="form">
+                <p:toolbar>
+                    <p:toolbarGroup>
+                        <p:commandButton value="#{msg['action.new']}" icon="pi pi-plus"
+                                         process="@this" actionListener="#{productMb.prepareNew}"
+                                         update=":form:dialog" oncomplete="cvResetPhotoPicker();PF('productDialog').show()"
+                                         styleClass="ui-button-primary" rendered="#{sessionMb.admin}"/>
+                        <p:commandButton icon="pi pi-refresh" title="#{msg['action.refresh']}"
+                                         process="@this" actionListener="#{productMb.refresh}" update=":form:table :messages"
+                                         styleClass="ui-button-secondary ml-2"/>
+                    </p:toolbarGroup>
+                </p:toolbar>
+
+                <p:dataTable id="table" var="pd" value="#{productMb.products}" paginator="true" rows="10"
+                             emptyMessage="#{msg['msg.noData']}" styleClass="mt-2" widgetVar="productTable"
+                             filteredValue="#{productMb.filtered}" globalFilterOnly="true" reflow="true"
+                             paginatorAlwaysVisible="false" rowKey="#{pd.id}" stripedRows="true">
+                    <f:facet name="header">
+                        <div class="flex-between wrap gap-2">
+                            <span class="muted">#{productMb.products.size()} #{msg['cat.product.count']}</span>
+                            <p:inputText id="globalFilter" onkeyup="PF('productTable').filter()"
+                                         placeholder="#{msg['action.search']}"/>
+                        </div>
+                    </f:facet>
+                    <p:column headerText="" style="width:4.5rem;text-align:center">
+                        <!-- The list comes without images; each visible row loads its photo from
+                             /productPhoto (cached by the browser). No photo (404) -> placeholder. -->
+                        <img alt="" class="cv-thumb" loading="lazy"
+                             src="#{request.contextPath}/productPhoto?id=#{pd.id}&amp;v=#{productMb.photoVersion}"
+                             onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex'"/>
+                        <span class="cv-thumb cv-thumb-empty" style="display:none"><i class="pi pi-image"></i></span>
+                    </p:column>
+                    <p:column headerText="#{msg['pos.lbl.barcode']}" sortBy="#{pd.barcode}" width="130"
+                              filterBy="#{pd.barcode}" filterMatchMode="contains">
+                        <h:outputText value="#{pd.barcode}" styleClass="muted" rendered="#{not empty pd.barcode}"/>
+                        <h:outputText value="—" styleClass="muted" rendered="#{empty pd.barcode}"/>
+                    </p:column>
+                    <p:column headerText="#{msg['cat.product.name']}" sortBy="#{pd.name}"
+                              filterBy="#{pd.name}" filterMatchMode="contains">
+                        <span style="font-weight:600">#{pd.name}</span>
+                        <h:panelGroup rendered="#{not empty pd.consignmentAgreementId}" styleClass="badge badge-warning" style="margin-left:.4rem"
+                                      title="#{msg['cons.product.readonlyHint']}">#{msg['cons.product.badge']} · #{pd.consignmentSupplierName}</h:panelGroup>
+                        <h:panelGroup rendered="#{not empty pd.shortDescription}" styleClass="muted" layout="block">#{pd.shortDescription}</h:panelGroup>
+                        <h:panelGroup rendered="#{not empty pd.size or not empty pd.color or not empty pd.modelName}" styleClass="muted" layout="block" style="font-size:.75rem">
+                            <h:outputText value="#{pd.modelName}" rendered="#{not empty pd.modelName}"/>
+                            <h:outputText value=" &#183; #{msg['pos.lbl.size']} #{pd.size}" rendered="#{not empty pd.size}"/>
+                            <h:outputText value=" &#183; #{pd.color}" rendered="#{not empty pd.color}"/>
+                        </h:panelGroup>
+                    </p:column>
+                    <p:column headerText="#{msg['pos.lbl.family']}" sortBy="#{pd.familyName}"
+                              filterBy="#{pd.familyName}" filterMatchMode="contains">
+                        <h:outputText value="#{pd.familyName}"/>
+                    </p:column>
+                    <p:column headerText="#{msg['cat.product.brand']}" sortBy="#{pd.brandName}"
+                              filterBy="#{pd.brandName}" filterMatchMode="contains">
+                        <h:outputText value="#{pd.brandName}"/>
+                    </p:column>
+                    <p:column headerText="#{msg['cat.product.onHand']}" sortBy="#{pd.quantityOnHand}" width="100"
+                              styleClass="text-right">
+                        <h:outputText value="#{pd.quantityOnHand != null ? pd.quantityOnHand : 0}"
+                                      style="font-weight:600;#{productMb.isLowStock(pd) ? 'color:var(--vip-danger)' : ''}"/>
+                        <h:panelGroup rendered="#{productMb.isLowStock(pd)}" title="#{msg['cat.product.lowStock']}">
+                            &#160;<i class="pi pi-exclamation-triangle" style="color:var(--vip-danger)"></i>
+                        </h:panelGroup>
+                    </p:column>
+                    <p:column headerText="#{msg['cat.product.minStock']}" sortBy="#{pd.minStock}" width="90"
+                              styleClass="text-right">
+                        <h:outputText value="#{pd.minStock != null ? pd.minStock : 0}"/>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.price']}" sortBy="#{pd.price}" width="110" styleClass="text-right">
+                        <h:outputText value="#{sessionMb.fmtMoney(pd.price)}" style="font-weight:600"/>
+                    </p:column>
+                    <p:column headerText="#{msg['cat.product.availableForBooking']}" width="120"
+                              sortBy="#{pd.availableForBooking}" styleClass="text-center">
+                        <span class="badge #{pd.availableForBooking ? 'badge-success' : 'badge-muted'}">
+                            #{pd.availableForBooking ? msg['action.yes'] : msg['action.no']}
+                        </span>
+                    </p:column>
+                    <!-- null (backend without the flag) counts as shown, like the store has always done -->
+                    <p:column headerText="#{msg['cat.product.availableInStore.short']}" width="110"
+                              sortBy="#{pd.availableInStore ne false}" styleClass="text-center">
+                        <span class="badge #{pd.availableInStore ne false ? 'badge-success' : 'badge-muted'}">
+                            #{pd.availableInStore ne false ? msg['action.yes'] : msg['action.no']}
+                        </span>
+                    </p:column>
+                    <p:column headerText="#{msg['cat.product.outlet.short']}" width="100"
+                              sortBy="#{pd.outlet}" styleClass="text-center">
+                        <span class="badge #{pd.outlet ? 'badge-warning' : 'badge-muted'}">
+                            #{pd.outlet ? msg['pub.store.outlet'] : msg['pub.store.line']}
+                        </span>
+                    </p:column>
+                    <p:column headerText="" style="width:7rem;text-align:center" rendered="#{sessionMb.admin}">
+                        <p:commandButton icon="pi pi-pencil" title="#{msg['action.edit']}" rendered="#{empty pd.consignmentAgreementId}"
+                                         process="@this" actionListener="#{productMb.prepareEdit(pd)}"
+                                         update=":form:dialog :messages"
+                                         oncomplete="cvResetPhotoPicker();PF('productDialog').show()"
+                                         styleClass="ui-button-rounded ui-button-text"/>
+                        <p:commandButton icon="pi pi-trash" title="#{msg['action.delete']}" rendered="#{empty pd.consignmentAgreementId}"
+                                         process="@this" actionListener="#{productMb.delete(pd)}" update=":form:table :messages"
+                                         styleClass="ui-button-rounded ui-button-text ui-button-danger">
+                            <p:confirm header="#{msg['action.confirm']}" message="#{msg['msg.confirmDelete']}"
+                                       icon="pi pi-exclamation-triangle"/>
+                        </p:commandButton>
+                    </p:column>
+                </p:dataTable>
+
+                <p:dialog header="#{msg['cat.product.name']}" widgetVar="productDialog" modal="true" id="dialog"
+                          width="700" resizable="false" fitViewport="true" responsive="true"
+                          contentStyle="max-height:75vh;overflow:auto" closeOnEscape="true">
+                    <!-- Photos first: current photos as thumbnails (star = main photo, trash = remove), then the picker. -->
+                    <p:outputPanel id="photosPanel">
+                        <div class="field">
+                            <label>#{msg['cat.product.photos']}</label>
+                            <div class="cv-photo-grid">
+                                <ui:repeat value="#{productMb.selected.photos}" var="ph">
+                                    <div class="cv-photo-card#{ph.isPrimary ? ' primary' : ''}">
+                                        <img alt="#{msg['cat.product.photo']} #{ph.sortOrder}" src="data:image/jpeg;base64,#{ph.imageBase64}"/>
+                                        <h:panelGroup rendered="#{ph.isPrimary}" styleClass="cv-photo-badge">#{msg['cat.product.primary']}</h:panelGroup>
+                                        <p:commandLink actionListener="#{productMb.setPrimary(ph)}" process="@this" update=":form:photosPanel"
+                                                       styleClass="cv-photo-action cv-photo-star" title="#{msg['cat.product.primary']}"
+                                                       rendered="#{not ph.isPrimary}">
+                                            <i class="pi pi-star"></i>
+                                        </p:commandLink>
+                                        <p:commandLink actionListener="#{productMb.removePhoto(ph)}" process="@this" update=":form:photosPanel"
+                                                       styleClass="cv-photo-action cv-photo-del" title="#{msg['action.delete']}">
+                                            <i class="pi pi-trash"></i>
+                                        </p:commandLink>
+                                    </div>
+                                </ui:repeat>
+                                <h:panelGroup rendered="#{empty productMb.selected.photos}" styleClass="muted small">#{msg['cat.product.noPhotos']}</h:panelGroup>
+                            </div>
+                            <p:inputTextarea id="newPhotoB64" value="#{productMb.newPhotoBase64}"
+                                             styleClass="photoB64" style="display:none"/>
+                            <div class="file-picker" style="margin:.4rem 0">
+                                <label class="ui-button ui-button-secondary" style="cursor:pointer">
+                                    <i class="pi pi-camera" style="margin-right:.4rem"></i>#{msg['cat.product.choosePhoto']}
+                                    <input type="file" accept="image/*" style="display:none" onchange="cvCompressPhoto(this)"/>
+                                </label>
+                                <img id="photoPreview" alt="" class="cv-thumb" style="display:none"/>
+                                <p:commandButton value="#{msg['cat.product.addPhoto']}" icon="pi pi-plus"
+                                                 actionListener="#{productMb.addPhoto}"
+                                                 process="@this newPhotoB64" update="photosPanel"
+                                                 oncomplete="cvResetPhotoPicker()" styleClass="ui-button-secondary"/>
+                            </div>
+                        </div>
+                    </p:outputPanel>
+
+                    <div class="form-grid" style="margin-top:.5rem">
+                        <div class="field required span-2">
+                            <label for="form:prdName">#{msg['lbl.name']}</label>
+                            <p:inputText id="prdName" value="#{productMb.selected.name}" maxlength="120" required="true"
+                                         requiredMessage="#{msg['lbl.name']}: #{msg['msg.required']}"/>
+                        </div>
+                        <div class="field span-2">
+                            <label for="form:prdShort">#{msg['cat.product.shortDescription']}</label>
+                            <p:inputText id="prdShort" value="#{productMb.selected.shortDescription}" maxlength="120"
+                                         placeholder="#{msg['cat.product.shortDescription.hint']}"/>
+                        </div>
+                        <div class="field span-2">
+                            <label for="form:prdBarcode"><i class="pi pi-qrcode gold"></i>&#160;#{msg['pos.lbl.barcode']}</label>
+                            <p:inputText id="prdBarcode" value="#{productMb.selected.barcode}" maxlength="60" autocomplete="off"
+                                         placeholder="#{msg['pos.product.barcode.placeholder']}"
+                                         onkeydown="if(event.key==='Enter'){event.preventDefault();return false;}"/>
+                            <span class="hint">#{msg['pos.product.barcode.hint']}</span>
+                        </div>
+                        <div class="field">
+                            <label for="form:prdFamily">#{msg['pos.lbl.family']}</label>
+                            <p:selectOneMenu id="prdFamily" value="#{productMb.selected.familyId}" filter="#{productMb.families.size() gt 8}" filterMatchMode="contains">
+                                <f:selectItem itemLabel="#{msg['lbl.select']}" itemValue="#{null}" noSelectionOption="true"/>
+                                <f:selectItems value="#{productMb.families}" var="fa" itemLabel="#{fa.name}" itemValue="#{fa.id}"/>
+                            </p:selectOneMenu>
+                        </div>
+                        <div class="field">
+                            <label for="form:prdBrand">#{msg['cat.product.brand']}</label>
+                            <p:selectOneMenu id="prdBrand" value="#{productMb.selected.brandId}" filter="#{productMb.brands.size() gt 8}" filterMatchMode="contains">
+                                <f:selectItem itemLabel="#{msg['lbl.select']}" itemValue="#{null}" noSelectionOption="true"/>
+                                <f:selectItems value="#{productMb.brands}" var="br" itemLabel="#{br.name}" itemValue="#{br.id}"/>
+                            </p:selectOneMenu>
+                        </div>
+                        <div class="field">
+                            <label for="form:prdModel">#{msg['pos.lbl.model']}</label>
+                            <p:selectOneMenu id="prdModel" value="#{productMb.selected.modelId}" filter="#{productMb.models.size() gt 8}" filterMatchMode="contains">
+                                <f:selectItem itemLabel="#{msg['lbl.select']}" itemValue="#{null}" noSelectionOption="true"/>
+                                <f:selectItems value="#{productMb.models}" var="mo" itemLabel="#{mo.name}" itemValue="#{mo.id}"/>
+                            </p:selectOneMenu>
+                        </div>
+                        <div class="field">
+                            <div class="flex gap-2">
+                                <span style="flex:1">
+                                    <label for="form:prdSize">#{msg['pos.lbl.size']}</label>
+                                    <p:inputText id="prdSize" value="#{productMb.selected.size}" maxlength="20" style="width:100%"/>
+                                </span>
+                                <span style="flex:1">
+                                    <label for="form:prdColor">#{msg['pos.lbl.color']}</label>
+                                    <p:inputText id="prdColor" value="#{productMb.selected.color}" maxlength="40" style="width:100%"/>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="field required">
+                            <label for="form:prdPrice">#{msg['lbl.price']}</label>
+                            <p:inputNumber id="prdPrice" value="#{productMb.selected.price}" symbol="$ " decimalPlaces="2"
+                                           minValue="0" required="true"
+                                           requiredMessage="#{msg['lbl.price']}: #{msg['msg.required']}"/>
+                        </div>
+                        <div class="field">
+                            <label for="form:prdMin">#{msg['cat.product.minStock']}</label>
+                            <p:spinner id="prdMin" value="#{productMb.selected.minStock}" min="0" max="99999"/>
+                            <span class="hint">#{msg['cat.product.minStock.hint']}</span>
+                        </div>
+                        <div class="field">
+                            <div class="check-inline" style="margin-top:1.5rem">
+                                <p:toggleSwitch id="prdAvailable" value="#{productMb.selected.availableForBooking}"/>
+                                <label for="form:prdAvailable" style="margin:0">#{msg['cat.product.availableForBooking']}</label>
+                            </div>
+                            <span class="hint">#{msg['cat.product.availableForBooking.hint']}</span>
+                        </div>
+                        <div class="field">
+                            <div class="check-inline" style="margin-top:.5rem">
+                                <p:toggleSwitch id="prdInStore" value="#{productMb.selected.availableInStore}"/>
+                                <label for="form:prdInStore" style="margin:0">#{msg['cat.product.availableInStore']}</label>
+                            </div>
+                            <span class="hint">#{msg['cat.product.availableInStore.hint']}</span>
+                        </div>
+                        <div class="field">
+                            <div class="check-inline" style="margin-top:.5rem">
+                                <p:toggleSwitch id="prdOutlet" value="#{productMb.selected.isOutlet}"/>
+                                <label for="form:prdOutlet" style="margin:0">#{msg['cat.product.outlet']}</label>
+                            </div>
+                            <span class="hint">#{msg['cat.product.outlet.hint']}</span>
+                        </div>
+                        <h:panelGroup rendered="#{not empty productMb.selected.id}" layout="block" styleClass="field span-2">
+                            <span class="muted">#{msg['cat.product.onHand']}:
+                                <strong>#{productMb.selected.quantityOnHand != null ? productMb.selected.quantityOnHand : 0}</strong>
+                                &#183; #{msg['cat.inventory.averageCost']}:
+                                <strong>#{sessionMb.fmtMoney(productMb.selected.averageCost)}</strong>
+                            </span>
+                            <span class="hint">#{msg['cat.product.stock.hint']}</span>
+                        </h:panelGroup>
+                    </div>
+
+                    <f:facet name="footer">
+                        <p:commandButton value="#{msg['action.save']}" icon="pi pi-check"
+                                         actionListener="#{productMb.save}" update=":form:table :messages"
+                                         styleClass="ui-button-primary"/>
+                        <p:commandButton value="#{msg['action.cancel']}" icon="pi pi-times"
+                                         onclick="PF('productDialog').hide()" type="button"
+                                         styleClass="ui-button-secondary"/>
+                    </f:facet>
+                </p:dialog>
+
+                <p:confirmDialog global="true">
+                    <p:commandButton value="#{msg['action.yes']}" type="button"
+                                     styleClass="ui-confirmdialog-yes ui-button-primary"/>
+                    <p:commandButton value="#{msg['action.no']}" type="button"
+                                     styleClass="ui-confirmdialog-no ui-button-secondary"/>
+                </p:confirmDialog>
+            </h:form>
+
+            <style type="text/css">
+                .cv-thumb { width: 56px; height: 56px; object-fit: cover; border-radius: 8px; border: 1px solid var(--vip-border); background: var(--vip-surface-2); }
+                .cv-photo-grid { display: flex; flex-wrap: wrap; gap: .6rem; margin: .3rem 0 .2rem; }
+                .cv-photo-card { position: relative; width: 104px; height: 104px; border-radius: 10px; overflow: hidden; border: 2px solid var(--vip-border); background: var(--vip-surface-2); }
+                .cv-photo-card.primary { border-color: var(--vip-gold-deep); }
+                .cv-photo-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+                .cv-photo-badge { position: absolute; left: 4px; bottom: 4px; padding: .05rem .4rem; border-radius: 999px; background: var(--vip-gold-deep); color: #fff; font-size: .68rem; font-weight: 600; }
+                .cv-photo-action { position: absolute; top: 4px; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.55); color: #fff !important; text-decoration: none; }
+                .cv-photo-action:hover { background: rgba(0,0,0,.8); }
+                .cv-photo-action i { font-size: .8rem; }
+                .cv-photo-star { left: 4px; }
+                .cv-photo-del { right: 4px; }
+                .cv-photo-del:hover { background: var(--vip-danger); }
+                .cv-thumb-empty { display: inline-flex; align-items: center; justify-content: center; color: var(--vip-text-muted); }
+            </style>
+            <script type="text/javascript">
+            //<![CDATA[
+            // Downscale the picked image (max 1024px) to JPEG q0.8 and stash the data URL in the hidden textarea.
+            function cvCompressPhoto(input) {
+                if (!input.files || !input.files[0]) { return; }
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    var img = new Image();
+                    img.onload = function () {
+                        var max = 1024;
+                        var scale = Math.min(1, max / Math.max(img.width, img.height));
+                        var w = Math.round(img.width * scale);
+                        var h = Math.round(img.height * scale);
+                        var canvas = document.createElement('canvas');
+                        canvas.width = w;
+                        canvas.height = h;
+                        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                        var dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                        var ta = document.querySelector('textarea.photoB64');
+                        if (ta) { ta.value = dataUrl; }
+                        var preview = document.getElementById('photoPreview');
+                        if (preview) { preview.src = dataUrl; preview.style.display = 'inline-block'; }
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+            function cvResetPhotoPicker() {
+                var ta = document.querySelector('textarea.photoB64');
+                if (ta) { ta.value = ''; }
+                var preview = document.getElementById('photoPreview');
+                if (preview) { preview.removeAttribute('src'); preview.style.display = 'none'; }
+            }
+            //]]>
+            </script>
+        </div>
+    </ui:define>
+</ui:composition>

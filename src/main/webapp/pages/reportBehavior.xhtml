@@ -1,0 +1,107 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <div class="page-header">
+            <span class="page-icon"><i class="pi pi-verified"></i></span>
+            <h2>#{msg['menu.report.behavior']}</h2>
+            <span class="page-subtitle">#{msg['pos.behavior.subtitle']}</span>
+        </div>
+
+        <h:form id="form">
+            <div class="card">
+                <p:toolbar styleClass="mb-2">
+                    <p:toolbarGroup>
+                        <p:inputText id="search" value="#{reportBehaviorMb.search}" style="width:22rem" placeholder="#{msg['pos.behavior.search']}"/>
+                        <p:commandButton id="btnSearch" value="#{msg['action.search']}" icon="pi pi-search"
+                                         actionListener="#{reportBehaviorMb.find}" update="@form :messages"
+                                         styleClass="ui-button-primary ml-2"/>
+                        <p:defaultCommand target="btnSearch"/>
+                    </p:toolbarGroup>
+                </p:toolbar>
+
+                <p:dataTable id="matches" var="c" value="#{reportBehaviorMb.matches}" rows="10" paginator="true" paginatorAlwaysVisible="false"
+                             reflow="true" stripedRows="true" rendered="#{reportBehaviorMb.matches.size() ne 1}"
+                             emptyMessage="#{reportBehaviorMb.searched ? msg['pos.behavior.noMatches'] : msg['pos.behavior.typeSomething']}">
+                    <p:column headerText="#{msg['pos.customer.name']}">
+                        <span class="avatar" style="margin-right:.5rem">#{sessionMb.initialsOf(c.fullName)}</span>
+                        <span style="font-weight:600">#{c.fullName}</span>
+                        <span class="muted">&#160;#{c.phone}</span>
+                    </p:column>
+                    <p:column headerText="#{msg['pos.behavior.visits']}" width="90" styleClass="text-right">#{c.visitsCount}</p:column>
+                    <p:column headerText="#{msg['pos.behavior.totalSpent']}" width="120" styleClass="text-right">#{sessionMb.fmtMoney(c.totalSpent)}</p:column>
+                    <p:column style="width:9rem;text-align:center">
+                        <p:commandButton value="#{msg['pos.behavior.history']}" icon="pi pi-list"
+                                         actionListener="#{reportBehaviorMb.select(c)}" process="@this" update="@form :messages"
+                                         styleClass="ui-button-sm ui-button-primary"/>
+                    </p:column>
+                </p:dataTable>
+
+                <!-- Detail of the selected customer -->
+                <h:panelGroup rendered="#{not empty reportBehaviorMb.selected}" layout="block" styleClass="mt-2">
+                    <div class="flex-between wrap gap-2">
+                        <div class="pos-customer-card" style="margin:0">
+                            <span class="avatar avatar-lg">#{sessionMb.initialsOf(reportBehaviorMb.selected.customerName)}</span>
+                            <span class="who">
+                                <span class="name" style="font-size:1.1rem">#{reportBehaviorMb.selected.customerName}</span>
+                                <span class="muted">#{reportBehaviorMb.selected.customerPhone}
+                                    <h:outputText value=" &#183; #{reportBehaviorMb.selected.customerAddress}" rendered="#{not empty reportBehaviorMb.selected.customerAddress}"/>
+                                </span>
+                            </span>
+                        </div>
+                        <span class="#{reportBehaviorMb.ratingStyle(reportBehaviorMb.selected.rating)}" style="font-size:.95rem;padding:.4rem 1rem">
+                            #{reportBehaviorMb.ratingLabel(reportBehaviorMb.selected.rating)}</span>
+                    </div>
+
+                    <div class="kpi-grid mt-2">
+                        <div class="kpi-card kpi-ink">
+                            <span class="kpi-label">#{msg['pos.behavior.onTime']}</span>
+                            <span class="kpi-value">
+                                <h:outputText value="#{reportBehaviorMb.selected.onTimePercent}" rendered="#{not empty reportBehaviorMb.selected.onTimePercent}">
+                                    <f:convertNumber minFractionDigits="0" maxFractionDigits="1"/></h:outputText><h:outputText value="%" rendered="#{not empty reportBehaviorMb.selected.onTimePercent}"/>
+                                <h:outputText value="—" rendered="#{empty reportBehaviorMb.selected.onTimePercent}"/>
+                            </span>
+                            <span class="kpi-hint">#{reportBehaviorMb.selected.paidOnTime} / #{reportBehaviorMb.selected.paidLate} / #{reportBehaviorMb.selected.installmentsPending}
+                                &#183; #{msg['pos.behavior.installmentsLegend']}</span>
+                        </div>
+                        <div class="kpi-card">
+                            <span class="kpi-label">#{msg['pos.behavior.plans']}</span>
+                            <span class="kpi-value">#{reportBehaviorMb.selected.plansTotal}</span>
+                            <span class="kpi-hint">#{reportBehaviorMb.selected.plansOpen} #{msg['pos.behavior.open']} &#183; #{msg['pos.behavior.totalFinanced']}: #{sessionMb.fmtMoney(reportBehaviorMb.selected.totalFinanced)}</span>
+                        </div>
+                        <div class="kpi-card">
+                            <span class="kpi-label">#{msg['pos.credit.balance']}</span>
+                            <span class="kpi-value">#{sessionMb.fmtMoney(reportBehaviorMb.selected.balance)}</span>
+                            <span class="kpi-hint" style="#{reportBehaviorMb.selected.overdueAmount gt 0 ? 'color:var(--vip-danger);font-weight:600' : ''}">
+                                #{msg['pos.credit.overdue']}: #{sessionMb.fmtMoney(reportBehaviorMb.selected.overdueAmount)}</span>
+                        </div>
+                        <div class="kpi-card">
+                            <span class="kpi-label">#{msg['pos.behavior.avgDaysLate']}</span>
+                            <span class="kpi-value"><h:outputText value="#{reportBehaviorMb.selected.avgDaysLate}"><f:convertNumber minFractionDigits="0" maxFractionDigits="1"/></h:outputText></span>
+                            <span class="kpi-hint">#{msg['pos.behavior.maxDaysLate']}: #{reportBehaviorMb.selected.maxDaysLate} &#183;
+                                #{msg['pos.behavior.currentOverdue']}: #{reportBehaviorMb.selected.currentMaxDaysOverdue}</span>
+                        </div>
+                    </div>
+
+                    <p:dataTable var="i" value="#{reportBehaviorMb.selected.history}" rows="15" paginator="true" paginatorAlwaysVisible="false"
+                                 reflow="true" stripedRows="true" emptyMessage="#{msg['msg.noData']}">
+                        <p:column headerText="#{msg['pos.lbl.folio']}" width="100">#{i.saleFolio}</p:column>
+                        <p:column headerText="#{msg['pos.credit.installment']}" style="width:5rem;text-align:center">#{i.installmentNumber}</p:column>
+                        <p:column headerText="#{msg['pos.credit.dueDate']}" width="120">#{reportBehaviorMb.fmtDay(i.dueDate)}</p:column>
+                        <p:column headerText="#{msg['pos.credit.amount']}" width="110" styleClass="text-right">#{sessionMb.fmtMoney(i.amount)}</p:column>
+                        <p:column headerText="#{msg['pos.behavior.paidAt']}" width="120">#{reportBehaviorMb.fmtStampDay(i.paidAt)}</p:column>
+                        <p:column headerText="#{msg['pos.behavior.result']}">
+                            <h:outputText value="#{msg['pos.behavior.late']} (#{i.daysLate})" rendered="#{i.installmentStatus eq 'PAID' and i.daysLate gt 0}" styleClass="badge badge-warning"/>
+                            <h:outputText value="#{msg['pos.behavior.onTimeShort']}" rendered="#{i.installmentStatus eq 'PAID' and i.daysLate le 0}" styleClass="badge badge-success"/>
+                            <h:outputText value="#{msg['pos.behavior.overdueNow']} (#{i.daysOverdue})" rendered="#{i.installmentStatus ne 'PAID' and i.overdue}" styleClass="badge badge-danger"/>
+                            <h:outputText value="#{msg['pos.behavior.pending']}" rendered="#{i.installmentStatus ne 'PAID' and not i.overdue}" styleClass="badge badge-muted"/>
+                        </p:column>
+                    </p:dataTable>
+                </h:panelGroup>
+            </div>
+        </h:form>
+    </ui:define>
+</ui:composition>

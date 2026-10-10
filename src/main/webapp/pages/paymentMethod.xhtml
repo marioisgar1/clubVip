@@ -1,0 +1,110 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <div class="card">
+            <div class="page-header">
+                <span class="page-icon"><i class="pi pi-credit-card"></i></span>
+                <h2>#{msg['menu.catalog.payment']}</h2>
+                <span class="page-subtitle">#{msg['pos.payment.subtitle']}</span>
+            </div>
+
+            <h:form id="form">
+                <p:toolbar>
+                    <p:toolbarGroup>
+                        <p:commandButton value="#{msg['action.new']}" icon="pi pi-plus"
+                                         process="@this" actionListener="#{paymentMethodMb.prepareNew}"
+                                         update=":form:dialog" oncomplete="PF('paymentMethodDialog').show()"
+                                         styleClass="ui-button-primary" rendered="#{sessionMb.admin}"/>
+                        <p:commandButton icon="pi pi-refresh" title="#{msg['action.refresh']}"
+                                         process="@this" actionListener="#{paymentMethodMb.refresh}" update=":form:table :messages"
+                                         styleClass="ui-button-secondary ml-2"/>
+                    </p:toolbarGroup>
+                </p:toolbar>
+
+                <p:dataTable id="table" var="pm" value="#{paymentMethodMb.paymentMethods}" paginator="true" rows="10"
+                             emptyMessage="#{msg['msg.noData']}" styleClass="mt-2" widgetVar="paymentTable"
+                             filteredValue="#{paymentMethodMb.filtered}" globalFilterOnly="true" reflow="true"
+                             paginatorAlwaysVisible="false" rowKey="#{pm.id}" stripedRows="true">
+                    <f:facet name="header">
+                        <div class="flex-between wrap gap-2">
+                            <span class="muted">#{paymentMethodMb.paymentMethods.size()} #{msg['pos.payment.count']}</span>
+                            <p:inputText id="globalFilter" onkeyup="PF('paymentTable').filter()"
+                                         placeholder="#{msg['action.search']}"/>
+                        </div>
+                    </f:facet>
+                    <p:column headerText="#{msg['lbl.name']}" sortBy="#{pm.name}"
+                              filterBy="#{pm.name}" filterMatchMode="contains">
+                        <span style="font-weight:600">#{pm.name}</span>
+                    </p:column>
+                    <p:column headerText="#{msg['pos.lbl.commission']}" sortBy="#{pm.commissionPercent}" width="130"
+                              styleClass="text-right">
+                        <h:outputText value="#{pm.commissionPercent}">
+                            <f:convertNumber minFractionDigits="2" maxFractionDigits="2"/>
+                        </h:outputText> %
+                    </p:column>
+                    <p:column headerText="#{msg['pos.payment.isCredit']}" width="150" styleClass="text-center"
+                              sortBy="#{pm.credit}">
+                        <span class="badge #{pm.credit ? 'badge-warning' : 'badge-muted'}">
+                            #{pm.credit ? msg['pos.payment.credit.yes'] : msg['pos.payment.credit.no']}
+                        </span>
+                    </p:column>
+                    <p:column headerText="" style="width:7rem;text-align:center" rendered="#{sessionMb.admin}">
+                        <p:commandButton icon="pi pi-pencil" title="#{msg['action.edit']}"
+                                         process="@this" actionListener="#{paymentMethodMb.prepareEdit(pm)}"
+                                         update=":form:dialog :messages" oncomplete="PF('paymentMethodDialog').show()"
+                                         styleClass="ui-button-rounded ui-button-text"/>
+                        <p:commandButton icon="pi pi-trash" title="#{msg['action.delete']}"
+                                         process="@this" actionListener="#{paymentMethodMb.delete(pm)}" update=":form:table :messages"
+                                         styleClass="ui-button-rounded ui-button-text ui-button-danger">
+                            <p:confirm header="#{msg['action.confirm']}" message="#{msg['msg.confirmDelete']}"
+                                       icon="pi pi-exclamation-triangle"/>
+                        </p:commandButton>
+                    </p:column>
+                </p:dataTable>
+
+                <p:dialog header="#{msg['menu.catalog.payment']}" widgetVar="paymentMethodDialog" modal="true" id="dialog"
+                          width="520" resizable="false" fitViewport="true" responsive="true" closeOnEscape="true">
+                    <div class="form-grid" style="margin-top:.5rem">
+                        <div class="field required span-2">
+                            <label for="form:payName">#{msg['lbl.name']}</label>
+                            <p:inputText id="payName" value="#{paymentMethodMb.selected.name}" maxlength="120" required="true"
+                                         requiredMessage="#{msg['lbl.name']}: #{msg['msg.required']}"/>
+                        </div>
+                        <div class="field">
+                            <label for="form:payCommission">#{msg['pos.lbl.commission']}</label>
+                            <p:inputNumber id="payCommission" value="#{paymentMethodMb.selected.commissionPercent}"
+                                           symbol=" %" symbolPosition="s" decimalPlaces="2" minValue="0" maxValue="100"/>
+                            <span class="hint">#{msg['pos.payment.commission.hint']}</span>
+                        </div>
+                        <div class="field">
+                            <div class="check-inline" style="margin-top:1.5rem">
+                                <p:toggleSwitch id="payCredit" value="#{paymentMethodMb.selected.credit}"/>
+                                <label for="form:payCredit" style="margin:0">#{msg['pos.payment.isCredit']}</label>
+                            </div>
+                            <span class="hint">#{msg['pos.payment.isCredit.hint']}</span>
+                        </div>
+                    </div>
+                    <f:facet name="footer">
+                        <p:commandButton value="#{msg['action.save']}" icon="pi pi-check"
+                                         actionListener="#{paymentMethodMb.save}" update=":form:table :messages"
+                                         styleClass="ui-button-primary"/>
+                        <p:commandButton value="#{msg['action.cancel']}" icon="pi pi-times"
+                                         onclick="PF('paymentMethodDialog').hide()" type="button"
+                                         styleClass="ui-button-secondary"/>
+                    </f:facet>
+                </p:dialog>
+
+                <p:confirmDialog global="true">
+                    <p:commandButton value="#{msg['action.yes']}" type="button"
+                                     styleClass="ui-confirmdialog-yes ui-button-primary"/>
+                    <p:commandButton value="#{msg['action.no']}" type="button"
+                                     styleClass="ui-confirmdialog-no ui-button-secondary"/>
+                </p:confirmDialog>
+            </h:form>
+        </div>
+    </ui:define>
+</ui:composition>

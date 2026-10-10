@@ -1,0 +1,85 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <div class="card">
+            <div class="page-header">
+                <span class="page-icon"><i class="pi pi-bookmark"></i></span>
+                <h2>#{msg['menu.catalog.brand']}</h2>
+                <span class="page-subtitle">#{msg['pos.brand.subtitle']}</span>
+            </div>
+
+            <h:form id="form">
+                <p:toolbar>
+                    <p:toolbarGroup>
+                        <p:commandButton value="#{msg['action.new']}" icon="pi pi-plus"
+                                         process="@this" actionListener="#{brandMb.prepareNew}"
+                                         update=":form:dialog" oncomplete="PF('brandDialog').show()"
+                                         styleClass="ui-button-primary" rendered="#{sessionMb.admin}"/>
+                        <p:commandButton icon="pi pi-refresh" title="#{msg['action.refresh']}"
+                                         process="@this" actionListener="#{brandMb.refresh}" update=":form:table :messages"
+                                         styleClass="ui-button-secondary ml-2"/>
+                    </p:toolbarGroup>
+                </p:toolbar>
+
+                <p:dataTable id="table" var="b" value="#{brandMb.brands}" paginator="true" rows="10"
+                             emptyMessage="#{msg['msg.noData']}" styleClass="mt-2" widgetVar="brandTable"
+                             filteredValue="#{brandMb.filtered}" globalFilterOnly="true" reflow="true"
+                             paginatorAlwaysVisible="false" rowKey="#{b.id}" stripedRows="true">
+                    <f:facet name="header">
+                        <div class="flex-between wrap gap-2">
+                            <span class="muted">#{brandMb.brands.size()} #{msg['pos.brand.count']}</span>
+                            <p:inputText id="globalFilter" onkeyup="PF('brandTable').filter()"
+                                         placeholder="#{msg['action.search']}"/>
+                        </div>
+                    </f:facet>
+                    <p:column headerText="#{msg['lbl.name']}" sortBy="#{b.name}"
+                              filterBy="#{b.name}" filterMatchMode="contains">
+                        <span style="font-weight:600">#{b.name}</span>
+                    </p:column>
+                    <p:column headerText="" style="width:7rem;text-align:center" rendered="#{sessionMb.admin}">
+                        <p:commandButton icon="pi pi-pencil" title="#{msg['action.edit']}"
+                                         process="@this" actionListener="#{brandMb.prepareEdit(b)}"
+                                         update=":form:dialog :messages" oncomplete="PF('brandDialog').show()"
+                                         styleClass="ui-button-rounded ui-button-text"/>
+                        <p:commandButton icon="pi pi-trash" title="#{msg['action.delete']}"
+                                         process="@this" actionListener="#{brandMb.delete(b)}" update=":form:table :messages"
+                                         styleClass="ui-button-rounded ui-button-text ui-button-danger">
+                            <p:confirm header="#{msg['action.confirm']}" message="#{msg['msg.confirmDelete']}"
+                                       icon="pi pi-exclamation-triangle"/>
+                        </p:commandButton>
+                    </p:column>
+                </p:dataTable>
+
+                <p:dialog header="#{msg['menu.catalog.brand']}" widgetVar="brandDialog" modal="true" id="dialog"
+                          width="460" resizable="false" fitViewport="true" responsive="true" closeOnEscape="true">
+                    <div class="form-grid" style="margin-top:.5rem">
+                        <div class="field required span-2">
+                            <label for="form:brdName">#{msg['lbl.name']}</label>
+                            <p:inputText id="brdName" value="#{brandMb.selected.name}" maxlength="120" required="true"
+                                         requiredMessage="#{msg['lbl.name']}: #{msg['msg.required']}"/>
+                        </div>
+                    </div>
+                    <f:facet name="footer">
+                        <p:commandButton value="#{msg['action.save']}" icon="pi pi-check"
+                                         actionListener="#{brandMb.save}" update=":form:table :messages"
+                                         styleClass="ui-button-primary"/>
+                        <p:commandButton value="#{msg['action.cancel']}" icon="pi pi-times"
+                                         onclick="PF('brandDialog').hide()" type="button"
+                                         styleClass="ui-button-secondary"/>
+                    </f:facet>
+                </p:dialog>
+
+                <p:confirmDialog global="true">
+                    <p:commandButton value="#{msg['action.yes']}" type="button"
+                                     styleClass="ui-confirmdialog-yes ui-button-primary"/>
+                    <p:commandButton value="#{msg['action.no']}" type="button"
+                                     styleClass="ui-confirmdialog-no ui-button-secondary"/>
+                </p:confirmDialog>
+            </h:form>
+        </div>
+    </ui:define>
+</ui:composition>

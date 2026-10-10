@@ -1,0 +1,17 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:ui="jakarta.faces.facelets"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <meta http-equiv="refresh" content="0;url=#{request.contextPath}/pages/dashboard.xhtml"/>
+        <div class="card">
+            <div class="page-header">
+                <span class="page-icon"><i class="pi pi-home"></i></span>
+                <h2>#{msg['home.welcome']}</h2>
+            </div>
+            <p>#{msg['welcome']}, #{sessionMb.user.fullName}.
+                <h:outputLink value="#{request.contextPath}/pages/dashboard.xhtml">#{msg['menu.operation.dashboard']}</h:outputLink>
+            </p>
+        </div>
+    </ui:define>
+</ui:composition>

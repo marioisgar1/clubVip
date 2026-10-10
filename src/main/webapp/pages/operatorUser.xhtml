@@ -1,0 +1,126 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <div class="card">
+            <div class="page-header">
+                <span class="page-icon"><i class="pi pi-users"></i></span>
+                <h2>#{msg['menu.security.user']}</h2>
+                <span class="page-subtitle">#{msg['rel.user.subtitle']}</span>
+            </div>
+
+            <h:form id="form">
+                <p:toolbar>
+                    <p:toolbarGroup>
+                        <p:commandButton value="#{msg['action.new']}" icon="pi pi-plus" actionListener="#{operatorUserMb.prepareNew}"
+                                         update="dialog" oncomplete="PF('userDialog').show()"/>
+                    </p:toolbarGroup>
+                </p:toolbar>
+
+                <p:dataTable id="table" var="u" value="#{operatorUserMb.users}" rows="15" paginator="true"
+                             paginatorPosition="bottom" paginatorAlwaysVisible="false" reflow="true" stripedRows="true"
+                             emptyMessage="#{msg['msg.noData']}" rowKey="#{u.id}" widgetVar="userTable" styleClass="mt-2"
+                             filteredValue="#{operatorUserMb.filtered}" globalFilterOnly="true">
+                    <f:facet name="header">
+                        <div class="flex-between">
+                            <span class="muted">#{msg['rel.user.list']}</span>
+                            <p:inputText onkeyup="PF('userTable').filter()" placeholder="#{msg['action.search']}"/>
+                        </div>
+                    </f:facet>
+                    <p:column headerText="#{msg['lbl.email']}" sortBy="#{u.email}" filterBy="#{u.email}">
+                        <span class="avatar" style="width:28px;height:28px;font-size:.7rem">#{sessionMb.initialsOf(u.fullName)}</span>
+                        &#160;<span style="font-weight:600">#{u.email}</span>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.fullName']}" sortBy="#{u.fullName}" filterBy="#{u.fullName}">
+                        #{u.fullName}
+                        <div class="muted small">#{u.email}
+                            <h:outputText rendered="#{not empty u.phone}" value=" &#183; #{u.phone}"/>
+                        </div>
+                    </p:column>
+                    <p:column headerText="#{msg['rel.affiliate.business']}" sortBy="#{u.businessName}" filterBy="#{u.businessName}">
+                        <h:outputText rendered="#{not empty u.businessName}" value="#{u.businessName}"/>
+                        <h:outputText rendered="#{empty u.businessName}" styleClass="muted" value="—"/>
+                        <h:panelGroup rendered="#{not empty u.businessId}" styleClass="muted small"> (#{u.businessId})</h:panelGroup>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.profile']}" sortBy="#{u.profileName}" filterBy="#{u.profileName}" width="170">
+                        <span class="#{operatorUserMb.profileBadge(u.profileId)}">#{u.profileName}</span>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.actions']}" width="110" styleClass="text-right">
+                        <p:commandButton icon="pi pi-pencil" title="#{msg['action.edit']}" actionListener="#{operatorUserMb.prepareEdit(u)}"
+                                         update=":form:dialog" oncomplete="PF('userDialog').show()" styleClass="ui-button-rounded ui-button-text"/>
+                        <p:commandButton icon="pi pi-trash" title="#{msg['action.delete']}" actionListener="#{operatorUserMb.delete(u)}"
+                                         update="table :messages" styleClass="ui-button-rounded ui-button-text ui-button-danger"
+                                         disabled="#{u.id eq sessionMb.userId}">
+                            <p:confirm header="#{msg['action.confirm']}" message="#{msg['msg.confirmDelete']}" icon="pi pi-exclamation-triangle"/>
+                        </p:commandButton>
+                    </p:column>
+                </p:dataTable>
+
+                <p:dialog id="dialog" header="#{msg['menu.security.user']}" widgetVar="userDialog" modal="true"
+                          width="560" resizable="false" responsive="true">
+                    <div class="form-grid">
+                        <div class="field required">
+                            <label>#{msg['lbl.email']}</label>
+                            <p:inputText value="#{operatorUserMb.selected.email}" maxlength="120"/>
+                        </div>
+                        <div class="field required span-2">
+                            <label>#{msg['lbl.fullName']}</label>
+                            <p:inputText value="#{operatorUserMb.selected.fullName}" maxlength="120"/>
+                        </div>
+                        <div class="field">
+                            <label>#{msg['lbl.phone']}</label>
+                            <p:inputText value="#{operatorUserMb.selected.phone}" maxlength="20"/>
+                        </div>
+                        <div class="field required">
+                            <label>#{msg['lbl.profile']}</label>
+                            <p:selectOneMenu value="#{operatorUserMb.selected.profileId}" converter="jakarta.faces.Integer" style="width:100%">
+                                <f:selectItem itemLabel="#{msg['lbl.select']}" noSelectionOption="true"/>
+                                <f:selectItems value="#{operatorUserMb.allProfiles}" var="pr" itemLabel="#{pr.name}" itemValue="#{pr.id}"/>
+                            </p:selectOneMenu>
+                        </div>
+                        <div class="field">
+                            <label>#{msg['rel.user.businessId']}</label>
+                            <p:inputNumber value="#{operatorUserMb.selected.businessId}" decimalPlaces="0" thousandSeparator="" minValue="1"/>
+                            <span class="hint">#{msg['rel.user.businessId.hint']}
+                                <h:outputText rendered="#{not empty operatorUserMb.selected.businessName}" value=" (#{operatorUserMb.selected.businessName})"/>
+                            </span>
+                        </div>
+                        <div class="field">
+                            <label>#{msg['lbl.password']}</label>
+                            <p:password value="#{operatorUserMb.selected.password}" feedback="false" redisplay="false" maxlength="60"/>
+                            <span class="hint">#{msg['rel.user.password.hint']}</span>
+                        </div>
+                        <div class="field">
+                            <label>#{msg['rel.user.language']}</label>
+                            <p:selectOneMenu value="#{operatorUserMb.selected.preferredLanguage}" style="width:100%">
+                                <f:selectItem itemValue="es" itemLabel="#{msg['lang.es']}"/>
+                                <f:selectItem itemValue="en" itemLabel="#{msg['lang.en']}"/>
+                            </p:selectOneMenu>
+                        </div>
+                        <div class="field">
+                            <label>#{msg['rel.user.theme']}</label>
+                            <p:selectOneMenu value="#{operatorUserMb.selected.preferredTheme}" style="width:100%">
+                                <f:selectItem itemValue="light" itemLabel="#{msg['theme.light']}"/>
+                                <f:selectItem itemValue="dim" itemLabel="#{msg['theme.dim']}"/>
+                                <f:selectItem itemValue="dark" itemLabel="#{msg['theme.dark']}"/>
+                            </p:selectOneMenu>
+                        </div>
+                    </div>
+                    <f:facet name="footer">
+                        <p:commandButton value="#{msg['action.save']}" icon="pi pi-check" action="#{operatorUserMb.save}" update="dialog table :messages"/>
+                        <p:commandButton value="#{msg['action.cancel']}" icon="pi pi-times" type="button"
+                                         onclick="PF('userDialog').hide()" styleClass="ui-button-secondary"/>
+                    </f:facet>
+                </p:dialog>
+
+                <p:confirmDialog global="true">
+                    <p:commandButton value="#{msg['action.yes']}" type="button" styleClass="ui-confirmdialog-yes"/>
+                    <p:commandButton value="#{msg['action.no']}" type="button" styleClass="ui-confirmdialog-no ui-button-secondary"/>
+                </p:confirmDialog>
+            </h:form>
+        </div>
+    </ui:define>
+</ui:composition>

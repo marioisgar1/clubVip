@@ -1,0 +1,94 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <div class="card">
+            <div class="page-header">
+                <span class="page-icon"><i class="pi pi-th-large"></i></span>
+                <h2>#{msg['menu.catalog.model']}</h2>
+                <span class="page-subtitle">#{msg['pos.model.subtitle']}</span>
+            </div>
+
+            <h:form id="form">
+                <p:toolbar>
+                    <p:toolbarGroup>
+                        <p:commandButton value="#{msg['action.new']}" icon="pi pi-plus"
+                                         process="@this" actionListener="#{productModelMb.prepareNew}"
+                                         update=":form:dialog" oncomplete="PF('productModelDialog').show()"
+                                         styleClass="ui-button-primary" rendered="#{sessionMb.admin}"/>
+                        <p:commandButton icon="pi pi-refresh" title="#{msg['action.refresh']}"
+                                         process="@this" actionListener="#{productModelMb.refresh}" update=":form:table :messages"
+                                         styleClass="ui-button-secondary ml-2"/>
+                    </p:toolbarGroup>
+                </p:toolbar>
+
+                <p:dataTable id="table" var="m" value="#{productModelMb.models}" paginator="true" rows="10"
+                             emptyMessage="#{msg['msg.noData']}" styleClass="mt-2" widgetVar="modelTable"
+                             filteredValue="#{productModelMb.filtered}" globalFilterOnly="true" reflow="true"
+                             paginatorAlwaysVisible="false" rowKey="#{m.id}" stripedRows="true">
+                    <f:facet name="header">
+                        <div class="flex-between wrap gap-2">
+                            <span class="muted">#{productModelMb.models.size()} #{msg['pos.model.count']}</span>
+                            <p:inputText id="globalFilter" onkeyup="PF('modelTable').filter()"
+                                         placeholder="#{msg['action.search']}"/>
+                        </div>
+                    </f:facet>
+                    <p:column headerText="#{msg['lbl.name']}" sortBy="#{m.name}"
+                              filterBy="#{m.name}" filterMatchMode="contains">
+                        <span style="font-weight:600">#{m.name}</span>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.description']}" sortBy="#{m.description}"
+                              filterBy="#{m.description}" filterMatchMode="contains">
+                        <h:outputText value="#{m.description}" styleClass="muted"/>
+                    </p:column>
+                    <p:column headerText="" style="width:7rem;text-align:center" rendered="#{sessionMb.admin}">
+                        <p:commandButton icon="pi pi-pencil" title="#{msg['action.edit']}"
+                                         process="@this" actionListener="#{productModelMb.prepareEdit(m)}"
+                                         update=":form:dialog :messages" oncomplete="PF('productModelDialog').show()"
+                                         styleClass="ui-button-rounded ui-button-text"/>
+                        <p:commandButton icon="pi pi-trash" title="#{msg['action.delete']}"
+                                         process="@this" actionListener="#{productModelMb.delete(m)}" update=":form:table :messages"
+                                         styleClass="ui-button-rounded ui-button-text ui-button-danger">
+                            <p:confirm header="#{msg['action.confirm']}" message="#{msg['msg.confirmDelete']}"
+                                       icon="pi pi-exclamation-triangle"/>
+                        </p:commandButton>
+                    </p:column>
+                </p:dataTable>
+
+                <p:dialog header="#{msg['menu.catalog.model']}" widgetVar="productModelDialog" modal="true" id="dialog"
+                          width="520" resizable="false" fitViewport="true" responsive="true" closeOnEscape="true">
+                    <div class="form-grid" style="margin-top:.5rem">
+                        <div class="field required span-2">
+                            <label for="form:mdlName">#{msg['lbl.name']}</label>
+                            <p:inputText id="mdlName" value="#{productModelMb.selected.name}" maxlength="120" required="true"
+                                         requiredMessage="#{msg['lbl.name']}: #{msg['msg.required']}"/>
+                        </div>
+                        <div class="field span-2">
+                            <label for="form:mdlDesc">#{msg['lbl.description']}</label>
+                            <p:inputTextarea id="mdlDesc" value="#{productModelMb.selected.description}" rows="3"
+                                             maxlength="250" autoResize="false"/>
+                        </div>
+                    </div>
+                    <f:facet name="footer">
+                        <p:commandButton value="#{msg['action.save']}" icon="pi pi-check"
+                                         actionListener="#{productModelMb.save}" update=":form:table :messages"
+                                         styleClass="ui-button-primary"/>
+                        <p:commandButton value="#{msg['action.cancel']}" icon="pi pi-times"
+                                         onclick="PF('productModelDialog').hide()" type="button"
+                                         styleClass="ui-button-secondary"/>
+                    </f:facet>
+                </p:dialog>
+
+                <p:confirmDialog global="true">
+                    <p:commandButton value="#{msg['action.yes']}" type="button"
+                                     styleClass="ui-confirmdialog-yes ui-button-primary"/>
+                    <p:commandButton value="#{msg['action.no']}" type="button"
+                                     styleClass="ui-confirmdialog-no ui-button-secondary"/>
+                </p:confirmDialog>
+            </h:form>
+        </div>
+    </ui:define>
+</ui:composition>

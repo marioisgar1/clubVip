@@ -1,0 +1,98 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui">
+    <!-- Day list of appointments (or every appointment from today on when owner.upcoming). Params: owner (AbstractAppointmentListMb), showEmployee (boolean). Must live inside h:form id="form". -->
+    <p:toolbar>
+        <p:toolbarGroup>
+            <p:commandButton icon="pi pi-chevron-left" actionListener="#{owner.previousDay}" update="@form :messages"
+                             styleClass="ui-button-secondary"/>
+            <p:datePicker value="#{owner.date}" pattern="dd/MM/yyyy" showIcon="true" readonlyInput="true"
+                          locale="#{sessionMb.language}" styleClass="ml-2" style="width:160px">
+                <p:ajax event="dateSelect" listener="#{owner.selectDay}" update="@form :messages"/>
+            </p:datePicker>
+            <p:commandButton icon="pi pi-chevron-right" actionListener="#{owner.nextDay}" update="@form :messages"
+                             styleClass="ui-button-secondary ml-2"/>
+            <p:commandButton value="#{msg['op.schedule.today']}" actionListener="#{owner.goToday}" update="@form :messages"
+                             styleClass="ui-button-secondary ml-2" rendered="#{not owner.today}"/>
+            <p:commandButton value="#{msg['op.my.upcoming']}" icon="pi pi-calendar" actionListener="#{owner.showUpcoming}"
+                             process="@this" update="@form :messages" rendered="#{owner.upcomingAvailable and not owner.upcoming}"
+                             styleClass="ui-button-secondary ml-2"/>
+        </p:toolbarGroup>
+        <p:toolbarGroup align="right">
+            <p:selectOneMenu value="#{owner.employeeId}" rendered="#{showEmployee}" style="min-width:180px">
+                <f:selectItem itemLabel="#{msg['op.schedule.allEmployees']}" itemValue="#{null}" noSelectionOption="true"/>
+                <f:selectItems value="#{owner.employees}" var="e" itemLabel="#{e.fullName}" itemValue="#{e.id}"/>
+                <p:ajax listener="#{owner.refresh}" update="@form :messages"/>
+            </p:selectOneMenu>
+            <p:selectOneMenu value="#{owner.status}" styleClass="ml-2" style="min-width:160px">
+                <f:selectItem itemLabel="#{msg['op.day.allStatus']}" itemValue="#{null}" noSelectionOption="true"/>
+                <f:selectItem itemLabel="#{msg['status.BOOKED']}" itemValue="BOOKED"/>
+                <f:selectItem itemLabel="#{msg['status.IN_PROGRESS']}" itemValue="IN_PROGRESS"/>
+                <f:selectItem itemLabel="#{msg['status.DONE']}" itemValue="DONE"/>
+                <f:selectItem itemLabel="#{msg['status.CANCELLED']}" itemValue="CANCELLED"/>
+                <f:selectItem itemLabel="#{msg['status.NO_SHOW']}" itemValue="NO_SHOW"/>
+                <p:ajax listener="#{owner.refresh}" update="@form :messages"/>
+            </p:selectOneMenu>
+            <p:commandButton value="#{msg['op.appointment.new']}" icon="pi pi-plus" rendered="#{sessionMb.admin}"
+                             actionListener="#{bookingMb.openNew}" update=":bookingForm :messages"
+                             oncomplete="PF('bookingDlg').show()" styleClass="ml-2"/>
+        </p:toolbarGroup>
+    </p:toolbar>
+
+    <div class="summary-bar mt-2">
+        <span class="summary-item"><b>#{owner.appointments.size()}</b> #{msg['op.day.count']}</span>
+        <span class="summary-item">#{msg['op.lbl.amount']}: <b>#{sessionMb.fmtMoney(owner.totalAmount)}</b></span>
+        <span class="summary-item muted">#{owner.dateLabel}</span>
+    </div>
+
+    <p:dataTable id="table" var="a" value="#{owner.appointments}" rowKey="#{a.id}" emptyMessage="#{msg['msg.noData']}"
+                 paginator="true" rows="20" paginatorAlwaysVisible="false" reflow="true" stripedRows="true"
+                 sortBy="#{a.date.concat(' ').concat(a.startTime)}">
+        <p:column headerText="#{msg['lbl.date']}" width="110" rendered="#{owner.upcoming}">
+            <span style="font-weight:600">#{sessionMb.fmtDay(a.date)}</span>
+        </p:column>
+        <p:column headerText="#{msg['lbl.time']}" width="90" sortBy="#{a.startTime}">
+            <span style="font-weight:600">#{a.startTime}</span><span class="muted"> - #{a.endTime}</span>
+        </p:column>
+        <p:column headerText="#{msg['lbl.customer']}" sortBy="#{a.customerName}">
+            <span style="font-weight:600">#{a.customerName}</span>
+            <h:panelGroup rendered="#{not empty a.customerPhone}" styleClass="muted" layout="block">#{a.customerPhone}</h:panelGroup>
+        </p:column>
+        <p:column headerText="#{msg['lbl.service']}" sortBy="#{a.serviceName}">#{a.serviceName}</p:column>
+        <p:column headerText="#{msg['lbl.employee']}" sortBy="#{a.employeeName}" rendered="#{showEmployee}">#{a.employeeName}</p:column>
+        <p:column headerText="#{msg['op.day.products']}" width="70" styleClass="text-center">
+            <h:outputText value="#{owner.productsCount(a)}" rendered="#{owner.productsCount(a) gt 0}" styleClass="badge badge-muted"/>
+        </p:column>
+        <p:column headerText="#{msg['lbl.status']}" width="120" sortBy="#{a.appointmentStatus}">
+            <span class="#{owner.statusBadge(a.appointmentStatus)}">#{msg['status.'.concat(a.appointmentStatus)]}</span>
+        </p:column>
+        <p:column headerText="#{msg['op.lbl.amount']}" width="100" styleClass="text-right" sortBy="#{a.total}">
+            #{sessionMb.fmtMoney(a.total)}
+        </p:column>
+        <p:column headerText="#{msg['lbl.actions']}" width="250" styleClass="text-center" exportable="false">
+            <p:commandButton icon="pi pi-eye" title="#{msg['op.action.detail']}" actionListener="#{appointmentActionsMb.open(a)}"
+                             process="@this" update=":apptDetailForm :messages" oncomplete="PF('apptDetailDlg').show()"
+                             styleClass="ui-button-secondary ui-button-flat"/>
+            <p:commandButton icon="pi pi-play" title="#{msg['op.action.start']}" actionListener="#{appointmentActionsMb.startFor(a, owner)}"
+                             process="@this" update="@form :messages" rendered="#{appointmentActionsMb.canStart(a)}"
+                             styleClass="ui-button-info ui-button-flat"/>
+            <p:commandButton icon="pi pi-check" title="#{msg['op.action.close']}" actionListener="#{appointmentActionsMb.prepareCloseFor(a)}"
+                             process="@this" update=":apptCloseForm :messages" oncomplete="PF('apptCloseDlg').show()"
+                             rendered="#{appointmentActionsMb.canClose(a)}" styleClass="ui-button-success ui-button-flat"/>
+            <p:commandButton icon="pi pi-whatsapp" title="#{msg['op.action.reminder']}" actionListener="#{appointmentActionsMb.reminderFor(a, owner)}"
+                             process="@this" update="@form :messages"
+                             rendered="#{appointmentActionsMb.canStart(a) and not empty a.customerPhone}"
+                             styleClass="ui-button-whatsapp"/>
+            <p:commandButton icon="pi pi-user-minus" title="#{msg['op.action.noShow']}" actionListener="#{appointmentActionsMb.noShowFor(a, owner)}"
+                             process="@this" update="@form :messages" rendered="#{appointmentActionsMb.canStart(a)}"
+                             styleClass="ui-button-warning ui-button-flat">
+                <p:confirm header="#{msg['action.confirm']}" message="#{msg['op.action.noShow']}: #{a.customerName}?" icon="pi pi-exclamation-triangle"/>
+            </p:commandButton>
+            <p:commandButton icon="pi pi-times" title="#{msg['op.action.cancelAppt']}" actionListener="#{appointmentActionsMb.open(a)}"
+                             process="@this" update=":apptCancelForm :messages" oncomplete="PF('apptCancelDlg').show()"
+                             rendered="#{appointmentActionsMb.canClose(a)}" styleClass="ui-button-danger ui-button-flat"/>
+        </p:column>
+    </p:dataTable>
+</ui:composition>

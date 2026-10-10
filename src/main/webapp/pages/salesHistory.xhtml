@@ -1,0 +1,154 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <div class="page-header">
+            <span class="page-icon"><i class="pi pi-receipt"></i></span>
+            <h2>#{msg['menu.sale.history']}</h2>
+            <span class="page-subtitle">#{sessionMb.seller ? msg['pos.history.subtitle.seller'] : msg['pos.history.subtitle']}</span>
+        </div>
+
+        <h:form id="form">
+            <div class="card">
+                <p:toolbar styleClass="mb-2">
+                    <p:toolbarGroup>
+                        <span class="field-inline">
+                            <label>#{msg['pos.report.from']}</label>
+                            <p:datePicker value="#{salesHistoryMb.from}" pattern="dd/MM/yyyy" showIcon="true" style="width:150px"/>
+                        </span>
+                        <span class="field-inline ml-2">
+                            <label>#{msg['pos.report.to']}</label>
+                            <p:datePicker value="#{salesHistoryMb.to}" pattern="dd/MM/yyyy" showIcon="true" style="width:150px"/>
+                        </span>
+                        <p:commandButton value="#{msg['action.search']}" icon="pi pi-search"
+                                         actionListener="#{salesHistoryMb.refresh}" update="@form :messages"
+                                         styleClass="ui-button-primary ml-2" style="margin-top:1.1rem"/>
+                    </p:toolbarGroup>
+                </p:toolbar>
+
+                <div class="kpi-grid">
+                    <div class="kpi-card kpi-ink">
+                        <span class="kpi-label">#{msg['pos.history.kpi.sales']}</span>
+                        <span class="kpi-value">#{salesHistoryMb.completedCount}</span>
+                        <span class="kpi-hint">#{msg['pos.history.kpi.cancelled']}: #{salesHistoryMb.cancelledCount}</span>
+                    </div>
+                    <div class="kpi-card">
+                        <span class="kpi-label">#{msg['pos.history.kpi.total']}</span>
+                        <span class="kpi-value">#{sessionMb.fmtMoney(salesHistoryMb.totalAmount)}</span>
+                        <span class="kpi-hint">#{msg['pos.history.kpi.total.hint']}</span>
+                    </div>
+                    <h:panelGroup layout="block" styleClass="kpi-card" rendered="#{sessionMb.admin}">
+                        <span class="kpi-label">#{msg['pos.report.commissions']}</span>
+                        <span class="kpi-value">#{sessionMb.fmtMoney(salesHistoryMb.totalCommission)}</span>
+                        <span class="kpi-hint">#{msg['pos.history.kpi.commission.hint']}</span>
+                    </h:panelGroup>
+                </div>
+
+                <p:dataTable id="table" var="s" value="#{salesHistoryMb.sales}" paginator="true" rows="15" widgetVar="historyTable"
+                             filteredValue="#{salesHistoryMb.filtered}" globalFilterOnly="true"
+                             emptyMessage="#{msg['msg.noData']}" reflow="true" stripedRows="true"
+                             paginatorAlwaysVisible="false" rowKey="#{s.id}">
+                    <f:facet name="header">
+                        <div class="flex-between wrap gap-2">
+                            <span class="muted">#{salesHistoryMb.sales.size()} #{msg['pos.history.count']}</span>
+                            <p:inputText id="globalFilter" onkeyup="PF('historyTable').filter()" placeholder="#{msg['action.search']}"/>
+                        </div>
+                    </f:facet>
+                    <p:column headerText="#{msg['pos.lbl.folio']}" sortBy="#{s.folio}" filterBy="#{s.folio}" filterMatchMode="contains" width="120">
+                        <strong>#{s.folio}</strong>
+                        <h:outputText styleClass="badge badge-info" style="margin-left:.3rem" rendered="#{s.saleType eq 'EXCHANGE'}" value="#{salesHistoryMb.typeLabel(s.saleType)}"/>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.date']}" sortBy="#{s.saleDate}" width="140">#{salesHistoryMb.fmtStamp(s.saleDate)}</p:column>
+                    <p:column headerText="#{msg['lbl.customer']}" filterBy="#{s.customerName}" filterMatchMode="contains">
+                        <h:outputText value="#{s.customerName}" rendered="#{not empty s.customerName}"/>
+                        <h:outputText value="—" styleClass="muted" rendered="#{empty s.customerName}"/>
+                    </p:column>
+                    <p:column headerText="#{msg['pos.lbl.saleLocation']}" filterBy="#{s.saleLocationName}" filterMatchMode="contains">#{s.saleLocationName}</p:column>
+                    <p:column headerText="#{msg['pos.lbl.paymentMethod']}" filterBy="#{s.paymentMethodName}" filterMatchMode="contains">#{s.paymentMethodName}</p:column>
+                    <p:column headerText="#{msg['lbl.total']}" sortBy="#{s.total}" width="110" styleClass="text-right"><strong>#{sessionMb.fmtMoney(s.total)}</strong></p:column>
+                    <p:column headerText="#{msg['lbl.status']}" width="120">
+                        <span class="#{salesHistoryMb.saleBadge(s.saleStatus)}">#{salesHistoryMb.statusLabel(s.saleStatus)}</span>
+                    </p:column>
+                    <p:column headerText="" style="width:4rem;text-align:center">
+                        <p:commandButton icon="pi pi-search" title="#{msg['pos.action.detail']}"
+                                         actionListener="#{salesHistoryMb.openDetail(s)}" process="@this"
+                                         update=":form:detailDialog :messages" oncomplete="PF('detailDialog').show()"
+                                         styleClass="ui-button-rounded ui-button-text"/>
+                    </p:column>
+                </p:dataTable>
+            </div>
+
+            <p:dialog header="#{msg['pos.sale.detail']}" widgetVar="detailDialog" id="detailDialog" modal="true"
+                      width="680" resizable="false" fitViewport="true" responsive="true" closeOnEscape="true"
+                      contentStyle="max-height:75vh;overflow:auto">
+                <h:panelGroup rendered="#{not empty salesHistoryMb.detail}" layout="block">
+                    <div class="flex-between wrap gap-2">
+                        <div>
+                            <div class="pos-result-folio">#{salesHistoryMb.detail.folio}</div>
+                            <span class="muted">#{salesHistoryMb.fmtStamp(salesHistoryMb.detail.saleDate)}
+                                &#183; #{salesHistoryMb.detail.paymentMethodName}
+                                <h:outputText value=" &#183; #{salesHistoryMb.detail.saleLocationName}" rendered="#{not empty salesHistoryMb.detail.saleLocationName}"/>
+                                <h:outputText value=" &#183; #{salesHistoryMb.detail.customerName} (#{salesHistoryMb.detail.customerPhone})" rendered="#{not empty salesHistoryMb.detail.customerName}"/>
+                            </span>
+                            <h:panelGroup rendered="#{not empty salesHistoryMb.detail.originFolio}" styleClass="muted" layout="block">
+                                #{msg['pos.exchange.originSale']}: #{salesHistoryMb.detail.originFolio}</h:panelGroup>
+                            <h:panelGroup rendered="#{not empty salesHistoryMb.detail.cancelledReason}" styleClass="muted" layout="block">
+                                #{msg['pos.return.reason']}: #{salesHistoryMb.detail.cancelledReason}</h:panelGroup>
+                        </div>
+                        <span class="#{salesHistoryMb.saleBadge(salesHistoryMb.detail.saleStatus)}">#{salesHistoryMb.statusLabel(salesHistoryMb.detail.saleStatus)}</span>
+                    </div>
+                    <p:dataTable var="it" value="#{salesHistoryMb.detail.items}" styleClass="mt-2" reflow="true" emptyMessage="#{msg['msg.noData']}">
+                        <p:column headerText="#{msg['lbl.description']}">
+                            #{it.description}<span class="muted" style="display:block">#{it.barcode}</span>
+                        </p:column>
+                        <p:column headerText="#{msg['lbl.quantity']}" width="70" styleClass="text-right">#{it.quantity}</p:column>
+                        <p:column headerText="#{msg['pos.lbl.listPrice']}" width="100" styleClass="text-right"><span class="muted">#{sessionMb.fmtMoney(it.listPrice)}</span></p:column>
+                        <p:column headerText="#{msg['pos.lbl.unitPrice']}" width="100" styleClass="text-right">#{sessionMb.fmtMoney(it.unitPrice)}</p:column>
+                        <p:column headerText="#{msg['lbl.total']}" width="100" styleClass="text-right"><strong>#{sessionMb.fmtMoney(it.lineTotal)}</strong></p:column>
+                    </p:dataTable>
+                    <div class="totals-box mt-2">
+                        <div class="totals-row"><span>#{msg['pos.sale.subtotal']}</span><span>#{sessionMb.fmtMoney(salesHistoryMb.detail.subtotal)}</span></div>
+                        <h:panelGroup layout="block" styleClass="totals-row" rendered="#{salesHistoryMb.detail.creditAmount gt 0}">
+                            <span>#{msg['pos.exchange.credit']}</span><span>#{sessionMb.fmtMoney(salesHistoryMb.detail.creditAmount)}</span>
+                        </h:panelGroup>
+                        <h:panelGroup layout="block" styleClass="totals-row" rendered="#{salesHistoryMb.detail.commissionAmount gt 0 and sessionMb.admin}">
+                            <span>#{msg['pos.report.commissions']} (#{salesHistoryMb.detail.commissionPercent}%)</span>
+                            <span class="muted">#{sessionMb.fmtMoney(salesHistoryMb.detail.commissionAmount)}</span>
+                        </h:panelGroup>
+                        <div class="totals-row grand-total"><span>#{msg['lbl.total']}</span><span>#{sessionMb.fmtMoney(salesHistoryMb.detail.total)}</span></div>
+                    </div>
+
+                    <h:panelGroup rendered="#{not empty salesHistoryMb.detailCredit}" layout="block" styleClass="mt-2">
+                        <h3 class="section-title"><i class="pi pi-calendar gold"></i>&#160;#{msg['pos.sale.credit.title']}
+                            <span class="badge #{salesHistoryMb.detailCredit.planStatus eq 'PAID' ? 'badge-success' : (salesHistoryMb.detailCredit.planStatus eq 'CANCELLED' ? 'badge-danger' : 'badge-warning')}"
+                                  style="margin-left:.4rem">#{msg['pos.planStatus.'.concat(salesHistoryMb.detailCredit.planStatus)]}</span>
+                        </h3>
+                        <div class="totals-box">
+                            <div class="totals-row"><span>#{msg['pos.credit.financed']}</span><span>#{sessionMb.fmtMoney(salesHistoryMb.detailCredit.financedAmount)}</span></div>
+                            <div class="totals-row"><span>#{msg['pos.credit.paid']}</span><span>#{sessionMb.fmtMoney(salesHistoryMb.detailCredit.paidAmount)}</span></div>
+                            <div class="totals-row grand-total"><span>#{msg['pos.credit.balance']}</span><span>#{sessionMb.fmtMoney(salesHistoryMb.detailCredit.balance)}</span></div>
+                        </div>
+                        <p:dataTable var="ins" value="#{salesHistoryMb.detailCredit.installments}" styleClass="mt-2" reflow="true" emptyMessage="#{msg['msg.noData']}">
+                            <p:column headerText="#" style="width:2.5rem;text-align:center">#{ins.installmentNumber}</p:column>
+                            <p:column headerText="#{msg['pos.credit.dueDate']}">#{salesHistoryMb.fmtDay(ins.dueDate)}</p:column>
+                            <p:column headerText="#{msg['pos.credit.amount']}" styleClass="text-right">#{sessionMb.fmtMoney(ins.amount)}</p:column>
+                            <p:column headerText="#{msg['pos.credit.pending']}" styleClass="text-right">#{sessionMb.fmtMoney(ins.pendingAmount)}</p:column>
+                            <p:column headerText="#{msg['lbl.status']}" width="110">
+                                <span class="badge #{ins.installmentStatus eq 'PAID' ? 'badge-success' : (ins.overdue ? 'badge-danger' : 'badge-muted')}">
+                                    #{ins.installmentStatus eq 'PAID' ? msg['pos.credit.status.paid'] : (ins.overdue ? msg['pos.credit.status.overdue'] : msg['pos.credit.status.pending'])}
+                                </span>
+                            </p:column>
+                        </p:dataTable>
+                    </h:panelGroup>
+                </h:panelGroup>
+                <f:facet name="footer">
+                    <p:commandButton value="#{msg['action.close']}" icon="pi pi-times" type="button"
+                                     onclick="PF('detailDialog').hide()" styleClass="ui-button-secondary"/>
+                </f:facet>
+            </p:dialog>
+        </h:form>
+    </ui:define>
+</ui:composition>

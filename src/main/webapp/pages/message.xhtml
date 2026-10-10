@@ -1,0 +1,103 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <div class="card">
+            <div class="page-header">
+                <span class="page-icon"><i class="pi pi-whatsapp"></i></span>
+                <h2>#{msg['op.message.title']}</h2>
+            </div>
+
+            <h:form id="form">
+                <p:tabView id="tabs">
+                    <p:tab title="#{msg['op.message.tab.templates']}">
+                        <p:toolbar>
+                            <p:toolbarGroup>
+                                <p:commandButton value="#{msg['op.message.new']}" icon="pi pi-plus" rendered="#{sessionMb.admin}"
+                                                 process="@this" actionListener="#{messageMb.prepareNew}" update=":templateForm" oncomplete="PF('templateDlg').show()"/>
+                                <p:commandButton icon="pi pi-refresh" title="#{msg['action.refresh']}" process="@this" actionListener="#{messageMb.refresh}"
+                                                 update="@form :messages" styleClass="ui-button-secondary ml-2"/>
+                            </p:toolbarGroup>
+                        </p:toolbar>
+                        <p:dataTable id="tblTemplates" var="t" value="#{messageMb.templates}" rowKey="#{t.templateType}#{t.id}"
+                                     emptyMessage="#{msg['msg.noData']}" reflow="true" stripedRows="true" styleClass="mt-2">
+                            <p:column headerText="#{msg['op.message.type']}" width="170" sortBy="#{t.templateType}">
+                                <span class="badge badge-muted">#{msg['op.message.type.'.concat(t.templateType)]}</span>
+                            </p:column>
+                            <p:column headerText="#{msg['lbl.name']}" width="200" sortBy="#{t.name}"><b>#{t.name}</b></p:column>
+                            <p:column headerText="#{msg['op.message.body']}"><span class="small" style="white-space:pre-wrap">#{t.body}</span></p:column>
+                            <p:column headerText="#{msg['lbl.status']}" width="130">
+                                <h:outputText value="#{msg['op.message.default']}" styleClass="badge badge-info" rendered="#{t.isDefault or not messageMb.isOwn(t)}"/>
+                                <h:outputText value="#{msg['op.message.own']}" styleClass="badge badge-success" rendered="#{not t.isDefault and messageMb.isOwn(t)}"/>
+                            </p:column>
+                            <p:column headerText="#{msg['lbl.actions']}" width="110" styleClass="text-center" rendered="#{sessionMb.admin}">
+                                <p:commandButton icon="pi pi-pencil" title="#{msg['action.edit']}" actionListener="#{messageMb.prepareEdit(t)}"
+                                                 process="@this" update=":templateForm" oncomplete="PF('templateDlg').show()"
+                                                 styleClass="ui-button-secondary ui-button-flat"/>
+                                <p:commandButton icon="pi pi-trash" title="#{msg['action.delete']}" actionListener="#{messageMb.delete(t)}"
+                                                 process="@this" update="@form :messages" rendered="#{messageMb.isOwn(t)}"
+                                                 styleClass="ui-button-danger ui-button-flat">
+                                    <p:confirm header="#{msg['action.confirm']}" message="#{msg['msg.confirmDelete']}" icon="pi pi-exclamation-triangle"/>
+                                </p:commandButton>
+                            </p:column>
+                        </p:dataTable>
+                    </p:tab>
+
+                    <p:tab title="#{msg['op.message.tab.log']}" rendered="#{sessionMb.admin}">
+                        <div class="flex wrap gap-2 mb-2" style="align-items:flex-end">
+                            <span class="field-inline"><label>#{msg['op.message.from']}</label>
+                                <p:datePicker value="#{messageMb.from}" pattern="dd/MM/yyyy" showIcon="true" readonlyInput="true" locale="#{sessionMb.language}"/></span>
+                            <span class="field-inline"><label>#{msg['op.message.to']}</label>
+                                <p:datePicker value="#{messageMb.to}" pattern="dd/MM/yyyy" showIcon="true" readonlyInput="true" locale="#{sessionMb.language}"/></span>
+                            <p:commandButton value="#{msg['action.search']}" icon="pi pi-search" actionListener="#{messageMb.loadLog}"
+                                             update=":form:tabs:tblLog :messages" styleClass="ui-button-secondary"/>
+                        </div>
+                        <p:dataTable id="tblLog" var="l" value="#{messageMb.log}" rowKey="#{l.id}" emptyMessage="#{msg['msg.noData']}"
+                                     paginator="true" rows="20" paginatorAlwaysVisible="false" reflow="true" stripedRows="true">
+                            <p:column headerText="#{msg['op.message.sentAt']}" width="140" sortBy="#{l.sentAt}">
+                                <h:outputText value="#{l.sentAt}"><f:convertDateTime pattern="dd/MM/yyyy HH:mm" timeZone="America/Mexico_City"/></h:outputText>
+                            </p:column>
+                            <p:column headerText="#{msg['lbl.customer']}" sortBy="#{l.customerName}"><b>#{l.customerName}</b>
+                                <span class="muted" style="display:block">#{l.phone}</span></p:column>
+                            <p:column headerText="#{msg['op.message.type']}" width="160" sortBy="#{l.templateType}">
+                                <span class="badge badge-muted">#{msg['op.message.type.'.concat(l.templateType)]}</span></p:column>
+                            <p:column headerText="#{msg['op.message.body']}"><span class="small" style="white-space:pre-wrap">#{l.body}</span></p:column>
+                            <p:column headerText="#{msg['op.message.channel']}" width="100">#{l.channel}</p:column>
+                        </p:dataTable>
+                    </p:tab>
+                </p:tabView>
+
+                <p:confirmDialog global="true" showEffect="fade" hideEffect="fade" responsive="true">
+                    <p:commandButton value="#{msg['action.yes']}" type="button" styleClass="ui-confirmdialog-yes" icon="pi pi-check"/>
+                    <p:commandButton value="#{msg['action.no']}" type="button" styleClass="ui-confirmdialog-no ui-button-secondary" icon="pi pi-times"/>
+                </p:confirmDialog>
+            </h:form>
+        </div>
+
+        <p:dialog header="#{msg['op.message.edit']}" widgetVar="templateDlg" modal="true" responsive="true" width="620"
+                  appendTo="@(body)" closeOnEscape="true">
+            <h:form id="templateForm">
+                <div class="form-grid">
+                    <div class="field required"><label>#{msg['op.message.type']}</label>
+                        <p:selectOneMenu value="#{messageMb.selected.templateType}">
+                            <f:selectItems value="#{messageMb.types}" var="ty" itemValue="#{ty}" itemLabel="#{msg['op.message.type.'.concat(ty)]}"/>
+                        </p:selectOneMenu></div>
+                    <div class="field required"><label>#{msg['lbl.name']}</label>
+                        <p:inputText value="#{messageMb.selected.name}" required="true" requiredMessage="#{msg['lbl.name']}: #{msg['msg.required']}"/></div>
+                    <div class="field required span-2"><label>#{msg['op.message.body']}</label>
+                        <p:inputTextarea value="#{messageMb.selected.body}" rows="6" autoResize="false" required="true"
+                                         requiredMessage="#{msg['op.message.body']}: #{msg['msg.required']}"/>
+                        <span class="hint">#{msg['op.message.variables']}:
+                            <code>{customer} {business} {service} {date} {time} {employee} {address} {promo}</code></span></div>
+                </div>
+                <div class="flex gap-2" style="justify-content:flex-end">
+                    <p:commandButton value="#{msg['action.cancel']}" type="button" onclick="PF('templateDlg').hide()" styleClass="ui-button-secondary"/>
+                    <p:commandButton value="#{msg['action.save']}" icon="pi pi-save" actionListener="#{messageMb.save}" update="@form :form :messages"/>
+                </div>
+            </h:form>
+        </p:dialog>
+    </ui:define>
+</ui:composition>

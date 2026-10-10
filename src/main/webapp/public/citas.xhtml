@@ -1,0 +1,253 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/public-template.xhtml">
+    <ui:param name="pb" value="#{publicBookingMb}"/>
+    <ui:define name="content">
+        <h:form id="form">
+            <!-- Business hero (same feel as the business sheet of the app) -->
+            <!-- The logo already leads the black header (logos are often made for dark backgrounds). -->
+            <div class="bk-hero">
+                <div class="bk-hero-text">
+                    <h1>#{publicBookingMb.business.name}
+                        <h:panelGroup rendered="#{publicBookingMb.business.verified}" styleClass="bk-verified" title="#{msg['lbl.verified']}"><i class="pi pi-verified"></i></h:panelGroup>
+                    </h1>
+                    <div class="bk-hero-sub">#{publicBookingMb.business.categoryName}#{not empty publicBookingMb.business.specialty ? ' · '.concat(publicBookingMb.business.specialty) : ''}</div>
+                    <h:panelGroup rendered="#{publicBookingMb.business.ratingCount gt 0}" layout="block" styleClass="bk-rating">
+                        <i class="pi pi-star-fill"></i>&#160;#{publicBookingMb.business.ratingAverage} <span>(#{publicBookingMb.business.ratingCount})</span>
+                    </h:panelGroup>
+                    <div class="bk-hero-meta">
+                        <h:panelGroup rendered="#{not empty publicBookingMb.business.address}"><i class="pi pi-map-marker"></i>&#160;#{publicBookingMb.business.address}</h:panelGroup>
+                        <h:panelGroup rendered="#{not empty publicBookingMb.business.hoursText}" styleClass="bk-hours"><i class="pi pi-clock"></i>&#160;#{publicBookingMb.business.hoursText}</h:panelGroup>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Business without appointments -->
+            <h:panelGroup rendered="#{not publicBookingMb.hasAppointments}" layout="block" styleClass="pub-empty">
+                <i class="pi pi-calendar-times"></i>
+                <h2>#{msg['pub.book.disabled']}</h2>
+                <h:panelGroup rendered="#{publicBookingMb.hasStore}">
+                    <a class="pub-primary" href="#{publicBookingMb.tiendaLink}"><i class="pi pi-shopping-bag"></i>&#160;#{msg['pub.book.goStore']}</a>
+                </h:panelGroup>
+            </h:panelGroup>
+
+            <p:outputPanel id="booking" rendered="#{publicBookingMb.hasAppointments}">
+                <!-- Done -->
+                <h:panelGroup rendered="#{publicBookingMb.booked ne null}" layout="block" styleClass="bk-card bk-done">
+                    <div class="bk-done-icon"><i class="pi pi-check"></i></div>
+                    <h2>#{msg['pub.book.done']}</h2>
+                    <div class="bk-summary">
+                        <div class="bk-summary-pro">
+                            <h:panelGroup rendered="#{not empty publicBookingMb.photo(publicBookingMb.selectedEmployee)}">
+                                <img src="#{publicBookingMb.photo(publicBookingMb.selectedEmployee)}" alt=""/>
+                            </h:panelGroup>
+                            <h:panelGroup rendered="#{empty publicBookingMb.photo(publicBookingMb.selectedEmployee)}" styleClass="bk-avatar-mono">#{sessionMb.initialsOf(publicBookingMb.booked.employeeName)}</h:panelGroup>
+                            <div>
+                                <strong>#{publicBookingMb.booked.serviceName}</strong>
+                                <span>#{msg['pub.book.with']} #{publicBookingMb.booked.employeeName}</span>
+                            </div>
+                        </div>
+                        <div class="bk-summary-row"><i class="pi pi-calendar"></i>#{publicBookingMb.longDate}</div>
+                        <div class="bk-summary-row"><i class="pi pi-clock"></i>#{publicBookingMb.booked.startTime} hrs</div>
+                    </div>
+                    <p class="muted">#{msg['pub.book.done.hint']}</p>
+                    <div class="pub-actions">
+                        <h:panelGroup rendered="#{not empty publicBookingMb.whatsAppConfirm}">
+                            <a class="bk-btn bk-btn-wa" href="#{publicBookingMb.whatsAppConfirm}" target="_blank" rel="noopener"><i class="pi pi-whatsapp"></i>&#160;#{msg['pub.book.sendWa']}</a>
+                        </h:panelGroup>
+                        <a class="bk-btn bk-btn-ghost" href="#{publicBookingMb.appIntent}"><i class="pi pi-mobile"></i>&#160;#{msg['pub.book.getApp']}</a>
+                        <p:commandLink value="#{msg['pub.book.again']}" action="#{publicBookingMb.again}" process="@this"
+                                       update=":form:booking" styleClass="pub-link"/>
+                    </div>
+                </h:panelGroup>
+
+                <h:panelGroup rendered="#{publicBookingMb.booked eq null}" layout="block">
+                    <!-- 1. Service -->
+                    <section class="bk-section">
+                        <h2 class="bk-title">#{msg['pub.book.step.service']}</h2>
+                        <h:panelGroup rendered="#{empty publicBookingMb.services}" styleClass="muted">#{msg['pub.book.noServices']}</h:panelGroup>
+                        <div class="bk-services">
+                            <ui:repeat value="#{publicBookingMb.services}" var="s">
+                                <p:commandLink action="#{publicBookingMb.selectService(s.id)}" process="@this" update=":form:booking"
+                                               styleClass="bk-service #{publicBookingMb.serviceId eq s.id ? 'selected' : ''}">
+                                    <span class="bk-service-check"><i class="pi pi-check"></i></span>
+                                    <span class="bk-service-body">
+                                        <span class="bk-service-name">#{s.name}</span>
+                                        <h:panelGroup rendered="#{not empty s.description}" styleClass="bk-service-desc">#{s.description}</h:panelGroup>
+                                        <span class="bk-service-meta"><span class="bk-chip"><i class="pi pi-clock"></i>&#160;#{s.durationMinutes} min</span></span>
+                                    </span>
+                                    <span class="bk-service-price">#{sessionMb.fmtMoney(s.price)}</span>
+                                </p:commandLink>
+                            </ui:repeat>
+                        </div>
+                    </section>
+
+                    <h:panelGroup rendered="#{publicBookingMb.serviceId ne null}" layout="block">
+                        <!-- 2. Who attends -->
+                        <section class="bk-section">
+                            <h2 class="bk-title">#{msg['pub.book.who']}</h2>
+                            <p:outputPanel id="pros" styleClass="bk-scroller">
+                                <p:commandLink action="#{publicBookingMb.selectEmployee(null)}" process="@this"
+                                               update=":form:pros :form:days :form:slots :form:confirm"
+                                               styleClass="bk-pro #{publicBookingMb.employeeId eq null ? 'selected' : ''}">
+                                    <span class="bk-avatar bk-avatar-any"><i class="pi pi-users"></i></span>
+                                    <span class="bk-pro-name">#{msg['pub.book.anyone.short']}</span>
+                                    <span class="bk-pro-spec">#{msg['pub.book.anyone.hint']}</span>
+                                </p:commandLink>
+                                <ui:repeat value="#{publicBookingMb.employees}" var="e">
+                                    <p:commandLink action="#{publicBookingMb.selectEmployee(e.id)}" process="@this"
+                                                   update=":form:pros :form:days :form:slots :form:confirm"
+                                                   styleClass="bk-pro #{publicBookingMb.employeeId eq e.id ? 'selected' : ''}">
+                                        <h:panelGroup rendered="#{not empty publicBookingMb.photo(e)}" styleClass="bk-avatar">
+                                            <img src="#{publicBookingMb.photo(e)}" alt="#{e.fullName}"/>
+                                        </h:panelGroup>
+                                        <h:panelGroup rendered="#{empty publicBookingMb.photo(e)}" styleClass="bk-avatar bk-avatar-mono">#{sessionMb.initialsOf(e.fullName)}</h:panelGroup>
+                                        <span class="bk-pro-name">#{e.fullName}</span>
+                                        <span class="bk-pro-spec">#{e.specialty}</span>
+                                    </p:commandLink>
+                                </ui:repeat>
+                            </p:outputPanel>
+                        </section>
+
+                        <!-- 3. Day -->
+                        <section class="bk-section">
+                            <h2 class="bk-title">#{msg['pub.book.day']}</h2>
+                            <p:outputPanel id="days" styleClass="bk-calendar">
+                                <div class="bk-cal-head">
+                                    <p:commandLink action="#{publicBookingMb.previousMonth}" process="@this" update=":form:days"
+                                                   disabled="#{not publicBookingMb.canPrevious}" styleClass="bk-cal-nav" title="#{msg['pub.book.prevMonth']}">
+                                        <i class="pi pi-chevron-left"></i>
+                                    </p:commandLink>
+                                    <span class="bk-cal-month">#{publicBookingMb.monthLabel}</span>
+                                    <p:commandLink action="#{publicBookingMb.nextMonth}" process="@this" update=":form:days"
+                                                   disabled="#{not publicBookingMb.canNext}" styleClass="bk-cal-nav" title="#{msg['pub.book.nextMonth']}">
+                                        <i class="pi pi-chevron-right"></i>
+                                    </p:commandLink>
+                                </div>
+                                <div class="bk-cal-grid">
+                                    <ui:repeat value="#{publicBookingMb.weekdays}" var="wd">
+                                        <span class="bk-cal-wd">#{wd}</span>
+                                    </ui:repeat>
+                                    <ui:repeat value="#{publicBookingMb.calendarCells}" var="c">
+                                        <h:panelGroup rendered="#{c.blank}" styleClass="bk-cal-cell"/>
+                                        <h:panelGroup rendered="#{not c.blank and not c.available}" styleClass="bk-cal-cell">
+                                            <span class="bk-cal-day off #{c.today ? 'today' : ''}">#{c.day}</span>
+                                        </h:panelGroup>
+                                        <h:panelGroup rendered="#{not c.blank and c.available}" styleClass="bk-cal-cell">
+                                            <p:commandLink action="#{publicBookingMb.selectDate(c.iso)}" process="@this"
+                                                           update=":form:days :form:slots :form:confirm"
+                                                           oncomplete="var t=document.getElementById('form:slots');if(t)t.scrollIntoView({behavior:'smooth',block:'start'});"
+                                                           styleClass="bk-cal-day on #{c.selected ? 'selected' : ''} #{c.today ? 'today' : ''}">#{c.day}</p:commandLink>
+                                        </h:panelGroup>
+                                    </ui:repeat>
+                                </div>
+                                <div class="bk-cal-legend">
+                                    <span><i class="dot on"></i>#{msg['pub.book.legend.available']}</span>
+                                    <span><i class="dot sel"></i>#{msg['pub.book.legend.selected']}</span>
+                                </div>
+                            </p:outputPanel>
+                        </section>
+
+                        <!-- 4. Time -->
+                        <section class="bk-section">
+                            <h2 class="bk-title">#{msg['pub.book.time']}</h2>
+                            <p:outputPanel id="slots">
+                                <h:panelGroup rendered="#{publicBookingMb.date eq null}" layout="block" styleClass="bk-noslots">
+                                    <i class="pi pi-hand-pointer"></i>&#160;#{msg['pub.book.pickDayFirst']}
+                                </h:panelGroup>
+                                <h:panelGroup rendered="#{publicBookingMb.date ne null and empty publicBookingMb.slots}" layout="block" styleClass="bk-noslots">
+                                    <i class="pi pi-calendar-times"></i>&#160;#{msg['pub.book.noSlots']}
+                                </h:panelGroup>
+                                <h:panelGroup rendered="#{publicBookingMb.date ne null and not empty publicBookingMb.slots}" layout="block" styleClass="bk-slot-day">#{publicBookingMb.longDate}</h:panelGroup>
+                                <h:panelGroup rendered="#{not empty publicBookingMb.morningSlots}" layout="block" styleClass="bk-slot-group">
+                                    <span class="bk-slot-label"><i class="pi pi-sun"></i>&#160;#{msg['pub.book.part.morning']}</span>
+                                    <div class="bk-slots">
+                                        <ui:repeat value="#{publicBookingMb.morningSlots}" var="sl">
+                                            <p:commandLink action="#{publicBookingMb.selectSlot(publicBookingMb.slotKey(sl))}" process="@this"
+                                                           update=":form:slots :form:confirm"
+                                                           oncomplete="var c=document.getElementById('form:confirm');if(c)c.scrollIntoView({behavior:'smooth',block:'start'});"
+                                                           styleClass="bk-slot #{publicBookingMb.slotKey eq publicBookingMb.slotKey(sl) ? 'selected' : ''}">#{sl.startTime}</p:commandLink>
+                                        </ui:repeat>
+                                    </div>
+                                </h:panelGroup>
+                                <h:panelGroup rendered="#{not empty publicBookingMb.afternoonSlots}" layout="block" styleClass="bk-slot-group">
+                                    <span class="bk-slot-label"><i class="pi pi-cloud"></i>&#160;#{msg['pub.book.part.afternoon']}</span>
+                                    <div class="bk-slots">
+                                        <ui:repeat value="#{publicBookingMb.afternoonSlots}" var="sl">
+                                            <p:commandLink action="#{publicBookingMb.selectSlot(publicBookingMb.slotKey(sl))}" process="@this"
+                                                           update=":form:slots :form:confirm"
+                                                           oncomplete="var c=document.getElementById('form:confirm');if(c)c.scrollIntoView({behavior:'smooth',block:'start'});"
+                                                           styleClass="bk-slot #{publicBookingMb.slotKey eq publicBookingMb.slotKey(sl) ? 'selected' : ''}">#{sl.startTime}</p:commandLink>
+                                        </ui:repeat>
+                                    </div>
+                                </h:panelGroup>
+                                <h:panelGroup rendered="#{not empty publicBookingMb.eveningSlots}" layout="block" styleClass="bk-slot-group">
+                                    <span class="bk-slot-label"><i class="pi pi-moon"></i>&#160;#{msg['pub.book.part.evening']}</span>
+                                    <div class="bk-slots">
+                                        <ui:repeat value="#{publicBookingMb.eveningSlots}" var="sl">
+                                            <p:commandLink action="#{publicBookingMb.selectSlot(publicBookingMb.slotKey(sl))}" process="@this"
+                                                           update=":form:slots :form:confirm"
+                                                           oncomplete="var c=document.getElementById('form:confirm');if(c)c.scrollIntoView({behavior:'smooth',block:'start'});"
+                                                           styleClass="bk-slot #{publicBookingMb.slotKey eq publicBookingMb.slotKey(sl) ? 'selected' : ''}">#{sl.startTime}</p:commandLink>
+                                        </ui:repeat>
+                                    </div>
+                                </h:panelGroup>
+                            </p:outputPanel>
+                        </section>
+                    </h:panelGroup>
+
+                    <!-- 5. Summary + contact -->
+                    <p:outputPanel id="confirm">
+                        <h:panelGroup rendered="#{publicBookingMb.slotKey ne null}" layout="block" styleClass="bk-card">
+                            <h2 class="bk-title">#{msg['pub.book.summary']}</h2>
+                            <div class="bk-summary">
+                                <div class="bk-summary-pro">
+                                    <h:panelGroup rendered="#{not empty publicBookingMb.photo(publicBookingMb.selectedEmployee)}">
+                                        <img src="#{publicBookingMb.photo(publicBookingMb.selectedEmployee)}" alt=""/>
+                                    </h:panelGroup>
+                                    <h:panelGroup rendered="#{empty publicBookingMb.photo(publicBookingMb.selectedEmployee)}" styleClass="bk-avatar-mono">
+                                        <h:outputText rendered="#{publicBookingMb.selectedEmployee ne null}" value="#{sessionMb.initialsOf(publicBookingMb.selectedEmployee.fullName)}"/>
+                                        <h:panelGroup rendered="#{publicBookingMb.selectedEmployee eq null}"><i class="pi pi-users"></i></h:panelGroup>
+                                    </h:panelGroup>
+                                    <div>
+                                        <strong>#{publicBookingMb.selectedService.name}</strong>
+                                        <span>#{publicBookingMb.selectedEmployee ne null ? msg['pub.book.with'].concat(' ').concat(publicBookingMb.selectedEmployee.fullName) : msg['pub.book.anyone']}</span>
+                                    </div>
+                                    <span class="bk-summary-price">#{sessionMb.fmtMoney(publicBookingMb.selectedService.price)}</span>
+                                </div>
+                                <div class="bk-summary-row"><i class="pi pi-calendar"></i>#{publicBookingMb.longDate}</div>
+                                <div class="bk-summary-row"><i class="pi pi-clock"></i>#{publicBookingMb.selectedTime} hrs · #{publicBookingMb.selectedService.durationMinutes} min</div>
+                            </div>
+
+                            <h2 class="bk-title" style="margin-top:1.25rem">#{msg['pub.book.step.contact']}</h2>
+                            <div class="bk-fields">
+                                <span class="bk-field">
+                                    <i class="pi pi-user"></i>
+                                    <p:inputText id="pubName" value="#{publicBookingMb.customerName}" maxlength="120"
+                                                 placeholder="#{msg['pub.book.name']}" autocomplete="name"/>
+                                </span>
+                                <span class="bk-field">
+                                    <i class="pi pi-whatsapp"></i>
+                                    <p:inputText id="pubPhone" value="#{publicBookingMb.customerPhone}" maxlength="20" type="tel"
+                                                 placeholder="#{msg['pub.book.phone']}" autocomplete="tel"/>
+                                </span>
+                                <span class="bk-field bk-field-area">
+                                    <i class="pi pi-comment"></i>
+                                    <p:inputTextarea id="pubNotes" value="#{publicBookingMb.notes}" rows="2" maxlength="400" autoResize="false"
+                                                     placeholder="#{msg['pub.book.notes']}"/>
+                                </span>
+                            </div>
+                            <p:commandButton value="#{msg['pub.book.confirm']}" icon="pi pi-check" action="#{publicBookingMb.book}"
+                                             process="@this pubName pubPhone pubNotes" update=":form:booking :messages"
+                                             styleClass="bk-confirm"/>
+                            <p class="bk-privacy"><i class="pi pi-lock"></i>&#160;#{msg['pub.book.privacy']}</p>
+                        </h:panelGroup>
+                    </p:outputPanel>
+                </h:panelGroup>
+            </p:outputPanel>
+        </h:form>
+    </ui:define>
+</ui:composition>

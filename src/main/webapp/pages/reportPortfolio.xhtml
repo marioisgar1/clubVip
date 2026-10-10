@@ -1,0 +1,90 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <div class="page-header">
+            <span class="page-icon"><i class="pi pi-exclamation-circle"></i></span>
+            <h2>#{msg['menu.report.portfolio']}</h2>
+            <span class="page-subtitle">#{msg['pos.portfolio.subtitle']}</span>
+        </div>
+
+        <h:form id="form">
+            <div class="card">
+                <p:toolbar styleClass="mb-2">
+                    <p:toolbarGroup>
+                        <span class="field-inline">
+                            <label>#{msg['pos.portfolio.asOf']}</label>
+                            <p:datePicker value="#{reportPortfolioMb.asOf}" pattern="dd/MM/yyyy" showIcon="true" style="width:150px"/>
+                        </span>
+                        <p:commandButton value="#{msg['pos.report.generate']}" icon="pi pi-search"
+                                         actionListener="#{reportPortfolioMb.refresh}" update="@form :messages"
+                                         styleClass="ui-button-primary ml-2" style="margin-top:1.1rem"/>
+                    </p:toolbarGroup>
+                    <p:toolbarGroup align="right">
+                        <div class="check-inline">
+                            <p:toggleSwitch id="onlyDue" value="#{reportPortfolioMb.onlyDue}">
+                                <p:ajax update=":form:table"/>
+                            </p:toggleSwitch>
+                            <label for="form:onlyDue" style="margin:0">#{msg['pos.credit.onlyDue']}</label>
+                        </div>
+                    </p:toolbarGroup>
+                </p:toolbar>
+
+                <div class="kpi-grid">
+                    <div class="kpi-card kpi-ink">
+                        <span class="kpi-label">#{msg['pos.credit.overdue']}</span>
+                        <span class="kpi-value" style="color:#F08A96">#{sessionMb.fmtMoney(reportPortfolioMb.portfolio.overdueAmount)}</span>
+                        <span class="kpi-hint">#{reportPortfolioMb.portfolio.overdueCount} #{msg['pos.portfolio.installments']} &#183;
+                            #{reportPortfolioMb.portfolio.overdueCustomersCount} #{msg['pos.portfolio.customers']}</span>
+                    </div>
+                    <div class="kpi-card">
+                        <span class="kpi-label">#{msg['pos.credit.dueToday']}</span>
+                        <span class="kpi-value">#{sessionMb.fmtMoney(reportPortfolioMb.portfolio.dueTodayAmount)}</span>
+                        <span class="kpi-hint">#{reportPortfolioMb.portfolio.dueTodayCount} #{msg['pos.portfolio.installments']}</span>
+                    </div>
+                    <div class="kpi-card">
+                        <span class="kpi-label">#{msg['pos.portfolio.upcoming']}</span>
+                        <span class="kpi-value">#{sessionMb.fmtMoney(reportPortfolioMb.portfolio.upcomingAmount)}</span>
+                        <span class="kpi-hint">#{reportPortfolioMb.portfolio.upcomingCount} #{msg['pos.portfolio.installments']}</span>
+                    </div>
+                    <div class="kpi-card">
+                        <span class="kpi-label">#{msg['pos.credit.totalOwed']}</span>
+                        <span class="kpi-value">#{sessionMb.fmtMoney(reportPortfolioMb.portfolio.totalOutstanding)}</span>
+                        <span class="kpi-hint">#{reportPortfolioMb.portfolio.customersCount} #{msg['pos.portfolio.customers']}</span>
+                    </div>
+                </div>
+
+                <p:dataTable id="table" var="line" value="#{reportPortfolioMb.lines}" paginator="true" rows="15"
+                             paginatorAlwaysVisible="false" reflow="true" stripedRows="true" emptyMessage="#{msg['pos.credit.nothingDue']}">
+                    <p:column headerText="#{msg['pos.customer.name']}" sortBy="#{line.customerName}" filterBy="#{line.customerName}" filterMatchMode="contains">
+                        <span style="font-weight:600">#{line.customerName}</span>
+                        <span class="muted" style="display:block">#{line.customerPhone}</span>
+                        <h:panelGroup rendered="#{not empty line.customerAddress}" styleClass="muted" layout="block">
+                            <i class="pi pi-map-marker" style="font-size:.7rem"></i> #{line.customerAddress}</h:panelGroup>
+                    </p:column>
+                    <p:column headerText="#{msg['pos.lbl.folio']}" width="100">#{line.saleFolio}</p:column>
+                    <p:column headerText="#" style="width:3rem;text-align:center">#{line.installmentNumber}</p:column>
+                    <p:column headerText="#{msg['pos.credit.dueDate']}" sortBy="#{line.dueDate}" width="120">#{reportPortfolioMb.fmtDay(line.dueDate)}</p:column>
+                    <p:column headerText="#{msg['pos.credit.pending']}" sortBy="#{line.pendingAmount}" width="110" styleClass="text-right">
+                        <strong>#{sessionMb.fmtMoney(line.pendingAmount)}</strong>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.status']}" width="130">
+                        <span class="badge #{line.overdue ? 'badge-danger' : 'badge-muted'}">
+                            #{line.overdue ? msg['pos.credit.status.overdue'].concat(' (').concat(line.daysOverdue).concat(')') : msg['pos.credit.status.pending']}
+                        </span>
+                    </p:column>
+                    <p:column style="width:4rem;text-align:center">
+                        <h:outputLink value="#{reportPortfolioMb.reminderLink(line)}" target="_blank" title="#{msg['pos.credit.wa.send']}"
+                                      rendered="#{not empty reportPortfolioMb.reminderLink(line)}"
+                                      styleClass="ui-button ui-button-whatsapp ui-button-rounded" style="padding:.4rem .6rem">
+                            <i class="pi pi-whatsapp"></i>
+                        </h:outputLink>
+                    </p:column>
+                </p:dataTable>
+            </div>
+        </h:form>
+    </ui:define>
+</ui:composition>

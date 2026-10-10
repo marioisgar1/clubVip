@@ -1,0 +1,233 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <div class="page-header">
+            <span class="page-icon"><i class="pi pi-wallet"></i></span>
+            <h2>#{msg['menu.sale.collection']}</h2>
+            <span class="page-subtitle">#{msg['pos.collection.subtitle']}</span>
+        </div>
+
+        <h:form id="form">
+            <p:outputPanel id="kpis">
+                <div class="kpi-grid">
+                    <div class="kpi-card kpi-ink">
+                        <span class="kpi-label">#{msg['pos.credit.totalOwed']}</span>
+                        <span class="kpi-value">#{sessionMb.fmtMoney(collectionMb.totalOwed)}</span>
+                        <span class="kpi-hint">#{collectionMb.openCount} #{msg['pos.credit.openPlans']}</span>
+                    </div>
+                    <div class="kpi-card">
+                        <span class="kpi-label">#{msg['pos.credit.overdue']}</span>
+                        <span class="kpi-value" style="color:var(--vip-danger)">#{sessionMb.fmtMoney(collectionMb.totalOverdue)}</span>
+                        <span class="kpi-hint">#{collectionMb.overdueCustomers} #{msg['pos.credit.overdueCustomers']}</span>
+                    </div>
+                </div>
+            </p:outputPanel>
+
+            <div class="card">
+                <p:toolbar>
+                    <p:toolbarGroup>
+                        <p:selectOneMenu value="#{collectionMb.planStatus}">
+                            <f:selectItem itemLabel="#{msg['pos.credit.filter.open']}" itemValue="OPEN"/>
+                            <f:selectItem itemLabel="#{msg['pos.credit.filter.paid']}" itemValue="PAID"/>
+                            <f:selectItem itemLabel="#{msg['pos.credit.filter.all']}" itemValue=""/>
+                            <p:ajax listener="#{collectionMb.refresh}" update=":form:table :form:kpis :messages"/>
+                        </p:selectOneMenu>
+                    </p:toolbarGroup>
+                    <p:toolbarGroup align="right">
+                        <p:commandButton icon="pi pi-refresh" title="#{msg['action.refresh']}"
+                                         actionListener="#{collectionMb.refresh}" update=":form:table :form:kpis :messages"
+                                         styleClass="ui-button-secondary"/>
+                    </p:toolbarGroup>
+                </p:toolbar>
+
+                <p:dataTable id="table" var="plan" value="#{collectionMb.plans}" paginator="true" rows="10" widgetVar="planTable"
+                             filteredValue="#{collectionMb.filtered}" globalFilterOnly="true"
+                             emptyMessage="#{msg['pos.credit.noPlans']}" styleClass="mt-2" reflow="true" stripedRows="true"
+                             paginatorAlwaysVisible="false" rowKey="#{plan.id}">
+                    <f:facet name="header">
+                        <div class="flex-between wrap gap-2">
+                            <span class="muted">#{collectionMb.plans.size()} #{msg['pos.credit.count']}</span>
+                            <p:inputText id="globalFilter" onkeyup="PF('planTable').filter()" placeholder="#{msg['action.search']}"/>
+                        </div>
+                    </f:facet>
+                    <p:column headerText="#{msg['pos.customer.name']}" sortBy="#{plan.customerName}"
+                              filterBy="#{plan.customerName}" filterMatchMode="contains">
+                        <span style="font-weight:600">#{plan.customerName}</span>
+                        <span class="muted" style="display:block">#{plan.customerPhone}</span>
+                        <h:panelGroup rendered="#{not empty plan.customerAddress}" styleClass="muted" layout="block">
+                            <i class="pi pi-map-marker" style="font-size:.7rem"></i> #{plan.customerAddress}</h:panelGroup>
+                    </p:column>
+                    <p:column headerText="#{msg['pos.lbl.folio']}" sortBy="#{plan.saleFolio}" filterBy="#{plan.saleFolio}"
+                              filterMatchMode="contains" width="110">
+                        #{plan.saleFolio}
+                        <span class="muted" style="display:block;font-size:.75rem">#{collectionMb.fmtStampDay(plan.saleDate)}</span>
+                    </p:column>
+                    <p:column headerText="#{msg['pos.credit.financed']}" styleClass="text-right" width="110">#{sessionMb.fmtMoney(plan.financedAmount)}</p:column>
+                    <p:column headerText="#{msg['pos.credit.paid']}" styleClass="text-right" width="110">#{sessionMb.fmtMoney(plan.paidAmount)}</p:column>
+                    <p:column headerText="#{msg['pos.credit.balance']}" sortBy="#{plan.balance}" styleClass="text-right" width="120">
+                        <strong class="gold">#{sessionMb.fmtMoney(plan.balance)}</strong>
+                    </p:column>
+                    <p:column headerText="#{msg['pos.credit.nextDue']}" sortBy="#{plan.nextDueDate}" width="150">
+                        <h:outputText value="#{collectionMb.fmtDay(plan.nextDueDate)}" rendered="#{not empty plan.nextDueDate}"/>
+                        <h:outputText value="#{sessionMb.fmtMoney(plan.nextDueAmount)}" styleClass="muted" style="display:block"
+                                      rendered="#{not empty plan.nextDueAmount}"/>
+                        <h:panelGroup rendered="#{plan.overdueCount gt 0}" layout="block" style="color:var(--vip-danger);font-weight:600;font-size:.8rem">
+                            #{msg['pos.credit.overdueBadge']} #{plan.overdueCount} &#183; #{sessionMb.fmtMoney(plan.overdueAmount)}
+                        </h:panelGroup>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.status']}" width="100">
+                        <span class="#{collectionMb.planBadge(plan.planStatus)}">#{msg['pos.planStatus.'.concat(plan.planStatus)]}</span>
+                    </p:column>
+                    <p:column headerText="" style="width:6rem;text-align:center">
+                        <p:commandButton icon="pi pi-search" title="#{msg['pos.action.detail']}"
+                                         actionListener="#{collectionMb.openPlan(plan)}" process="@this"
+                                         update=":form:detail :messages" oncomplete="PF('planDialog').show()"
+                                         styleClass="ui-button-rounded ui-button-text"/>
+                    </p:column>
+                </p:dataTable>
+            </div>
+
+            <!-- Detail of one credit: instalments + collection -->
+            <p:dialog header="#{msg['pos.credit.detailTitle']}" widgetVar="planDialog" id="detail" modal="true"
+                      width="820" resizable="false" fitViewport="true" responsive="true" closeOnEscape="true"
+                      contentStyle="max-height:78vh;overflow:auto">
+                <h:panelGroup rendered="#{not empty collectionMb.selected}" layout="block">
+                    <div class="flex-between wrap gap-2">
+                        <div>
+                            <div class="pos-result-folio">#{collectionMb.selected.customerName}</div>
+                            <span class="muted">#{collectionMb.selected.saleFolio} &#183; #{collectionMb.selected.customerPhone}
+                                <h:outputText value=" &#183; #{collectionMb.frequencyLabel(collectionMb.selected.frequency)}" rendered="#{not empty collectionMb.selected.frequency}"/>
+                            </span>
+                            <h:panelGroup rendered="#{not empty collectionMb.selected.customerAddress}" styleClass="muted" layout="block">
+                                <i class="pi pi-map-marker" style="font-size:.75rem"></i> #{collectionMb.selected.customerAddress}</h:panelGroup>
+                        </div>
+                        <div class="text-right">
+                            <span class="muted">#{msg['pos.credit.balance']}</span>
+                            <div class="pos-result-total">#{sessionMb.fmtMoney(collectionMb.selected.balance)}</div>
+                            <span class="#{collectionMb.planBadge(collectionMb.selected.planStatus)}">#{msg['pos.planStatus.'.concat(collectionMb.selected.planStatus)]}</span>
+                        </div>
+                    </div>
+
+                    <div class="summary-bar mt-2">
+                        <span class="summary-item">#{msg['pos.sale.total']}: <strong>#{sessionMb.fmtMoney(collectionMb.selected.totalAmount)}</strong></span>
+                        <span class="summary-item">#{msg['pos.credit.downPayment']}: <strong>#{sessionMb.fmtMoney(collectionMb.selected.downPayment)}</strong></span>
+                        <span class="summary-item">#{msg['pos.credit.financed']}: <strong>#{sessionMb.fmtMoney(collectionMb.selected.financedAmount)}</strong></span>
+                        <span class="summary-item">#{msg['pos.credit.paid']}: <strong class="gold">#{sessionMb.fmtMoney(collectionMb.selected.paidAmount)}</strong></span>
+                    </div>
+
+                    <p:dataTable id="installments" var="i" value="#{collectionMb.selected.installments}" reflow="true" emptyMessage="#{msg['msg.noData']}">
+                        <p:column headerText="#" style="width:2.5rem;text-align:center">#{i.installmentNumber}</p:column>
+                        <p:column headerText="#{msg['pos.credit.dueDate']}">#{collectionMb.fmtDay(i.dueDate)}</p:column>
+                        <p:column headerText="#{msg['pos.credit.amount']}" styleClass="text-right">#{sessionMb.fmtMoney(i.amount)}</p:column>
+                        <p:column headerText="#{msg['pos.credit.paid']}" styleClass="text-right">#{sessionMb.fmtMoney(i.paidAmount)}</p:column>
+                        <p:column headerText="#{msg['pos.credit.pending']}" styleClass="text-right"><strong>#{sessionMb.fmtMoney(i.pendingAmount)}</strong></p:column>
+                        <p:column headerText="#{msg['lbl.status']}" width="130">
+                            <span class="#{collectionMb.installmentBadge(i)}">#{collectionMb.installmentLabel(i)}</span>
+                            <h:outputText value="#{collectionMb.fmtStampDay(i.paidAt)}" styleClass="muted" style="display:block;font-size:.75rem"
+                                          rendered="#{not empty i.paidAt}"/>
+                        </p:column>
+                        <p:column style="width:7rem;text-align:center">
+                            <p:commandButton value="#{msg['pos.action.collect']}" icon="pi pi-dollar"
+                                             rendered="#{i.installmentStatus ne 'PAID' and collectionMb.selected.planStatus eq 'OPEN'}"
+                                             actionListener="#{collectionMb.prepareCollect(i)}" process="@this"
+                                             update=":form:collect" oncomplete="PF('collectDialog').show()"
+                                             styleClass="ui-button-sm ui-button-primary"/>
+                        </p:column>
+                    </p:dataTable>
+
+                    <div class="flex gap-2 wrap mt-2">
+                        <p:commandButton value="#{msg['pos.credit.freePayment']}" icon="pi pi-plus"
+                                         rendered="#{collectionMb.selected.planStatus eq 'OPEN'}"
+                                         actionListener="#{collectionMb.prepareFreePayment}" process="@this"
+                                         update=":form:collect" oncomplete="PF('collectDialog').show()"
+                                         styleClass="ui-button-secondary"/>
+                        <h:outputLink value="#{collectionMb.reminderLink(collectionMb.selected)}" target="_blank"
+                                      rendered="#{collectionMb.selected.planStatus eq 'OPEN' and not empty collectionMb.reminderLink(collectionMb.selected)}"
+                                      styleClass="ui-button ui-button-whatsapp">
+                            <i class="pi pi-whatsapp"></i>&#160;#{msg['pos.credit.wa.send']}
+                        </h:outputLink>
+                    </div>
+
+                    <h3 class="section-title mt-3">#{msg['pos.credit.history']}</h3>
+                    <p:dataTable id="payments" var="pay" value="#{collectionMb.selected.payments}" reflow="true" emptyMessage="#{msg['pos.credit.noPayments']}">
+                        <p:column headerText="#{msg['pos.credit.paymentDate']}" width="140">#{collectionMb.fmtStamp(pay.paymentDate)}</p:column>
+                        <p:column headerText="#" style="width:3rem;text-align:center">
+                            <h:outputText value="#{pay.installmentNumber}" rendered="#{not empty pay.installmentNumber}"/>
+                            <h:outputText value="—" styleClass="muted" rendered="#{empty pay.installmentNumber}"/>
+                        </p:column>
+                        <p:column headerText="#{msg['pos.credit.amount']}" styleClass="text-right" width="110"><strong>#{sessionMb.fmtMoney(pay.amount)}</strong></p:column>
+                        <p:column headerText="#{msg['pos.lbl.paymentMethod']}">#{pay.paymentMethodName}</p:column>
+                        <p:column headerText="#{msg['lbl.notes']}"><span class="muted">#{pay.notes}</span></p:column>
+                        <p:column style="width:4rem;text-align:center">
+                            <p:commandButton icon="pi pi-undo" title="#{msg['pos.credit.undoPayment']}"
+                                             actionListener="#{collectionMb.undoPayment(pay)}" process="@this"
+                                             update=":form:detail :form:table :form:kpis :messages"
+                                             styleClass="ui-button-rounded ui-button-text ui-button-danger">
+                                <p:confirm header="#{msg['action.confirm']}" message="#{msg['pos.credit.undoPayment.confirm']}"
+                                           icon="pi pi-exclamation-triangle"/>
+                            </p:commandButton>
+                        </p:column>
+                    </p:dataTable>
+
+                    <h3 class="section-title mt-3">#{msg['pos.sale.items']}</h3>
+                    <p:dataTable var="it" value="#{collectionMb.selected.items}" reflow="true" emptyMessage="#{msg['msg.noData']}">
+                        <p:column headerText="#{msg['lbl.description']}">#{it.description}<span class="muted" style="display:block">#{it.barcode}</span></p:column>
+                        <p:column headerText="#{msg['lbl.quantity']}" width="70" styleClass="text-right">#{it.quantity}</p:column>
+                        <p:column headerText="#{msg['pos.lbl.unitPrice']}" width="100" styleClass="text-right">#{sessionMb.fmtMoney(it.unitPrice)}</p:column>
+                        <p:column headerText="#{msg['lbl.total']}" width="100" styleClass="text-right"><strong>#{sessionMb.fmtMoney(it.lineTotal)}</strong></p:column>
+                    </p:dataTable>
+                </h:panelGroup>
+                <f:facet name="footer">
+                    <p:commandButton value="#{msg['action.close']}" icon="pi pi-times" type="button"
+                                     onclick="PF('planDialog').hide()" styleClass="ui-button-secondary"/>
+                </f:facet>
+            </p:dialog>
+
+            <!-- Register the collection -->
+            <p:dialog header="#{msg['pos.action.collect']}" widgetVar="collectDialog" id="collect" modal="true"
+                      width="440" resizable="false" closeOnEscape="true">
+                <h:panelGroup rendered="#{not empty collectionMb.selected}" layout="block">
+                    <p class="muted" style="margin-top:0">
+                        #{collectionMb.selected.customerName} &#183; #{collectionMb.selected.saleFolio}
+                        <h:outputText value=" &#183; #{msg['pos.credit.installment']} #{collectionMb.selectedInstallment.installmentNumber} (#{collectionMb.fmtDay(collectionMb.selectedInstallment.dueDate)})"
+                                      rendered="#{not empty collectionMb.selectedInstallment}"/>
+                        <h:outputText value=" &#183; #{msg['pos.credit.freePayment']}" rendered="#{empty collectionMb.selectedInstallment}"/>
+                    </p>
+                    <div class="field required">
+                        <label for="form:payAmount">#{msg['pos.credit.amountCollected']}</label>
+                        <p:inputNumber id="payAmount" value="#{collectionMb.paymentAmount}" symbol="$ " decimalPlaces="2" minValue="0"/>
+                        <span class="hint">#{msg['pos.credit.partial.hint']}</span>
+                    </div>
+                    <div class="field">
+                        <label for="form:payMethod">#{msg['pos.lbl.paymentMethod']}</label>
+                        <p:selectOneMenu id="payMethod" value="#{collectionMb.paymentMethodId}">
+                            <f:selectItem itemLabel="#{msg['lbl.select']}" itemValue="#{null}" noSelectionOption="true"/>
+                            <f:selectItems value="#{collectionMb.collectionMethods}" var="m" itemLabel="#{m.name}" itemValue="#{m.id}"/>
+                        </p:selectOneMenu>
+                    </div>
+                    <div class="field">
+                        <label for="form:payNotes">#{msg['lbl.notes']}</label>
+                        <p:inputText id="payNotes" value="#{collectionMb.paymentNotes}" maxlength="250"/>
+                    </div>
+                </h:panelGroup>
+                <f:facet name="footer">
+                    <p:commandButton value="#{msg['pos.action.collect']}" icon="pi pi-check"
+                                     actionListener="#{collectionMb.collect}"
+                                     update=":form:detail :form:table :form:kpis :form:collect :messages"
+                                     styleClass="ui-button-primary"/>
+                    <p:commandButton value="#{msg['action.cancel']}" icon="pi pi-times" type="button"
+                                     onclick="PF('collectDialog').hide()" styleClass="ui-button-secondary"/>
+                </f:facet>
+            </p:dialog>
+
+            <p:confirmDialog global="true">
+                <p:commandButton value="#{msg['action.yes']}" type="button" styleClass="ui-confirmdialog-yes ui-button-primary"/>
+                <p:commandButton value="#{msg['action.no']}" type="button" styleClass="ui-confirmdialog-no ui-button-secondary"/>
+            </p:confirmDialog>
+        </h:form>
+    </ui:define>
+</ui:composition>

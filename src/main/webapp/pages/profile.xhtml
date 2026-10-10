@@ -1,0 +1,84 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <div class="card">
+            <div class="page-header">
+                <span class="page-icon"><i class="pi pi-id-card"></i></span>
+                <h2>#{msg['menu.security.profile']}</h2>
+            </div>
+
+            <h:form id="form">
+                <p:toolbar>
+                    <p:toolbarGroup>
+                        <p:commandButton value="#{msg['action.new']}" icon="pi pi-plus" actionListener="#{profileMb.prepareNew}"
+                                         update="dialog" oncomplete="PF('profileDialog').show()"/>
+                    </p:toolbarGroup>
+                </p:toolbar>
+
+                <p:dataTable id="table" var="pr" value="#{profileMb.profiles}" rows="10" paginator="true"
+                             paginatorPosition="bottom" paginatorAlwaysVisible="false" reflow="true" stripedRows="true"
+                             emptyMessage="#{msg['msg.noData']}" rowKey="#{pr.id}" widgetVar="profileTable" styleClass="mt-2"
+                             filteredValue="#{profileMb.filtered}" globalFilterOnly="true">
+                    <f:facet name="header">
+                        <div class="flex-between">
+                            <span class="muted">#{msg['rel.profile.list']}</span>
+                            <p:inputText onkeyup="PF('profileTable').filter()" placeholder="#{msg['action.search']}"/>
+                        </div>
+                    </f:facet>
+                    <p:column headerText="#" width="50" sortBy="#{pr.id}" styleClass="text-right">#{pr.id}</p:column>
+                    <p:column headerText="#{msg['lbl.name']}" sortBy="#{pr.name}" filterBy="#{pr.name}">
+                        <span style="font-weight:600">#{pr.name}</span>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.description']}" sortBy="#{pr.description}" filterBy="#{pr.description}">#{pr.description}</p:column>
+                    <p:column headerText="#{msg['rel.profile.permissions']}" width="120" styleClass="text-right">
+                        <span class="badge badge-info">#{profileMb.permissionCount(pr)}</span>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.actions']}" width="110" styleClass="text-right">
+                        <p:commandButton icon="pi pi-pencil" title="#{msg['action.edit']}" actionListener="#{profileMb.prepareEdit(pr)}"
+                                         update=":form:dialog" oncomplete="PF('profileDialog').show()" styleClass="ui-button-rounded ui-button-text"/>
+                        <p:commandButton icon="pi pi-trash" title="#{msg['action.delete']}" actionListener="#{profileMb.delete(pr)}"
+                                         update="table :messages" styleClass="ui-button-rounded ui-button-text ui-button-danger">
+                            <p:confirm header="#{msg['action.confirm']}" message="#{msg['msg.confirmDelete']}" icon="pi pi-exclamation-triangle"/>
+                        </p:commandButton>
+                    </p:column>
+                </p:dataTable>
+
+                <p:dialog id="dialog" header="#{msg['menu.security.profile']}" widgetVar="profileDialog" modal="true"
+                          width="640" resizable="false" responsive="true">
+                    <div class="field required">
+                        <label>#{msg['lbl.name']}</label>
+                        <p:inputText value="#{profileMb.selected.name}" maxlength="60"/>
+                    </div>
+                    <div class="field">
+                        <label>#{msg['lbl.description']}</label>
+                        <p:inputText value="#{profileMb.selected.description}" maxlength="255"/>
+                    </div>
+                    <div class="field">
+                        <label>#{msg['rel.profile.permissions']}</label>
+                        <p:scrollPanel style="max-height:340px" mode="native">
+                            <p:selectManyCheckbox value="#{profileMb.selected.permissionIds}" layout="grid" columns="2"
+                                                  converter="jakarta.faces.Integer" style="width:100%">
+                                <f:selectItems value="#{profileMb.allPermissions}" var="perm"
+                                               itemLabel="#{profileMb.permissionLabel(perm)}" itemValue="#{perm.id}"/>
+                            </p:selectManyCheckbox>
+                        </p:scrollPanel>
+                    </div>
+                    <f:facet name="footer">
+                        <p:commandButton value="#{msg['action.save']}" icon="pi pi-check" action="#{profileMb.save}" update="dialog table :messages"/>
+                        <p:commandButton value="#{msg['action.cancel']}" icon="pi pi-times" type="button"
+                                         onclick="PF('profileDialog').hide()" styleClass="ui-button-secondary"/>
+                    </f:facet>
+                </p:dialog>
+
+                <p:confirmDialog global="true">
+                    <p:commandButton value="#{msg['action.yes']}" type="button" styleClass="ui-confirmdialog-yes"/>
+                    <p:commandButton value="#{msg['action.no']}" type="button" styleClass="ui-confirmdialog-no ui-button-secondary"/>
+                </p:confirmDialog>
+            </h:form>
+        </div>
+    </ui:define>
+</ui:composition>

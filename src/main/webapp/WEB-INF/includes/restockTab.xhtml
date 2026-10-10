@@ -1,0 +1,73 @@
+<!-- One tab of the restock report. Params: rows (List<StockItemVo>), tableId, outletTab (boolean). -->
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui">
+    <h:panelGroup rendered="#{outletTab}" layout="block" styleClass="muted small" style="margin:.25rem 0 .75rem">
+        <i class="pi pi-info-circle"></i>&#160;#{msg['pos.report.restock.outletHint']}
+    </h:panelGroup>
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <span class="kpi-label">#{msg['pos.report.products']}</span>
+            <span class="kpi-value">#{rows.size()}</span>
+            <span class="kpi-hint">#{msg['pos.report.restock.atMinimum']}</span>
+        </div>
+        <div class="kpi-card">
+            <span class="kpi-label">#{msg['pos.report.restock.outOfStock']}</span>
+            <span class="kpi-value" style="color:var(--vip-danger)">#{reportRestockMb.outOfStock(rows)}</span>
+            <span class="kpi-hint">#{msg['pos.report.products']}</span>
+        </div>
+        <div class="kpi-card">
+            <span class="kpi-label">#{msg['pos.report.restock.shortage']}</span>
+            <span class="kpi-value">#{reportRestockMb.shortageUnits(rows)}</span>
+            <span class="kpi-hint">#{msg['pos.report.units']}</span>
+        </div>
+        <div class="kpi-card kpi-ink">
+            <span class="kpi-label">#{msg['pos.report.restock.cost']}</span>
+            <span class="kpi-value">#{sessionMb.fmtMoney(reportRestockMb.shortageCost(rows))}</span>
+            <span class="kpi-hint">#{msg['pos.report.restock.cost.hint']}</span>
+        </div>
+    </div>
+    <p:dataTable id="#{tableId}" var="s" value="#{rows}" paginator="true" rows="20" paginatorAlwaysVisible="false"
+                 reflow="true" emptyMessage="#{msg['pos.report.restock.empty']}" rowStyleClass="#{reportRestockMb.rowClass(s)}">
+        <p:column headerText="" style="width:4.5rem;text-align:center">
+            <!-- Same as the product list: each visible row loads its photo from /productPhoto
+                 (cached by the browser), so the report itself carries no images. -->
+            <img alt="" class="cv-thumb" loading="lazy"
+                 src="#{request.contextPath}/productPhoto?id=#{s.productId}&amp;v=#{sessionMb.productPhotoVersion}"
+                 onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex'"/>
+            <span class="cv-thumb cv-thumb-empty" style="display:none"><i class="pi pi-image"></i></span>
+        </p:column>
+        <p:column headerText="#{msg['pos.lbl.barcode']}" sortBy="#{s.barcode}" filterBy="#{s.barcode}" filterMatchMode="contains" width="140">
+            <span class="muted">#{s.barcode}</span>
+        </p:column>
+        <p:column headerText="#{msg['lbl.description']}" sortBy="#{s.name}" filterBy="#{s.name}" filterMatchMode="contains">
+            <span style="font-weight:600">#{s.name}</span>
+            <h:panelGroup rendered="#{s.consignment}" styleClass="badge badge-warning" style="margin-left:.4rem">#{msg['cons.product.badge']}</h:panelGroup>
+            <h:panelGroup rendered="#{not empty s.size or not empty s.color}" layout="block" styleClass="muted" style="font-size:.75rem">
+                #{not empty s.size ? msg['pos.lbl.size'].concat(' ').concat(s.size) : ''}#{not empty s.size and not empty s.color ? ' · ' : ''}#{s.color}
+            </h:panelGroup>
+        </p:column>
+        <p:column headerText="#{msg['pos.lbl.family']}" sortBy="#{s.familyName}" filterBy="#{s.familyName}" filterMatchMode="contains" width="140">
+            #{s.familyName}
+        </p:column>
+        <p:column headerText="#{msg['cat.product.brand']}" sortBy="#{s.brand}" filterBy="#{s.brand}" filterMatchMode="contains" width="130">
+            #{s.brand}
+        </p:column>
+        <p:column headerText="#{msg['cat.product.onHand']}" sortBy="#{s.quantityOnHand}" width="100" styleClass="text-right">
+            <strong style="color:#{s.quantityOnHand le 0 ? 'var(--vip-danger)' : 'inherit'}">#{s.quantityOnHand}</strong>
+        </p:column>
+        <p:column headerText="#{msg['cat.product.minStock']}" sortBy="#{s.minStock}" width="90" styleClass="text-right">
+            #{s.minStock}
+        </p:column>
+        <p:column headerText="#{msg['pos.report.restock.shortage']}" sortBy="#{s.shortage}" width="100" styleClass="text-right">
+            <strong>#{s.shortage}</strong>
+        </p:column>
+        <p:column headerText="#{msg['pos.report.unitCost']}" width="110" styleClass="text-right">
+            <span class="muted">#{sessionMb.fmtMoney(s.averageCost)}</span>
+        </p:column>
+        <p:column headerText="#{msg['pos.report.amount']}" sortBy="#{s.shortageCost}" width="120" styleClass="text-right">
+            <strong>#{sessionMb.fmtMoney(s.shortageCost)}</strong>
+        </p:column>
+    </p:dataTable>
+</ui:composition>

@@ -1,0 +1,212 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <div class="page-header">
+            <span class="page-icon"><i class="pi pi-star"></i></span>
+            <h2>#{msg['rel.loyalty.title']}</h2>
+            <span class="page-subtitle">#{msg['rel.loyalty.subtitle']}</span>
+        </div>
+
+        <div class="dashboard-grid" style="grid-template-columns:1fr 1.4fr">
+            <!-- Reward card configuration -->
+            <div class="card">
+                <h3 class="section-title"><i class="pi pi-id-card gold"></i>&#160;#{msg['rel.loyalty.card']}</h3>
+                <h:form id="programForm">
+                    <h:panelGroup rendered="#{not sessionMb.admin}" layout="block" styleClass="muted mb-2">
+                        #{msg['rel.loyalty.readOnly']}
+                    </h:panelGroup>
+                    <div class="field required">
+                        <label>#{msg['rel.loyalty.programName']}</label>
+                        <p:inputText value="#{loyaltyMb.program.name}" maxlength="80" disabled="#{not sessionMb.admin}"/>
+                    </div>
+                    <div class="form-grid">
+                        <div class="field required">
+                            <label>#{msg['rel.loyalty.servicesRequired']}</label>
+                            <p:spinner value="#{loyaltyMb.program.servicesRequired}" min="1" max="100" disabled="#{not sessionMb.admin}"/>
+                        </div>
+                        <div class="field">
+                            <label>#{msg['rel.loyalty.pointsPerService']}</label>
+                            <p:spinner value="#{loyaltyMb.program.pointsPerService}" min="0" max="1000" disabled="#{not sessionMb.admin}"/>
+                        </div>
+                    </div>
+                    <div class="field required">
+                        <label>#{msg['rel.loyalty.rewardType']}</label>
+                        <p:selectOneMenu value="#{loyaltyMb.program.rewardType}" disabled="#{not sessionMb.admin}">
+                            <f:selectItem itemValue="SERVICE" itemLabel="#{msg['rel.loyalty.rewardType.SERVICE']}"/>
+                            <f:selectItem itemValue="PRODUCT" itemLabel="#{msg['rel.loyalty.rewardType.PRODUCT']}"/>
+                            <f:selectItem itemValue="DISCOUNT" itemLabel="#{msg['rel.loyalty.rewardType.DISCOUNT']}"/>
+                            <p:ajax update="rewardPanel" process="@this"/>
+                        </p:selectOneMenu>
+                    </div>
+                    <h:panelGroup id="rewardPanel" layout="block">
+                        <div class="field" style="#{loyaltyMb.program.rewardType eq 'SERVICE' ? '' : 'display:none'}">
+                            <label>#{msg['rel.loyalty.rewardService']}</label>
+                            <p:selectOneMenu value="#{loyaltyMb.program.rewardServiceId}" converter="jakarta.faces.Integer"
+                                             disabled="#{not sessionMb.admin}" filter="true" filterMatchMode="contains">
+                                <f:selectItem itemLabel="#{msg['lbl.select']}" noSelectionOption="true"/>
+                                <f:selectItems value="#{loyaltyMb.services}" var="s" itemLabel="#{s.name}" itemValue="#{s.id}"/>
+                            </p:selectOneMenu>
+                        </div>
+                        <div class="field" style="#{loyaltyMb.program.rewardType eq 'PRODUCT' ? '' : 'display:none'}">
+                            <label>#{msg['rel.loyalty.rewardProduct']}</label>
+                            <p:selectOneMenu value="#{loyaltyMb.program.rewardProductId}" converter="jakarta.faces.Integer"
+                                             disabled="#{not sessionMb.admin}" filter="true" filterMatchMode="contains">
+                                <f:selectItem itemLabel="#{msg['lbl.select']}" noSelectionOption="true"/>
+                                <f:selectItems value="#{loyaltyMb.products}" var="pr" itemLabel="#{pr.name}" itemValue="#{pr.id}"/>
+                            </p:selectOneMenu>
+                        </div>
+                        <div class="field" style="#{loyaltyMb.program.rewardType eq 'DISCOUNT' ? '' : 'display:none'}">
+                            <label>#{msg['rel.loyalty.rewardDiscount']}</label>
+                            <p:inputNumber value="#{loyaltyMb.program.rewardDiscountPercent}" minValue="0" maxValue="100"
+                                           decimalPlaces="0" symbol=" %" symbolPosition="s" disabled="#{not sessionMb.admin}"/>
+                        </div>
+                    </h:panelGroup>
+                    <div class="field">
+                        <label>#{msg['rel.loyalty.rewardDescription']}</label>
+                        <p:inputTextarea value="#{loyaltyMb.program.rewardDescription}" rows="2" maxlength="255"
+                                         autoResize="false" disabled="#{not sessionMb.admin}"/>
+                        <span class="hint">#{msg['rel.loyalty.rewardDescription.hint']}</span>
+                    </div>
+                    <div class="field">
+                        <label>#{msg['rel.loyalty.appliesTo']}</label>
+                        <p:selectOneRadio value="#{loyaltyMb.program.appliesTo}" disabled="#{not sessionMb.admin}">
+                            <f:selectItem itemValue="ALL" itemLabel="#{msg['rel.loyalty.appliesTo.ALL']}"/>
+                            <f:selectItem itemValue="SELECTED" itemLabel="#{msg['rel.loyalty.appliesTo.SELECTED']}"/>
+                            <p:ajax update="servicesPanel" process="@this"/>
+                        </p:selectOneRadio>
+                    </div>
+                    <h:panelGroup id="servicesPanel" layout="block">
+                        <div class="field" style="#{loyaltyMb.program.appliesTo eq 'SELECTED' ? '' : 'display:none'}">
+                            <label>#{msg['rel.loyalty.services']}</label>
+                            <p:selectManyCheckbox value="#{loyaltyMb.program.serviceIds}" layout="grid" columns="2"
+                                                  converter="jakarta.faces.Integer" disabled="#{not sessionMb.admin}">
+                                <f:selectItems value="#{loyaltyMb.services}" var="s" itemLabel="#{s.name}" itemValue="#{s.id}"/>
+                            </p:selectManyCheckbox>
+                        </div>
+                    </h:panelGroup>
+                    <div class="flex-between mt-2">
+                        <span class="muted">
+                            <h:outputText rendered="#{not empty loyaltyMb.program.id}" value="#{msg['rel.loyalty.active']}"/>
+                            <h:outputText rendered="#{empty loyaltyMb.program.id}" value="#{msg['rel.loyalty.notConfigured']}"/>
+                        </span>
+                        <p:commandButton value="#{msg['action.save']}" icon="pi pi-check" action="#{loyaltyMb.saveProgram}"
+                                         update="@form :cardsForm :messages" rendered="#{sessionMb.admin}"/>
+                    </div>
+                </h:form>
+            </div>
+
+            <!-- Customers progress -->
+            <div class="card">
+                <h3 class="section-title"><i class="pi pi-users gold"></i>&#160;#{msg['rel.loyalty.progress']}</h3>
+                <h:form id="cardsForm">
+                    <p:dataTable id="tblCards" var="c" value="#{loyaltyMb.cards}" rows="10" paginator="true"
+                                 paginatorPosition="bottom" paginatorAlwaysVisible="false" reflow="true" stripedRows="true"
+                                 emptyMessage="#{msg['rel.loyalty.noCards']}" rowKey="#{c.id}" widgetVar="cardsTable"
+                                 filteredValue="#{loyaltyMb.filteredCards}" globalFilterOnly="true">
+                        <f:facet name="header">
+                            <div class="flex-between">
+                                <span class="muted">#{msg['rel.loyalty.progress.hint']}</span>
+                                <p:inputText onkeyup="PF('cardsTable').filter()" placeholder="#{msg['action.search']}"/>
+                            </div>
+                        </f:facet>
+                        <p:column headerText="#{msg['lbl.customer']}" sortBy="#{c.customerName}" filterBy="#{c.customerName}">
+                            <span style="font-weight:600">#{c.customerName}</span>
+                            <h:panelGroup rendered="#{not empty c.rewardDescription}" styleClass="muted" layout="block">
+                                #{c.rewardDescription}
+                            </h:panelGroup>
+                        </p:column>
+                        <p:column headerText="#{msg['rel.loyalty.advance']}" sortBy="#{c.stamps}" style="min-width:150px">
+                            <span class="small">#{loyaltyMb.progressLabel(c)}</span>
+                            <p:progressBar value="#{loyaltyMb.progressPercent(c)}" labelTemplate="{value}%" style="height:12px"/>
+                        </p:column>
+                        <p:column headerText="#{msg['rel.loyalty.points']}" sortBy="#{c.points}" styleClass="text-right" width="80">
+                            #{c.points != null ? c.points : 0}
+                        </p:column>
+                        <p:column headerText="#{msg['rel.loyalty.rewardsAvailable']}" sortBy="#{c.rewardsAvailable}" styleClass="text-right" width="100">
+                            <span class="#{c.rewardsAvailable gt 0 ? 'badge badge-success' : 'badge badge-muted'}">
+                                #{c.rewardsAvailable != null ? c.rewardsAvailable : 0}
+                            </span>
+                            <span class="muted small" title="#{msg['rel.loyalty.rewardsRedeemed']}">
+                                &#160;/ #{c.rewardsRedeemed != null ? c.rewardsRedeemed : 0}
+                            </span>
+                        </p:column>
+                        <p:column headerText="#{msg['lbl.actions']}" width="110" styleClass="text-right">
+                            <p:commandButton value="#{msg['rel.loyalty.redeem']}" icon="pi pi-gift"
+                                             actionListener="#{loyaltyMb.redeem(c)}" update="@form :messages"
+                                             disabled="#{empty c.rewardsAvailable or c.rewardsAvailable le 0}"
+                                             styleClass="ui-button-sm">
+                                <p:confirm header="#{msg['action.confirm']}" message="#{msg['rel.loyalty.confirmRedeem']}"
+                                           icon="pi pi-gift"/>
+                            </p:commandButton>
+                        </p:column>
+                    </p:dataTable>
+                    <p:confirmDialog global="true">
+                        <p:commandButton value="#{msg['action.yes']}" type="button" styleClass="ui-confirmdialog-yes"/>
+                        <p:commandButton value="#{msg['action.no']}" type="button" styleClass="ui-confirmdialog-no ui-button-secondary"/>
+                    </p:confirmDialog>
+                </h:form>
+            </div>
+        </div>
+
+        <!-- Benefits -->
+        <div class="card">
+            <h:form id="benefitForm">
+                <div class="flex-between wrap gap-2">
+                    <div>
+                        <h3 class="section-title" style="margin-bottom:.2rem"><i class="pi pi-ticket gold"></i>&#160;#{msg['rel.loyalty.benefits']}</h3>
+                        <span class="muted">#{msg['rel.loyalty.benefits.hint']}</span>
+                    </div>
+                    <p:commandButton value="#{msg['rel.loyalty.grantBenefit']}" icon="pi pi-plus"
+                                     actionListener="#{loyaltyMb.prepareBenefit}" update="benefitDialog :messages"
+                                     oncomplete="PF('benefitDialog').show()" rendered="#{sessionMb.admin}"/>
+                </div>
+
+                <p:dialog id="benefitDialog" header="#{msg['rel.loyalty.grantBenefit']}" widgetVar="benefitDialog" modal="true"
+                          width="480" resizable="false" responsive="true">
+                    <div class="field required">
+                        <label>#{msg['lbl.customer']}</label>
+                        <p:selectOneMenu value="#{loyaltyMb.benefit.customerId}" converter="jakarta.faces.Integer"
+                                         filter="true" filterMatchMode="contains" style="width:100%">
+                            <f:selectItem itemLabel="#{msg['lbl.select']}" noSelectionOption="true"/>
+                            <f:selectItems value="#{loyaltyMb.customers}" var="cu"
+                                           itemLabel="#{cu.fullName} #{not empty cu.phone ? ' - '.concat(cu.phone) : ''}" itemValue="#{cu.customerId}"/>
+                        </p:selectOneMenu>
+                    </div>
+                    <div class="field required">
+                        <label>#{msg['rel.loyalty.benefitType']}</label>
+                        <p:selectOneMenu value="#{loyaltyMb.benefit.benefitType}" style="width:100%">
+                            <f:selectItem itemValue="BIRTHDAY" itemLabel="#{msg['rel.loyalty.benefitType.BIRTHDAY']}"/>
+                            <f:selectItem itemValue="PROMO" itemLabel="#{msg['rel.loyalty.benefitType.PROMO']}"/>
+                        </p:selectOneMenu>
+                    </div>
+                    <div class="field required">
+                        <label>#{msg['lbl.description']}</label>
+                        <p:inputText value="#{loyaltyMb.benefit.description}" maxlength="255"/>
+                    </div>
+                    <div class="form-grid">
+                        <div class="field">
+                            <label>#{msg['rel.loyalty.discountPercent']}</label>
+                            <p:inputNumber value="#{loyaltyMb.benefit.discountPercent}" minValue="0" maxValue="100"
+                                           decimalPlaces="0" symbol=" %" symbolPosition="s"/>
+                        </div>
+                        <div class="field required">
+                            <label>#{msg['rel.loyalty.validUntil']}</label>
+                            <p:datePicker value="#{loyaltyMb.benefitValidUntil}" pattern="dd/MM/yyyy" showIcon="true"
+                                          mindate="#{sessionMb.todayLabel}" style="width:100%"/>
+                        </div>
+                    </div>
+                    <f:facet name="footer">
+                        <p:commandButton value="#{msg['rel.loyalty.grant']}" icon="pi pi-check" action="#{loyaltyMb.grantBenefit}"
+                                         update="benefitDialog :messages"/>
+                        <p:commandButton value="#{msg['action.cancel']}" icon="pi pi-times" type="button"
+                                         onclick="PF('benefitDialog').hide()" styleClass="ui-button-secondary"/>
+                    </f:facet>
+                </p:dialog>
+            </h:form>
+        </div>
+    </ui:define>
+</ui:composition>

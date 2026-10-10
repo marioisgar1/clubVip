@@ -1,0 +1,146 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <style>
+            .rating-hero { display:flex; align-items:center; gap:2rem; flex-wrap:wrap; }
+            .rating-big { font-family:var(--vip-font-heading); font-size:3.2rem; line-height:1; color:var(--vip-text); }
+            .rating-bars { flex:1; min-width:240px; }
+            .rating-bar-row { display:flex; align-items:center; gap:.6rem; margin:.3rem 0; font-size:.85rem; }
+            .rating-bar-row .lbl { width:2.2rem; text-align:right; color:var(--vip-text-muted); }
+            .rating-bar-row .track { flex:1; height:10px; border-radius:999px; background:var(--vip-surface-2); overflow:hidden; }
+            .rating-bar-row .fill { height:100%; background:var(--vip-gold); border-radius:999px; }
+            .rating-bar-row .cnt { width:2.5rem; color:var(--vip-text-muted); }
+            .review-comment { white-space:pre-wrap; }
+            .review-reply { margin-top:.4rem; padding:.45rem .6rem; border-left:3px solid var(--vip-gold); background:var(--vip-surface-2); border-radius:4px; font-size:.85rem; }
+        </style>
+        <div class="page-header">
+            <span class="page-icon"><i class="pi pi-comments"></i></span>
+            <h2>#{msg['rel.review.title']}</h2>
+            <span class="page-subtitle">#{msg['rel.review.subtitle']}</span>
+        </div>
+
+        <h:form id="form">
+            <!-- Summary -->
+            <h:panelGroup rendered="#{reviewMb.canReply}" layout="block" styleClass="card">
+                <div class="rating-hero">
+                    <div style="text-align:center">
+                        <div class="rating-big">
+                            <h:outputText value="#{reviewMb.average}">
+                                <f:convertNumber maxFractionDigits="1" minFractionDigits="1"/>
+                            </h:outputText>
+                        </div>
+                        <div class="stars" style="font-size:1.4rem">#{reviewMb.averageStars}</div>
+                        <div class="muted">#{reviewMb.count} #{msg['rel.review.count']}</div>
+                    </div>
+                    <div class="rating-bars">
+                        <ui:repeat var="lvl" value="#{reviewMb.starLevels}">
+                            <div class="rating-bar-row">
+                                <span class="lbl">#{lvl} &#9733;</span>
+                                <span class="track"><span class="fill" style="width:#{reviewMb.starPercent(lvl)}%"></span></span>
+                                <span class="cnt">#{reviewMb.starCount(lvl)}</span>
+                            </div>
+                        </ui:repeat>
+                    </div>
+                    <div style="text-align:center">
+                        <span class="kpi-label">#{msg['rel.review.pendingReplies']}</span><br/>
+                        <span class="#{reviewMb.pendingReplies gt 0 ? 'badge badge-warning' : 'badge badge-success'}"
+                              style="font-size:1rem;padding:.3rem .9rem">#{reviewMb.pendingReplies}</span>
+                    </div>
+                </div>
+            </h:panelGroup>
+
+            <!-- List -->
+            <div class="card">
+                <p:toolbar styleClass="mb-2">
+                    <p:toolbarGroup>
+                        <p:toggleSwitch value="#{reviewMb.pendingOnly}" style="vertical-align:middle">
+                            <p:ajax listener="#{reviewMb.loadReviews}" update="tblReviews :messages"/>
+                        </p:toggleSwitch>
+                        <span class="ml-2">#{msg['rel.review.pendingOnly']}</span>
+                    </p:toolbarGroup>
+                    <p:toolbarGroup align="right">
+                        <p:commandButton icon="pi pi-refresh" title="#{msg['action.refresh']}" actionListener="#{reviewMb.refresh}"
+                                         update="@form :messages" styleClass="ui-button-flat ui-button-secondary"/>
+                    </p:toolbarGroup>
+                </p:toolbar>
+
+                <p:dataTable id="tblReviews" var="r" value="#{reviewMb.reviews}" rows="10" paginator="true"
+                             paginatorPosition="bottom" paginatorAlwaysVisible="false" reflow="true" stripedRows="true"
+                             emptyMessage="#{msg['rel.review.none']}" rowKey="#{r.id}" widgetVar="reviewTable"
+                             filteredValue="#{reviewMb.filtered}" globalFilterOnly="true">
+                    <f:facet name="header">
+                        <div class="flex-between">
+                            <span class="muted">#{msg['rel.review.list']}</span>
+                            <p:inputText onkeyup="PF('reviewTable').filter()" placeholder="#{msg['action.search']}"/>
+                        </div>
+                    </f:facet>
+                    <p:column headerText="#{msg['lbl.customer']}" sortBy="#{r.customerName}" filterBy="#{r.customerName}" width="160">
+                        <span style="font-weight:600">#{r.customerName}</span>
+                    </p:column>
+                    <p:column headerText="#{msg['rel.review.rating']}" sortBy="#{r.rating}" width="110">
+                        <span class="stars">#{reviewMb.stars(r.rating)}</span>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.service']}" sortBy="#{r.serviceName}" filterBy="#{r.serviceName}">
+                        #{r.serviceName}
+                        <h:panelGroup rendered="#{not empty r.employeeName}" styleClass="muted" layout="block">
+                            #{msg['lbl.employee']}: #{r.employeeName}
+                        </h:panelGroup>
+                    </p:column>
+                    <p:column headerText="#{msg['rel.review.comment']}" filterBy="#{r.comment}">
+                        <div class="review-comment">#{r.comment}</div>
+                        <h:panelGroup rendered="#{not empty r.reply}" layout="block" styleClass="review-reply">
+                            <strong>#{msg['rel.review.reply']}:</strong> #{r.reply}
+                            <span class="muted">
+                                &#160;&#183;&#160;<h:outputText value="#{r.repliedAt}">
+                                    <f:convertDateTime pattern="dd/MM/yyyy" timeZone="America/Mexico_City"/>
+                                </h:outputText>
+                            </span>
+                        </h:panelGroup>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.date']}" sortBy="#{r.createdAt}" width="100">
+                        <h:outputText value="#{r.createdAt}">
+                            <f:convertDateTime pattern="dd/MM/yyyy" timeZone="America/Mexico_City"/>
+                        </h:outputText>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.actions']}" width="130" styleClass="text-right" rendered="#{reviewMb.canReply}">
+                        <span class="badge badge-warning" style="#{empty r.reply ? '' : 'display:none'}">#{msg['rel.review.unanswered']}</span>
+                        <p:commandButton icon="pi pi-reply" title="#{msg['rel.review.replyAction']}"
+                                         actionListener="#{reviewMb.prepareReply(r)}" update=":form:replyDialog"
+                                         oncomplete="PF('replyDialog').show()"
+                                         styleClass="ui-button-rounded #{empty r.reply ? '' : 'ui-button-text ui-button-secondary'} ml-2"/>
+                    </p:column>
+                </p:dataTable>
+            </div>
+
+            <p:dialog id="replyDialog" header="#{msg['rel.review.replyAction']}" widgetVar="replyDialog" modal="true"
+                      width="520" resizable="false" responsive="true">
+                <h:panelGroup layout="block" rendered="#{not empty reviewMb.selected.id}">
+                    <div class="mb-2">
+                        <span style="font-weight:600">#{reviewMb.selected.customerName}</span>
+                        &#160;<span class="stars">#{reviewMb.stars(reviewMb.selected.rating)}</span>
+                        <div class="muted">#{reviewMb.selected.serviceName}
+                            <h:outputText rendered="#{not empty reviewMb.selected.employeeName}" value=" &#183; #{reviewMb.selected.employeeName}"/>
+                        </div>
+                        <div class="review-comment mt-2">#{reviewMb.selected.comment}</div>
+                    </div>
+                    <div class="field required">
+                        <label>#{msg['rel.review.reply']}</label>
+                        <p:inputTextarea value="#{reviewMb.replyText}" rows="4" maxlength="500" counter="replyCounter"
+                                         counterTemplate="{0} #{msg['rel.review.charsLeft']}" autoResize="false"/>
+                        <h:outputText id="replyCounter" styleClass="hint"/>
+                    </div>
+                </h:panelGroup>
+                <f:facet name="footer">
+                    <p:commandButton value="#{msg['action.send']}" icon="pi pi-send" action="#{reviewMb.sendReply}"
+                                     update=":form:replyDialog :form:tblReviews :messages"/>
+                    <p:commandButton value="#{msg['action.cancel']}" icon="pi pi-times" type="button"
+                                     onclick="PF('replyDialog').hide()" styleClass="ui-button-secondary"/>
+                </f:facet>
+            </p:dialog>
+        </h:form>
+    </ui:define>
+</ui:composition>

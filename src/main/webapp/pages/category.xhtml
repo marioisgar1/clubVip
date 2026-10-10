@@ -1,0 +1,158 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <div class="card">
+            <div class="page-header">
+                <span class="page-icon"><i class="pi pi-th-large"></i></span>
+                <h2>#{msg['rel.category.title']}</h2>
+                <span class="page-subtitle">#{msg['rel.category.subtitle']}</span>
+            </div>
+
+            <h:form id="form">
+                <p:toolbar>
+                    <p:toolbarGroup>
+                        <p:commandButton value="#{msg['action.new']}" icon="pi pi-plus" actionListener="#{categoryMb.prepareNew}"
+                                         update="dialog" oncomplete="PF('categoryDialog').show()"/>
+                    </p:toolbarGroup>
+                </p:toolbar>
+
+                <p:dataTable id="table" var="c" value="#{categoryMb.categories}" rows="15" paginator="true"
+                             paginatorPosition="bottom" paginatorAlwaysVisible="false" reflow="true" stripedRows="true"
+                             emptyMessage="#{msg['msg.noData']}" rowKey="#{c.id}" widgetVar="catTable" styleClass="mt-2"
+                             filteredValue="#{categoryMb.filtered}" globalFilterOnly="true" sortBy="#{c.sortOrder}">
+                    <f:facet name="header">
+                        <div class="flex-between">
+                            <span class="muted">#{msg['rel.category.list']}</span>
+                            <p:inputText onkeyup="PF('catTable').filter()" placeholder="#{msg['action.search']}"/>
+                        </div>
+                    </f:facet>
+                    <p:column headerText="#" width="60" sortBy="#{c.sortOrder}" styleClass="text-right">#{c.sortOrder}</p:column>
+                    <p:column headerText="#{msg['rel.category.icon']}" width="60">
+                        <i class="#{c.icon} gold" style="font-size:1.2rem"></i>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.code']}" sortBy="#{c.code}" filterBy="#{c.code}" width="140">
+                        <code>#{c.code}</code>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.name']}" sortBy="#{c.name}" filterBy="#{c.name}">
+                        <span style="font-weight:600">#{c.name}</span>
+                        <h:panelGroup rendered="#{not empty c.description}" layout="block" styleClass="muted">#{c.description}</h:panelGroup>
+                    </p:column>
+                    <p:column headerText="#{msg['rel.category.requiresLicense']}" width="150" sortBy="#{c.requiresLicense}">
+                        <span class="#{c.requiresLicense ? 'badge badge-warning' : 'badge badge-muted'}">
+                            #{c.requiresLicense ? msg['action.yes'] : msg['action.no']}
+                        </span>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.actions']}" width="110" styleClass="text-right">
+                        <p:commandButton icon="pi pi-pencil" title="#{msg['action.edit']}" actionListener="#{categoryMb.prepareEdit(c)}"
+                                         update=":form:dialog" oncomplete="PF('categoryDialog').show()" styleClass="ui-button-rounded ui-button-text"/>
+                        <p:commandButton icon="pi pi-trash" title="#{msg['action.delete']}" actionListener="#{categoryMb.delete(c)}"
+                                         update="table :messages" styleClass="ui-button-rounded ui-button-text ui-button-danger">
+                            <p:confirm header="#{msg['action.confirm']}" message="#{msg['msg.confirmDelete']}" icon="pi pi-exclamation-triangle"/>
+                        </p:commandButton>
+                    </p:column>
+                </p:dataTable>
+
+                <p:dialog id="dialog" header="#{msg['rel.category.title']}" widgetVar="categoryDialog" modal="true"
+                          width="520" resizable="false" responsive="true">
+                    <div class="form-grid">
+                        <div class="field required">
+                            <label>#{msg['lbl.code']}</label>
+                            <p:inputText value="#{categoryMb.selected.code}" maxlength="30" style="text-transform:uppercase"/>
+                        </div>
+                        <div class="field">
+                            <label>#{msg['rel.category.sortOrder']}</label>
+                            <p:spinner value="#{categoryMb.selected.sortOrder}" min="0" max="999"/>
+                        </div>
+                        <div class="field required span-2">
+                            <label>#{msg['lbl.name']}</label>
+                            <p:inputText value="#{categoryMb.selected.name}" maxlength="80"/>
+                        </div>
+                        <div class="field span-2">
+                            <label>#{msg['lbl.description']}</label>
+                            <p:inputTextarea value="#{categoryMb.selected.description}" rows="2" maxlength="255" autoResize="false"/>
+                        </div>
+                        <!-- Icon picker: the current icon as a button; it opens a searchable grid of icons. -->
+                        <div class="field span-2">
+                            <label>#{msg['rel.category.icon']}</label>
+                            <div class="icon-picker">
+                                <h:inputHidden id="icon" value="#{categoryMb.selected.icon}" styleClass="icon-picker-value"/>
+                                <button type="button" class="icon-picker-current" onclick="iconPickerToggle(this)">
+                                    <i class="icon-picker-preview #{empty categoryMb.selected.icon ? 'pi pi-image muted' : categoryMb.selected.icon}"></i>
+                                    <span class="icon-picker-label">#{empty categoryMb.selected.icon ? msg['lbl.select'] : categoryMb.selected.icon.replace('pi pi-', '')}</span>
+                                    <i class="pi pi-chevron-down"></i>
+                                </button>
+                                <div class="icon-picker-panel" style="display:none">
+                                    <span class="ui-input-icon-left icon-picker-search">
+                                        <i class="pi pi-search"></i>
+                                        <input type="search" class="ui-inputfield ui-inputtext" placeholder="#{msg['action.search']}"
+                                               oninput="iconPickerFilter(this)"/>
+                                    </span>
+                                    <div class="icon-picker-grid">
+                                        <ui:repeat value="#{iconCatalog.icons}" var="ic">
+                                            <button type="button" class="icon-picker-option#{ic eq categoryMb.selected.icon ? ' active' : ''}"
+                                                    data-icon="#{ic}" title="#{ic.replace('pi pi-', '')}" onclick="iconPickerPick(this)">
+                                                <i class="#{ic}"></i>
+                                            </button>
+                                        </ui:repeat>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label>#{msg['rel.category.requiresLicense']}</label>
+                            <p:toggleSwitch value="#{categoryMb.selected.requiresLicense}"/>
+                            <span class="hint">#{msg['rel.category.requiresLicense.hint']}</span>
+                        </div>
+                    </div>
+                    <f:facet name="footer">
+                        <p:commandButton value="#{msg['action.save']}" icon="pi pi-check" action="#{categoryMb.save}" update="dialog table :messages"/>
+                        <p:commandButton value="#{msg['action.cancel']}" icon="pi pi-times" type="button"
+                                         onclick="PF('categoryDialog').hide()" styleClass="ui-button-secondary"/>
+                    </f:facet>
+                </p:dialog>
+                <script>
+                    // Icon picker of the category dialog (the hidden input carries the chosen class).
+                    function iconPickerToggle(btn) {
+                        var panel = btn.parentNode.querySelector('.icon-picker-panel');
+                        var open = panel.style.display === 'none';
+                        panel.style.display = open ? '' : 'none';
+                        if (open) {
+                            var active = panel.querySelector('.icon-picker-option.active');
+                            if (active) active.scrollIntoView({block: 'nearest'});
+                            panel.querySelector('input').focus();
+                        }
+                    }
+                    function iconPickerPick(opt) {
+                        var picker = opt.closest('.icon-picker');
+                        var icon = opt.getAttribute('data-icon');
+                        picker.querySelector('.icon-picker-value').value = icon;
+                        picker.querySelector('.icon-picker-preview').className = 'icon-picker-preview ' + icon;
+                        picker.querySelector('.icon-picker-label').textContent = icon.replace('pi pi-', '');
+                        picker.querySelectorAll('.icon-picker-option').forEach(function (o) { o.classList.toggle('active', o === opt); });
+                        picker.querySelector('.icon-picker-panel').style.display = 'none';
+                    }
+                    function iconPickerFilter(input) {
+                        var q = input.value.trim().toLowerCase();
+                        input.closest('.icon-picker').querySelectorAll('.icon-picker-option').forEach(function (o) {
+                            o.style.display = !q || o.getAttribute('data-icon').indexOf(q) &gt;= 0 ? '' : 'none';
+                        });
+                    }
+                    document.addEventListener('click', function (e) {
+                        document.querySelectorAll('.icon-picker').forEach(function (p) {
+                            if (!p.contains(e.target)) p.querySelector('.icon-picker-panel').style.display = 'none';
+                        });
+                    });
+                </script>
+
+                <p:confirmDialog global="true">
+                    <p:commandButton value="#{msg['action.yes']}" type="button" styleClass="ui-confirmdialog-yes"/>
+                    <p:commandButton value="#{msg['action.no']}" type="button" styleClass="ui-confirmdialog-no ui-button-secondary"/>
+                </p:confirmDialog>
+            </h:form>
+        </div>
+    </ui:define>
+</ui:composition>

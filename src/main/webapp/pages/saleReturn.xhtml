@@ -1,0 +1,135 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <div class="card">
+            <div class="page-header">
+                <span class="page-icon"><i class="pi pi-replay"></i></span>
+                <h2>#{msg['menu.sale.return']}</h2>
+                <span class="page-subtitle">#{msg['pos.return.subtitle']}</span>
+            </div>
+
+            <h:form id="form">
+                <p:toolbar>
+                    <p:toolbarGroup>
+                        <span class="field-inline">
+                            <label>#{msg['pos.report.from']}</label>
+                            <p:datePicker value="#{saleReturnMb.from}" pattern="dd/MM/yyyy" showIcon="true" style="width:150px"/>
+                        </span>
+                        <span class="field-inline ml-2">
+                            <label>#{msg['pos.report.to']}</label>
+                            <p:datePicker value="#{saleReturnMb.to}" pattern="dd/MM/yyyy" showIcon="true" style="width:150px"/>
+                        </span>
+                        <span class="field-inline ml-2">
+                            <label>#{msg['pos.lbl.folio']}</label>
+                            <p:inputText value="#{saleReturnMb.folio}" placeholder="V000123" style="width:130px"
+                                         onkeydown="if(event.key==='Enter'){PF('searchBtn').jq.click();return false;}"/>
+                        </span>
+                        <p:commandButton widgetVar="searchBtn" value="#{msg['action.search']}" icon="pi pi-search"
+                                         actionListener="#{saleReturnMb.search}" update=":form:table :messages"
+                                         styleClass="ui-button-primary ml-2" style="margin-top:1.1rem"/>
+                    </p:toolbarGroup>
+                </p:toolbar>
+
+                <p:dataTable id="table" var="s" value="#{saleReturnMb.sales}" paginator="true" rows="15"
+                             emptyMessage="#{msg['msg.noData']}" styleClass="mt-2" reflow="true" stripedRows="true"
+                             paginatorAlwaysVisible="false" rowKey="#{s.id}">
+                    <p:column headerText="#{msg['pos.lbl.folio']}" sortBy="#{s.folio}" width="110">
+                        <strong>#{s.folio}</strong>
+                        <h:outputText styleClass="badge badge-info" style="margin-left:.3rem" rendered="#{s.saleType eq 'EXCHANGE'}" value="#{saleReturnMb.typeLabel(s.saleType)}"/>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.date']}" sortBy="#{s.saleDate}" width="140">
+                        #{saleReturnMb.fmtStamp(s.saleDate)}
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.customer']}">
+                        <h:outputText value="#{s.customerName}" rendered="#{not empty s.customerName}"/>
+                        <h:outputText value="—" styleClass="muted" rendered="#{empty s.customerName}"/>
+                    </p:column>
+                    <p:column headerText="#{msg['pos.lbl.saleLocation']}">#{s.saleLocationName}</p:column>
+                    <p:column headerText="#{msg['pos.lbl.paymentMethod']}">#{s.paymentMethodName}</p:column>
+                    <p:column headerText="#{msg['lbl.total']}" sortBy="#{s.total}" width="110" styleClass="text-right">
+                        <strong>#{sessionMb.fmtMoney(s.total)}</strong>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.status']}" width="120">
+                        <span class="#{saleReturnMb.saleBadge(s.saleStatus)}">#{saleReturnMb.statusLabel(s.saleStatus)}</span>
+                        <h:panelGroup rendered="#{not empty s.cancelledReason}" styleClass="muted" layout="block"
+                                      style="font-size:.75rem">#{s.cancelledReason}</h:panelGroup>
+                    </p:column>
+                    <p:column headerText="" style="width:11rem;text-align:center">
+                        <p:commandButton icon="pi pi-search" title="#{msg['pos.action.detail']}"
+                                         actionListener="#{saleReturnMb.openDetail(s)}" process="@this"
+                                         update=":form:detailDialog :messages" oncomplete="PF('detailDialog').show()"
+                                         styleClass="ui-button-rounded ui-button-text"/>
+                        <p:commandButton value="#{msg['pos.return.cancel']}" icon="pi pi-undo"
+                                         rendered="#{saleReturnMb.isCancellable(s)}"
+                                         actionListener="#{saleReturnMb.prepareCancel(s)}" process="@this"
+                                         update=":form:cancelDialog" oncomplete="PF('cancelDialog').show()"
+                                         styleClass="ui-button-danger ui-button-sm"/>
+                    </p:column>
+                </p:dataTable>
+
+                <!-- Sale detail -->
+                <p:dialog header="#{msg['pos.sale.detail']}" widgetVar="detailDialog" id="detailDialog" modal="true"
+                          width="640" resizable="false" fitViewport="true" responsive="true" closeOnEscape="true">
+                    <h:panelGroup rendered="#{not empty saleReturnMb.detail}" layout="block">
+                        <div class="flex-between wrap gap-2">
+                            <div>
+                                <div class="pos-result-folio">#{saleReturnMb.detail.folio}</div>
+                                <span class="muted">#{saleReturnMb.fmtStamp(saleReturnMb.detail.saleDate)}
+                                    &#183; #{saleReturnMb.detail.paymentMethodName}
+                                    <h:outputText value=" &#183; #{saleReturnMb.detail.saleLocationName}" rendered="#{not empty saleReturnMb.detail.saleLocationName}"/>
+                                    <h:outputText value=" &#183; #{saleReturnMb.detail.customerName}" rendered="#{not empty saleReturnMb.detail.customerName}"/>
+                                </span>
+                            </div>
+                            <span class="#{saleReturnMb.saleBadge(saleReturnMb.detail.saleStatus)}">#{saleReturnMb.statusLabel(saleReturnMb.detail.saleStatus)}</span>
+                        </div>
+                        <p:dataTable var="it" value="#{saleReturnMb.detail.items}" styleClass="mt-2" reflow="true" emptyMessage="#{msg['msg.noData']}">
+                            <p:column headerText="#{msg['lbl.description']}">
+                                #{it.description}<span class="muted" style="display:block">#{it.barcode}</span>
+                            </p:column>
+                            <p:column headerText="#{msg['lbl.quantity']}" width="70" styleClass="text-right">#{it.quantity}</p:column>
+                            <p:column headerText="#{msg['pos.lbl.unitPrice']}" width="100" styleClass="text-right">#{sessionMb.fmtMoney(it.unitPrice)}</p:column>
+                            <p:column headerText="#{msg['lbl.total']}" width="100" styleClass="text-right"><strong>#{sessionMb.fmtMoney(it.lineTotal)}</strong></p:column>
+                        </p:dataTable>
+                        <div class="totals-box mt-2">
+                            <div class="totals-row"><span>#{msg['pos.sale.subtotal']}</span><span>#{sessionMb.fmtMoney(saleReturnMb.detail.subtotal)}</span></div>
+                            <h:panelGroup layout="block" styleClass="totals-row" rendered="#{saleReturnMb.detail.commissionAmount gt 0}">
+                                <span>#{msg['pos.report.commissions']} (#{saleReturnMb.detail.commissionPercent}%)</span>
+                                <span class="muted">#{sessionMb.fmtMoney(saleReturnMb.detail.commissionAmount)}</span>
+                            </h:panelGroup>
+                            <div class="totals-row grand-total"><span>#{msg['lbl.total']}</span><span>#{sessionMb.fmtMoney(saleReturnMb.detail.total)}</span></div>
+                        </div>
+                    </h:panelGroup>
+                    <f:facet name="footer">
+                        <p:commandButton value="#{msg['action.close']}" icon="pi pi-times" type="button"
+                                         onclick="PF('detailDialog').hide()" styleClass="ui-button-secondary"/>
+                    </f:facet>
+                </p:dialog>
+
+                <!-- Cancel with a reason -->
+                <p:dialog header="#{msg['pos.return.cancelTitle']}" widgetVar="cancelDialog" id="cancelDialog" modal="true"
+                          width="460" resizable="false" closeOnEscape="true">
+                    <h:panelGroup rendered="#{not empty saleReturnMb.target}" layout="block">
+                        <p class="mb-2">#{msg['pos.lbl.folio']}: <strong>#{saleReturnMb.target.folio}</strong>
+                            &#183; #{sessionMb.fmtMoney(saleReturnMb.target.total)}</p>
+                        <span class="hint" style="display:block;margin-bottom:.5rem">#{msg['pos.return.hint']}</span>
+                        <div class="field required">
+                            <label for="form:reason">#{msg['pos.return.reason']}</label>
+                            <p:inputTextarea id="reason" value="#{saleReturnMb.cancelReason}" rows="3" autoResize="false" maxlength="250"/>
+                        </div>
+                    </h:panelGroup>
+                    <f:facet name="footer">
+                        <p:commandButton value="#{msg['pos.return.confirmCancel']}" icon="pi pi-check"
+                                         actionListener="#{saleReturnMb.cancelSale}" update=":form:table :form:cancelDialog :messages"
+                                         styleClass="ui-button-danger"/>
+                        <p:commandButton value="#{msg['action.close']}" icon="pi pi-times" type="button"
+                                         onclick="PF('cancelDialog').hide()" styleClass="ui-button-secondary"/>
+                    </f:facet>
+                </p:dialog>
+            </h:form>
+        </div>
+    </ui:define>
+</ui:composition>

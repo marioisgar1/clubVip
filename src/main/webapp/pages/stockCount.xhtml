@@ -1,0 +1,149 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <div class="card">
+            <div class="page-header">
+                <span class="page-icon"><i class="pi pi-check-square"></i></span>
+                <h2>#{msg['menu.warehouse.count']}</h2>
+                <span class="page-subtitle">
+                    <p:button icon="pi pi-arrow-left" value="#{msg['menu.warehouse.inventory']}" outcome="/pages/inventory.xhtml"
+                              styleClass="ui-button-flat ui-button-secondary"/>
+                </span>
+            </div>
+
+            <h:form id="form">
+                <p:toolbar>
+                    <p:toolbarGroup>
+                        <p:commandButton value="#{msg['cat.count.open']}" icon="pi pi-plus"
+                                         actionListener="#{stockCountMb.prepareNew}"
+                                         update=":form:newCountDialog" oncomplete="PF('newCountDialog').show()"
+                                         disabled="#{stockCountMb.anyOpen}" title="#{stockCountMb.anyOpen ? msg['cat.count.alreadyOpen'] : ''}"
+                                         styleClass="ui-button-primary"/>
+                        <p:commandButton icon="pi pi-refresh" title="#{msg['action.refresh']}"
+                                         actionListener="#{stockCountMb.refresh}" update=":form:countsTable :messages"
+                                         styleClass="ui-button-secondary ml-2"/>
+                    </p:toolbarGroup>
+                </p:toolbar>
+
+                <!-- List of counts -->
+                <p:dataTable id="countsTable" var="c" value="#{stockCountMb.counts}" paginator="true" rows="8"
+                             emptyMessage="#{msg['msg.noData']}" styleClass="mt-2" reflow="true" paginatorAlwaysVisible="false"
+                             rowKey="#{c.id}" stripedRows="true">
+                    <p:column headerText="#" style="width:4rem">
+                        <h:outputText value="#{c.id}"/>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.date']}" width="150" sortBy="#{c.countDate}">
+                        <h:outputText value="#{c.countDate}">
+                            <f:convertDateTime pattern="dd/MM/yyyy HH:mm" timeZone="America/Mexico_City"/>
+                        </h:outputText>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.status']}" width="110">
+                        <span class="badge #{stockCountMb.isOpen(c) ? 'badge-warning' : 'badge-success'}">#{msg['status.'.concat(c.countStatus)]}</span>
+                    </p:column>
+                    <p:column headerText="#{msg['cat.count.progress']}" width="180">
+                        <span style="font-weight:600">#{c.countedItems != null ? c.countedItems : 0}</span>
+                        <span class="muted"> / #{c.totalItems != null ? c.totalItems : 0}</span>
+                        <h:panelGroup rendered="#{c.pendingItems gt 0}" styleClass="muted"> &#183; #{c.pendingItems} #{msg['cat.count.pending']}</h:panelGroup>
+                    </p:column>
+                    <p:column headerText="#{msg['cat.count.differenceValue']}" width="130" styleClass="text-right">
+                        <h:outputText value="#{sessionMb.fmtMoney(c.differenceValue)}"
+                                      style="font-weight:600;#{c.differenceValue lt 0 ? 'color:var(--vip-danger)' : ''}"/>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.notes']}">
+                        <h:outputText value="#{c.notes}" styleClass="muted"/>
+                    </p:column>
+                    <p:column headerText="" style="width:8rem;text-align:center">
+                        <p:commandButton icon="pi pi-folder-open" value="#{msg['cat.count.view']}"
+                                         actionListener="#{stockCountMb.select(c)}" update=":form:detail :messages"
+                                         styleClass="ui-button-sm ui-button-secondary"/>
+                    </p:column>
+                </p:dataTable>
+
+                <!-- Detail of the selected count -->
+                <p:outputPanel id="detail">
+                    <h:panelGroup rendered="#{stockCountMb.current != null}" layout="block" styleClass="mt-3">
+                        <h3 class="section-title">
+                            <i class="pi pi-list gold"></i>&#160;#{msg['cat.count.detail']} ##{stockCountMb.current.id}
+                            <span class="badge #{stockCountMb.currentOpen ? 'badge-warning' : 'badge-success'} ml-2">#{msg['status.'.concat(stockCountMb.current.countStatus)]}</span>
+                        </h3>
+                        <div class="summary-bar">
+                            <span class="summary-item">#{msg['cat.count.counted']}:
+                                <strong>#{stockCountMb.current.countedItems != null ? stockCountMb.current.countedItems : 0} / #{stockCountMb.current.totalItems != null ? stockCountMb.current.totalItems : 0}</strong></span>
+                            <span class="summary-item">#{msg['cat.count.pending']}:
+                                <strong>#{stockCountMb.current.pendingItems != null ? stockCountMb.current.pendingItems : 0}</strong></span>
+                            <span class="summary-item">#{msg['cat.count.differenceValue']}:
+                                <strong style="#{stockCountMb.current.differenceValue lt 0 ? 'color:var(--vip-danger)' : ''}">#{sessionMb.fmtMoney(stockCountMb.current.differenceValue)}</strong></span>
+                            <p:commandButton value="#{msg['cat.count.close']}" icon="pi pi-lock"
+                                             actionListener="#{stockCountMb.closeCount}" update=":form :messages"
+                                             rendered="#{stockCountMb.currentOpen}" styleClass="ui-button-primary">
+                                <p:confirm header="#{msg['action.confirm']}" message="#{msg['cat.count.confirmClose']}"
+                                           icon="pi pi-exclamation-triangle"/>
+                            </p:commandButton>
+                        </div>
+                        <h:panelGroup rendered="#{stockCountMb.currentOpen}" layout="block" styleClass="muted mb-2">
+                            #{msg['cat.count.hint']}
+                        </h:panelGroup>
+
+                        <p:dataTable id="itemsTable" var="it" value="#{stockCountMb.current.items}" emptyMessage="#{msg['msg.noData']}"
+                                     reflow="true" rowKey="#{it.productId}" rowStyleClass="#{stockCountMb.rowClass(it)}">
+                            <p:column headerText="#{msg['cat.product.name']}">
+                                <span style="font-weight:600">#{it.productName}</span>
+                            </p:column>
+                            <p:column headerText="#{msg['cat.count.systemQty']}" style="text-align:right;width:8rem">
+                                <h:outputText value="#{it.systemQuantity}"/>
+                            </p:column>
+                            <p:column headerText="#{msg['cat.count.countedQty']}" style="width:10rem">
+                                <p:inputNumber value="#{it.countedQuantity}" decimalPlaces="0" minValue="0" style="width:6rem"
+                                               disabled="#{not stockCountMb.currentOpen}" placeholder="-"
+                                               onkeydown="if(event.key==='Enter'){event.preventDefault();var b=this.closest('tr').querySelector('button');if(b){b.click();}}"/>
+                            </p:column>
+                            <p:column headerText="#{msg['cat.count.difference']}" style="text-align:right;width:7rem">
+                                <h:outputText value="#{it.difference}" style="font-weight:600" rendered="#{not empty it.countedQuantity}"/>
+                                <h:outputText value="-" styleClass="muted" rendered="#{empty it.countedQuantity}"/>
+                            </p:column>
+                            <p:column headerText="#{msg['cat.count.differenceValue']}" style="text-align:right;width:9rem">
+                                <h:outputText value="#{sessionMb.fmtMoney(it.differenceValue)}" rendered="#{not empty it.countedQuantity}"/>
+                            </p:column>
+                            <p:column style="width:4rem;text-align:center">
+                                <p:commandButton icon="pi pi-save" title="#{msg['action.save']}"
+                                                 actionListener="#{stockCountMb.saveItem(it)}"
+                                                 update=":form:detail :form:countsTable :messages"
+                                                 rendered="#{stockCountMb.currentOpen}"
+                                                 styleClass="ui-button-rounded ui-button-text"/>
+                            </p:column>
+                        </p:dataTable>
+                    </h:panelGroup>
+                </p:outputPanel>
+
+                <!-- New count dialog -->
+                <p:dialog header="#{msg['cat.count.open']}" widgetVar="newCountDialog" modal="true"
+                          id="newCountDialog" width="460" resizable="false" closeOnEscape="true" responsive="true">
+                    <p class="muted" style="margin-top:0">#{msg['cat.count.open.intro']}</p>
+                    <div class="field">
+                        <label for="form:newNotes">#{msg['lbl.notes']}</label>
+                        <p:inputTextarea id="newNotes" value="#{stockCountMb.newNotes}" rows="3" autoResize="false" maxlength="250"/>
+                    </div>
+                    <f:facet name="footer">
+                        <p:commandButton value="#{msg['cat.count.open']}" icon="pi pi-check"
+                                         actionListener="#{stockCountMb.openCount}" update=":form :messages"
+                                         styleClass="ui-button-primary"/>
+                        <p:commandButton value="#{msg['action.cancel']}" icon="pi pi-times"
+                                         onclick="PF('newCountDialog').hide()" type="button"
+                                         styleClass="ui-button-secondary"/>
+                    </f:facet>
+                </p:dialog>
+
+                <p:confirmDialog global="true">
+                    <p:commandButton value="#{msg['action.yes']}" type="button"
+                                     styleClass="ui-confirmdialog-yes ui-button-primary"/>
+                    <p:commandButton value="#{msg['action.no']}" type="button"
+                                     styleClass="ui-confirmdialog-no ui-button-secondary"/>
+                </p:confirmDialog>
+            </h:form>
+        </div>
+    </ui:define>
+</ui:composition>

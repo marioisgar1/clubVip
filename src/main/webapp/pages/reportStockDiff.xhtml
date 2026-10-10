@@ -1,0 +1,72 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <div class="page-header">
+            <span class="page-icon"><i class="pi pi-exclamation-triangle"></i></span>
+            <h2>#{msg['menu.report.stockdiff']}</h2>
+            <span class="page-subtitle">#{msg['pos.report.stockdiff.subtitle']}</span>
+        </div>
+
+        <h:form id="form">
+            <div class="card">
+                <p:toolbar styleClass="mb-2">
+                    <p:toolbarGroup>
+                        <span class="field-inline">
+                            <label>#{msg['pos.report.from']}</label>
+                            <p:datePicker value="#{reportStockDiffMb.from}" pattern="dd/MM/yyyy" showIcon="true" style="width:150px"/>
+                        </span>
+                        <span class="field-inline ml-2">
+                            <label>#{msg['pos.report.to']}</label>
+                            <p:datePicker value="#{reportStockDiffMb.to}" pattern="dd/MM/yyyy" showIcon="true" style="width:150px"/>
+                        </span>
+                        <p:commandButton value="#{msg['pos.report.generate']}" icon="pi pi-search"
+                                         actionListener="#{reportStockDiffMb.generate}" update="@form :messages"
+                                         styleClass="ui-button-primary ml-2" style="margin-top:1.1rem"/>
+                    </p:toolbarGroup>
+                </p:toolbar>
+
+                <h:panelGroup rendered="#{not empty reportStockDiffMb.report}" layout="block">
+                    <div class="kpi-grid">
+                        <div class="kpi-card">
+                            <span class="kpi-label">#{msg['pos.report.shortage']}</span>
+                            <span class="kpi-value" style="color:var(--vip-danger)">#{reportStockDiffMb.report.shortageUnits}</span>
+                            <span class="kpi-hint">#{msg['pos.report.units']}</span>
+                        </div>
+                        <div class="kpi-card">
+                            <span class="kpi-label">#{msg['pos.report.surplus']}</span>
+                            <span class="kpi-value" style="color:var(--vip-success)">#{reportStockDiffMb.report.surplusUnits}</span>
+                            <span class="kpi-hint">#{msg['pos.report.units']}</span>
+                        </div>
+                        <div class="kpi-card kpi-ink">
+                            <span class="kpi-label">#{msg['pos.report.differenceValue']}</span>
+                            <span class="kpi-value">#{sessionMb.fmtMoney(reportStockDiffMb.report.totalDifferenceValue)}</span>
+                            <span class="kpi-hint">#{msg['pos.report.differenceValue.hint']}</span>
+                        </div>
+                    </div>
+                    <p:dataTable id="table" var="l" value="#{reportStockDiffMb.report.lines}" paginator="true" rows="15"
+                                 paginatorAlwaysVisible="false" reflow="true" emptyMessage="#{msg['msg.noData']}"
+                                 rowStyleClass="#{reportStockDiffMb.rowClass(l.difference)}">
+                        <p:column headerText="#{msg['pos.lbl.barcode']}" sortBy="#{l.barcode}" width="130"><span class="muted">#{l.barcode}</span></p:column>
+                        <p:column headerText="#{msg['lbl.description']}" sortBy="#{l.description}"><span style="font-weight:600">#{l.description}</span></p:column>
+                        <p:column headerText="#{msg['pos.report.systemQty']}" width="110" styleClass="text-right">#{l.systemQuantity}</p:column>
+                        <p:column headerText="#{msg['pos.report.countedQty']}" width="110" styleClass="text-right">#{l.countedQuantity}</p:column>
+                        <p:column headerText="#{msg['pos.report.difference']}" sortBy="#{l.difference}" width="100" styleClass="text-right">
+                            <strong style="color:#{l.difference lt 0 ? 'var(--vip-danger)' : (l.difference gt 0 ? 'var(--vip-success)' : 'inherit')}">#{l.difference}</strong>
+                        </p:column>
+                        <p:column headerText="#{msg['pos.report.unitCost']}" width="100" styleClass="text-right"><span class="muted">#{sessionMb.fmtMoney(l.unitCost)}</span></p:column>
+                        <p:column headerText="#{msg['pos.report.amount']}" sortBy="#{l.differenceValue}" width="120" styleClass="text-right">
+                            <strong>#{sessionMb.fmtMoney(l.differenceValue)}</strong>
+                        </p:column>
+                    </p:dataTable>
+                </h:panelGroup>
+                <h:panelGroup rendered="#{empty reportStockDiffMb.report}" layout="block" styleClass="empty-state">
+                    <i class="pi pi-exclamation-triangle"></i>#{msg['msg.noData']}
+                </h:panelGroup>
+            </div>
+        </h:form>
+    </ui:define>
+</ui:composition>

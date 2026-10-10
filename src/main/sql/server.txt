@@ -1,0 +1,156 @@
+R02-03-2024
+
+
+74.208.197.92
+
+
+
+
+ssh root@74.208.197.92
+
+root password
+CkKCb58K
+
+
+mysql -u trust_deal_user -p
+
+1@uIopkkjs989.09MU8I9
+
+
+
+
+https://login.ionos.mx/
+w@widols.com
+2Dfg75_@tP-815NviaTu@l
+
+
+matar wildfly
+pgrep -d" " -f "wildfly" | xargs kill;
+
+
+pgrep -d" " -f "java" | xargs kill;
+
+
+ --sube wildfly
+        scp standalone.conf root@74.208.197.92:/home/trustDeal/wildfly-19.0.0.Final/bin
+
+--descomprime wildfly
+tar -xvzf wildfly-19.0.0.Final.tar.gz
+
+
+scp -r wildfly-39.0.1.Final root@74.208.197.92:/home/server/
+
+
+scp standalone.xml root@74.208.197.92:/home/server/wildfly-39.0.1.Final/standalone/configuration
+
+ scp ClubVip.war root@74.208.197.92:/home/server/wildfly-39.0.1.Final/standalone/deployments
+ scp clubVipServices.jar root@74.208.197.92:/home/server/microservices
+ 
+ sss
+ scp respaldo_leonisa_ambassador04dic2026.sql root@74.208.197.92:/home/respaldos
+
+
+
+scp standalone.xml root@74.208.197.92:/home/trustDeal/wildfly-19.0.0.Final/standalone/configuration
+
+scp standalone.xml root@74.208.197.92:/home/trustDeal/wildfly-19.0.0.Final/standalone/configuration
+
+scp trustdeal.club.pfx root@74.208.197.92:/home/trustDeal/wildfly-19.0.0.Final/standalone/configuration
+    
+ scp TrustDeal.war root@74.208.197.92:/home/trustDeal/wildfly-19.0.0.Final/standalone/deployments
+    
+    
+scp clubvip.club.pfx root@74.208.197.92:/home/server/wildfly-39.0.1.Final/standalone/configuration    
+    
+    
+    
+
+    
+    /home/server/wildfly-39.0.1.Final/standalone/configuration
+
+scp root@74.208.197.92:/home/server/wildfly-39.0.1.Final/standalone/configuration/standalone.xml /Users/mgarcia/Documents/Prolog
+
+    
+    
+  cd   /Users/mgarcia/Documents/workspace-spring-tool-suite-4-4.17.1.RELEASE/trustDealRest/target
+  
+  
+  scp trustDealRest-0.0.1-SNAPSHOT.jar root@74.208.197.92:/home/trustDeal/springboot
+  
+    
+    /home/server/wildfly-19.0.0.Final/standalone/deployments
+    
+   #start wildfly
+   
+   cd /home/trustDeal/wildfly-19.0.0.Final/bin
+   start wildfly
+   ./standalone.sh 
+   
+   nohup ./standalone.sh
+   
+   
+  cd /home/server/wildfly-39.0.1.Final/bin
+    ./standalone.sh 
+   
+   nohup ./standalone.sh
+   
+   
+   cd /home/server/microservices
+   
+   nohup java -jar clubVipServices.jar
+   
+   
+   
+   stop wildfly
+    ./jboss-cli.sh --connect command=:shutdown
+   restart 
+   ./jboss-cli.sh --connect command=:reload 
+   
+   
+   cd /home/trustDeal/springboot
+   
+   nohup java -jar trustDealRest-0.0.1-SNAPSHOT.jar
+   
+  ##instala java 11
+  sudo apt-get install openjdk-11-jdk
+   
+   
+   
+   
+   
+   
+
+
+
+#como isntalar mysql
+https://www.digitalocean.com/community/tutorials/how-to-install-mysql-on-ubuntu-20-04
+
+
+
+
+
+
+export JAVA_OPTS="-server -Xms1024m -Xmx6096m -XX:NewSize=1536m -XX:MaxNewSize=1536m"
+echo "$JAVA_OPTS" 
+
+
+
+
+ entra mgm1
+12:05:33,783 INFO  [stdout] (default task-2) videl length::709764
+12:05:33,865 INFO  [stdout] (default task-2) videl length2::709764
+
+
+
+
+
+openssl pkcs12 -export -out trustdeal.club.pfx -inkey _.trustdeal.club_private_key.key -in trustdeal.club_ssl_certificate.cer
+
+password:2Dfg75_@tP-815NviaTu@l
+
+
+
+
+openssl pkcs12 -export -out clubvip.club.pfx -inkey _.clubvip.club_private_key.key -in clubvip.club_ssl_certificate.cer
+
+password:2Dfg75_@tP-815NviaTu@l

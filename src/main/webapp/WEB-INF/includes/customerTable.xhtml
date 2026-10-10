@@ -1,0 +1,48 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui">
+    <!-- Customer list. Params: tableId, list, mode (all | inactive | birthday | new). Inside h:form id="form". -->
+    <p:dataTable id="#{tableId}" var="c" value="#{list}" rowKey="#{c.customerId}" emptyMessage="#{msg['msg.noData']}"
+                 paginator="true" rows="15" paginatorAlwaysVisible="false" reflow="true" stripedRows="true">
+        <p:column headerText="#{msg['lbl.customer']}" sortBy="#{c.fullName}">
+            <div class="flex gap-2">
+                <span class="avatar">#{sessionMb.initialsOf(c.fullName)}</span>
+                <span>
+                    <span style="font-weight:600;display:block">#{c.fullName}
+                        <h:outputText value="#{msg['op.customer.tab.new']}" styleClass="badge badge-info ml-2" rendered="#{c.isNew}"/>
+                    </span>
+                    <span class="muted">
+                        <h:outputText value="#{c.age} #{msg['op.lbl.years']}" rendered="#{not empty c.age}"/>
+                        <h:outputText value=" &#183; #{msg['op.lbl.birthday']} #{customerMb.birthdayLabel(c)}" rendered="#{not empty c.birthDay}"/>
+                        <h:outputText value=" &#183; #{c.monthsInactive} #{msg['op.customer.monthsInactive']}" rendered="#{mode eq 'inactive' and not empty c.monthsInactive}"/>
+                    </span>
+                </span>
+            </div>
+        </p:column>
+        <p:column headerText="#{msg['lbl.phone']}" width="130">#{c.phone}</p:column>
+        <p:column headerText="#{msg['op.customer.lastVisit']}" width="110" sortBy="#{c.lastVisitAt}">
+            <h:outputText value="#{c.lastVisitAt}"><f:convertDateTime pattern="dd/MM/yyyy" timeZone="America/Mexico_City"/></h:outputText>
+        </p:column>
+        <p:column headerText="#{msg['op.customer.services']}" width="90" styleClass="text-center" sortBy="#{c.visitsCount}">#{empty c.visitsCount ? 0 : c.visitsCount}</p:column>
+        <p:column headerText="#{msg['op.customer.totalSpent']}" width="110" styleClass="text-right" sortBy="#{c.totalSpent}">#{sessionMb.fmtMoney(c.totalSpent)}</p:column>
+        <p:column headerText="#{msg['op.customer.avgTicket']}" width="110" styleClass="text-right" sortBy="#{c.averageTicket}">#{sessionMb.fmtMoney(c.averageTicket)}</p:column>
+        <p:column headerText="#{msg['op.customer.loyalty']}" width="110">
+            <span style="font-weight:600">#{customerMb.loyaltyLabel(c)}</span>
+            <span class="occ-bar mt-2" style="display:block;height:6px;background:var(--vip-surface-2);border-radius:999px;overflow:hidden">
+                <span style="display:block;height:100%;background:var(--vip-gold);width:#{customerMb.loyaltyPercent(c)}%"></span></span>
+        </p:column>
+        <p:column headerText="#{msg['lbl.actions']}" width="170" styleClass="text-center">
+            <p:commandButton icon="pi pi-folder-open" title="#{msg['op.action.file']}" actionListener="#{customerMb.openFile(c)}"
+                             process="@this" update=":customerFileForm :messages" oncomplete="PF('customerFileDlg').show()"
+                             styleClass="ui-button-secondary ui-button-flat"/>
+            <p:commandButton icon="pi pi-whatsapp" title="#{mode eq 'inactive' ? msg['op.action.reactivate'] : msg['action.whatsapp']}"
+                             actionListener="#{customerMb.whatsapp(c, mode eq 'inactive' ? 'REACTIVATION' : (mode eq 'birthday' ? 'BIRTHDAY' : 'GENERIC'))}"
+                             process="@this @form" update=":messages" rendered="#{not empty c.phone}" styleClass="ui-button-whatsapp"/>
+            <p:commandButton icon="pi pi-calendar-plus" title="#{msg['op.action.book']}" actionListener="#{bookingMb.openForCustomer(c)}"
+                             process="@this" update=":bookingForm :messages" oncomplete="PF('bookingDlg').show()"
+                             rendered="#{sessionMb.admin}" styleClass="ui-button-flat"/>
+        </p:column>
+    </p:dataTable>
+</ui:composition>

@@ -1,0 +1,158 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <div class="card">
+            <div class="page-header">
+                <span class="page-icon"><i class="pi pi-briefcase"></i></span>
+                <h2>#{msg['menu.catalog.service']}</h2>
+                <span class="page-subtitle">#{msg['cat.service.subtitle']}</span>
+            </div>
+
+            <h:form id="form">
+                <p:toolbar>
+                    <p:toolbarGroup>
+                        <p:commandButton value="#{msg['action.new']}" icon="pi pi-plus"
+                                         process="@this" actionListener="#{serviceMb.prepareNew}"
+                                         update=":form:dialog" oncomplete="PF('serviceDialog').show()"
+                                         styleClass="ui-button-primary" rendered="#{sessionMb.admin}"/>
+                        <p:commandButton icon="pi pi-refresh" title="#{msg['action.refresh']}"
+                                         process="@this" actionListener="#{serviceMb.refresh}" update=":form:table :messages"
+                                         styleClass="ui-button-secondary ml-2"/>
+                    </p:toolbarGroup>
+                </p:toolbar>
+
+                <p:dataTable id="table" var="s" value="#{serviceMb.services}" paginator="true" rows="10"
+                             emptyMessage="#{msg['msg.noData']}" styleClass="mt-2" widgetVar="serviceTable"
+                             filteredValue="#{serviceMb.filtered}" globalFilterOnly="true" reflow="true"
+                             paginatorAlwaysVisible="false" rowKey="#{s.id}" stripedRows="true">
+                    <f:facet name="header">
+                        <div class="flex-between wrap gap-2">
+                            <span class="muted">#{serviceMb.services.size()} #{msg['cat.service.count']}</span>
+                            <p:inputText id="globalFilter" onkeyup="PF('serviceTable').filter()"
+                                         placeholder="#{msg['action.search']}"/>
+                        </div>
+                    </f:facet>
+                    <p:column headerText="#{msg['lbl.service']}" sortBy="#{s.name}"
+                              filterBy="#{s.name}" filterMatchMode="contains">
+                        <span style="font-weight:600">#{s.name}</span>
+                        <h:panelGroup rendered="#{not empty s.description}" styleClass="muted" layout="block">#{s.description}</h:panelGroup>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.specialty']}" sortBy="#{s.specialty}"
+                              filterBy="#{s.specialty}" filterMatchMode="contains">
+                        <h:outputText value="#{s.specialty}"/>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.duration']}" sortBy="#{s.durationMinutes}" width="100">
+                        <h:outputText value="#{s.durationMinutes} #{msg['lbl.minutes']}"/>
+                    </p:column>
+                    <p:column headerText="#{msg['cat.service.whoGives']}" filterBy="#{serviceMb.whoGives(s)}"
+                              filterMatchMode="contains">
+                        <h:outputText value="#{serviceMb.whoGives(s)}"
+                                      styleClass="#{empty s.employeeNames ? 'muted' : ''}"/>
+                    </p:column>
+                    <p:column headerText="#{msg['cat.service.commission']}" width="110" styleClass="text-right"
+                              sortBy="#{s.commissionPercent}">
+                        <h:outputText value="#{s.commissionPercent} %" rendered="#{not empty s.commissionPercent}"/>
+                        <h:outputText value="#{msg['cat.service.commission.employee']}" styleClass="muted"
+                                      rendered="#{empty s.commissionPercent}"/>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.price']}" width="110" styleClass="text-right" sortBy="#{s.price}">
+                        <h:outputText value="#{sessionMb.fmtMoney(s.price)}" style="font-weight:600"/>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.status']}" width="110" sortBy="#{s.activeForBooking}">
+                        <span class="badge #{serviceMb.isActive(s) ? 'badge-success' : 'badge-warning'}">
+                            #{serviceMb.isActive(s) ? msg['cat.service.active'] : msg['cat.service.paused']}
+                        </span>
+                    </p:column>
+                    <p:column headerText="" style="width:7rem;text-align:center" rendered="#{sessionMb.admin}">
+                        <p:commandButton icon="pi pi-pencil" title="#{msg['action.edit']}"
+                                         process="@this" actionListener="#{serviceMb.prepareEdit(s)}"
+                                         update=":form:dialog" oncomplete="PF('serviceDialog').show()"
+                                         styleClass="ui-button-rounded ui-button-text"/>
+                        <p:commandButton icon="pi pi-trash" title="#{msg['action.delete']}"
+                                         process="@this" actionListener="#{serviceMb.delete(s)}" update=":form:table :messages"
+                                         styleClass="ui-button-rounded ui-button-text ui-button-danger">
+                            <p:confirm header="#{msg['action.confirm']}" message="#{msg['msg.confirmDelete']}"
+                                       icon="pi pi-exclamation-triangle"/>
+                        </p:commandButton>
+                    </p:column>
+                </p:dataTable>
+
+                <p:dialog header="#{msg['lbl.service']}" widgetVar="serviceDialog" modal="true" id="dialog"
+                          width="680" resizable="false" fitViewport="true" responsive="true"
+                          contentStyle="max-height:75vh;overflow:auto" closeOnEscape="true">
+                    <div class="form-grid" style="margin-top:.5rem">
+                        <div class="field required span-2">
+                            <label for="form:svcName">#{msg['lbl.name']}</label>
+                            <p:inputText id="svcName" value="#{serviceMb.selected.name}" maxlength="120" required="true"
+                                         requiredMessage="#{msg['lbl.name']}: #{msg['msg.required']}"/>
+                        </div>
+                        <div class="field span-2">
+                            <label for="form:svcDesc">#{msg['lbl.description']}</label>
+                            <p:inputTextarea id="svcDesc" value="#{serviceMb.selected.description}" rows="2"
+                                             maxlength="500" autoResize="false"/>
+                        </div>
+                        <div class="field">
+                            <label for="form:svcSpecialty">#{msg['lbl.specialty']}</label>
+                            <p:inputText id="svcSpecialty" value="#{serviceMb.selected.specialty}" maxlength="120"/>
+                        </div>
+                        <div class="field required">
+                            <label for="form:svcDuration">#{msg['lbl.duration']} (#{msg['lbl.minutes']})</label>
+                            <p:spinner id="svcDuration" value="#{serviceMb.selected.durationMinutes}" min="5" max="600"
+                                       stepFactor="5" required="true"
+                                       requiredMessage="#{msg['lbl.duration']}: #{msg['msg.required']}"/>
+                        </div>
+                        <div class="field required">
+                            <label for="form:svcPrice">#{msg['lbl.price']}</label>
+                            <p:inputNumber id="svcPrice" value="#{serviceMb.selected.price}" symbol="$ " decimalPlaces="2"
+                                           minValue="0" required="true"
+                                           requiredMessage="#{msg['lbl.price']}: #{msg['msg.required']}"/>
+                        </div>
+                        <div class="field">
+                            <label for="form:svcCommission">#{msg['cat.service.commission']}</label>
+                            <p:inputNumber id="svcCommission" value="#{serviceMb.selected.commissionPercent}" symbol=" %"
+                                           symbolPosition="s" decimalPlaces="2" minValue="0" maxValue="100"
+                                           placeholder="#{msg['cat.service.commission.employee']}"/>
+                            <span class="hint">#{msg['cat.service.commission.hint']}</span>
+                        </div>
+                        <div class="field span-2">
+                            <div class="check-inline">
+                                <p:toggleSwitch id="svcActive" value="#{serviceMb.selected.activeForBooking}"/>
+                                <label for="form:svcActive" style="margin:0">#{msg['cat.service.activeForBooking']}</label>
+                            </div>
+                            <span class="hint">#{msg['cat.service.activeForBooking.hint']}</span>
+                        </div>
+                        <div class="field span-2">
+                            <label>#{msg['cat.service.employees']}</label>
+                            <p:selectManyCheckbox id="svcEmployees" value="#{serviceMb.selected.employeeIds}"
+                                                  layout="responsive" columns="2">
+                                <f:converter converterId="jakarta.faces.Integer"/>
+                                <f:selectItems value="#{serviceMb.employees}" var="e" itemLabel="#{e.fullName}"
+                                               itemValue="#{e.id}"/>
+                            </p:selectManyCheckbox>
+                            <span class="hint">#{msg['cat.service.employees.hint']}</span>
+                        </div>
+                    </div>
+                    <f:facet name="footer">
+                        <p:commandButton value="#{msg['action.save']}" icon="pi pi-check"
+                                         actionListener="#{serviceMb.save}" update=":form:table :messages"
+                                         styleClass="ui-button-primary"/>
+                        <p:commandButton value="#{msg['action.cancel']}" icon="pi pi-times"
+                                         onclick="PF('serviceDialog').hide()" type="button"
+                                         styleClass="ui-button-secondary"/>
+                    </f:facet>
+                </p:dialog>
+
+                <p:confirmDialog global="true">
+                    <p:commandButton value="#{msg['action.yes']}" type="button"
+                                     styleClass="ui-confirmdialog-yes ui-button-primary"/>
+                    <p:commandButton value="#{msg['action.no']}" type="button"
+                                     styleClass="ui-confirmdialog-no ui-button-secondary"/>
+                </p:confirmDialog>
+            </h:form>
+        </div>
+    </ui:define>
+</ui:composition>

@@ -1,0 +1,36 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui">
+    <!-- Weekly schedule editor (business or employee).
+         Params: week (WeekModel), withBreak (boolean: business lunch break per day). -->
+    <p:outputPanel id="weekHours" styleClass="wh">
+        <ui:repeat value="#{week.days}" var="d">
+            <p:outputPanel id="whRow" styleClass="wh-row #{d.open ? 'open' : 'closed'}">
+                <span class="wh-day">#{msg['weekday.'.concat(d.weekday)]}</span>
+                <p:toggleSwitch value="#{d.open}" styleClass="wh-toggle">
+                    <p:ajax listener="#{week.toggled(d)}" process="whRow" update="whRow"/>
+                </p:toggleSwitch>
+                <h:panelGroup rendered="#{d.open}" styleClass="wh-times">
+                    <p:inputMask value="#{d.startTime}" mask="99:99" placeholder="09:00" autoClear="false" styleClass="wh-time"/>
+                    <span class="muted">–</span>
+                    <p:inputMask value="#{d.endTime}" mask="99:99" placeholder="18:00" autoClear="false" styleClass="wh-time"/>
+                    <h:panelGroup rendered="#{withBreak}" styleClass="wh-break">
+                        <i class="pi pi-clock" title="#{msg['cat.business.break']}"></i>
+                        <p:inputMask value="#{d.breakStartTime}" mask="99:99" placeholder="#{msg['hours.break.from']}" autoClear="false" styleClass="wh-time"/>
+                        <span class="muted">–</span>
+                        <p:inputMask value="#{d.breakEndTime}" mask="99:99" placeholder="#{msg['hours.break.to']}" autoClear="false" styleClass="wh-time"/>
+                    </h:panelGroup>
+                </h:panelGroup>
+                <h:panelGroup rendered="#{not d.open}" styleClass="wh-closed">#{msg['hours.closed']}</h:panelGroup>
+            </p:outputPanel>
+        </ui:repeat>
+        <div class="wh-actions">
+            <p:commandLink action="#{week.copyToAll}" process="weekHours" update="weekHours" styleClass="wh-copy">
+                <i class="pi pi-copy"></i>&#160;#{msg['hours.copyToAll']}
+            </p:commandLink>
+            <h:panelGroup rendered="#{withBreak}" styleClass="hint">#{msg['hours.break.hint']}</h:panelGroup>
+        </div>
+    </p:outputPanel>
+</ui:composition>

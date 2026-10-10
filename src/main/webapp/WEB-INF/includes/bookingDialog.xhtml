@@ -1,0 +1,149 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui">
+    <!-- Shared counter booking dialog. Expects <ui:param name="owner" value="#{pageBean}"/> (a Refreshable)
+         and the owner page's main form to have id="form". Open with:
+         actionListener="#{bookingMb.openNew}" update=":bookingForm" oncomplete="PF('bookingDlg').show()" -->
+    <p:dialog header="#{msg['op.booking.title']}" widgetVar="bookingDlg" modal="true" responsive="true"
+              width="900" appendTo="@(body)" closeOnEscape="true" fitViewport="true">
+        <h:form id="bookingForm">
+            <div class="form-grid">
+                <!-- 1. customer -->
+                <div class="form-section">1. #{msg['op.booking.step.customer']}</div>
+                <div class="field required">
+                    <label>#{msg['op.booking.phone']}</label>
+                    <div class="flex gap-2">
+                        <p:inputText value="#{bookingMb.phone}" placeholder="55 1234 5678" style="flex:1"
+                                     disabled="#{bookingMb.customerFound and not empty bookingMb.customerId}"/>
+                        <p:commandButton value="#{msg['op.booking.lookup']}" icon="pi pi-search"
+                                         actionListener="#{bookingMb.lookupCustomer}" process="@this @parent"
+                                         update="customerPanel :messages" styleClass="ui-button-secondary"
+                                         disabled="#{bookingMb.customerFound and not empty bookingMb.customerId}"/>
+                    </div>
+                </div>
+                <p:outputPanel id="customerPanel" styleClass="field">
+                    <label>#{msg['op.booking.customerName']}</label>
+                    <h:panelGroup rendered="#{bookingMb.customerFound}">
+                        <div class="flex gap-2">
+                            <span class="avatar">#{sessionMb.initialsOf(bookingMb.customerName)}</span>
+                            <span><b>#{bookingMb.customerName}</b>
+                                <span class="badge badge-success ml-2">#{msg['op.booking.found']}</span></span>
+                        </div>
+                    </h:panelGroup>
+                    <h:panelGroup rendered="#{not bookingMb.customerFound}">
+                        <p:inputText value="#{bookingMb.customerName}" placeholder="#{msg['lbl.fullName']}"/>
+                        <h:panelGroup rendered="#{bookingMb.lookedUp}" styleClass="hint" layout="block">
+                            <i class="pi pi-info-circle"></i> #{msg['op.booking.notFound']}</h:panelGroup>
+                    </h:panelGroup>
+                </p:outputPanel>
+
+                <!-- 2. service -->
+                <div class="form-section">2. #{msg['op.booking.step.service']}</div>
+                <div class="field required">
+                    <label>#{msg['lbl.service']}</label>
+                    <p:selectOneMenu value="#{bookingMb.serviceId}" filter="true" filterMatchMode="contains">
+                        <f:selectItem itemLabel="#{msg['lbl.select']}" itemValue="#{null}" noSelectionOption="true"/>
+                        <f:selectItems value="#{bookingMb.services}" var="s" itemLabel="#{s.name}" itemValue="#{s.id}"/>
+                        <p:ajax listener="#{bookingMb.onServiceChange}" update="svcInfo empPanel slotPanel :messages"/>
+                    </p:selectOneMenu>
+                </div>
+                <p:outputPanel id="svcInfo" styleClass="field">
+                    <label>#{msg['lbl.duration']} / #{msg['lbl.price']}</label>
+                    <h:panelGroup rendered="#{not empty bookingMb.selectedService}">
+                        <b>#{bookingMb.selectedService.durationMinutes} #{msg['lbl.minutes']}</b>
+                        <span class="muted"> &#183; </span>
+                        <b>#{sessionMb.fmtMoney(bookingMb.selectedService.price)}</b>
+                        <h:panelGroup rendered="#{not empty bookingMb.selectedService.description}" styleClass="hint" layout="block">
+                            #{bookingMb.selectedService.description}</h:panelGroup>
+                    </h:panelGroup>
+                    <h:panelGroup rendered="#{empty bookingMb.selectedService}" styleClass="muted">-</h:panelGroup>
+                </p:outputPanel>
+
+                <!-- 3. employee + 4. date -->
+                <div class="form-section">3. #{msg['op.booking.step.employee']} &#183; 4. #{msg['op.booking.step.date']}</div>
+                <p:outputPanel id="empPanel" styleClass="field">
+                    <label>#{msg['lbl.employee']}</label>
+                    <p:selectOneRadio value="#{bookingMb.employeeId}" layout="responsive" columns="2">
+                        <f:selectItem itemLabel="#{msg['op.booking.anyEmployee']}" itemValue="#{null}" noSelectionOption="true"/>
+                        <f:selectItems value="#{bookingMb.employees}" var="e" itemLabel="#{e.fullName}" itemValue="#{e.id}"/>
+                        <p:ajax listener="#{bookingMb.loadAvailability}" update="slotPanel :messages"/>
+                    </p:selectOneRadio>
+                </p:outputPanel>
+                <div class="field required">
+                    <label>#{msg['lbl.date']}</label>
+                    <p:datePicker value="#{bookingMb.date}" pattern="dd/MM/yyyy" mindate="#{bookingMb.minDate}"
+                                  maxdate="#{bookingMb.maxDate}" showIcon="true" readonlyInput="true"
+                                  locale="#{sessionMb.language}">
+                        <p:ajax event="dateSelect" listener="#{bookingMb.loadAvailability}" update="slotPanel :messages"/>
+                    </p:datePicker>
+                </div>
+
+                <!-- 5. slot -->
+                <div class="form-section">5. #{msg['op.booking.step.slot']}</div>
+                <p:outputPanel id="slotPanel" styleClass="span-2 field">
+                    <h:panelGroup rendered="#{empty bookingMb.serviceId}" styleClass="muted">#{msg['op.booking.pickDate']}</h:panelGroup>
+                    <h:panelGroup rendered="#{not empty bookingMb.serviceId and empty bookingMb.slots}" styleClass="empty-state" layout="block">
+                        <i class="pi pi-calendar-times"></i>#{msg['op.booking.noSlots']}</h:panelGroup>
+                    <h:panelGroup rendered="#{not empty bookingMb.slots}" styleClass="slot-chips" layout="block">
+                        <p:selectOneButton value="#{bookingMb.slotKey}" unselectable="false">
+                            <f:selectItems value="#{bookingMb.slots}" var="sl" itemValue="#{bookingMb.slotKey(sl)}"
+                                           itemLabel="#{sl.startTime} &#183; #{sl.employeeName}"/>
+                            <p:ajax update="slotChosen"/>
+                        </p:selectOneButton>
+                        <p:outputPanel id="slotChosen" styleClass="hint">
+                            <h:outputText value="#{msg['op.booking.selected']}: #{bookingMb.slotKey}" rendered="#{not empty bookingMb.slotKey}"/>
+                        </p:outputPanel>
+                    </h:panelGroup>
+                </p:outputPanel>
+
+                <!-- 6. products -->
+                <div class="form-section">6. #{msg['op.booking.step.products']}
+                    <span class="muted"> (<h:outputText id="reservedCount" value="#{bookingMb.reservedCount}"/>)</span></div>
+                <div class="span-2">
+                    <h:panelGroup rendered="#{empty bookingMb.products}" styleClass="muted">#{msg['op.booking.noProducts']}</h:panelGroup>
+                    <p:dataTable id="prodTable" var="pr" value="#{bookingMb.products}" rendered="#{not empty bookingMb.products}"
+                                 scrollable="true" scrollHeight="180" styleClass="small">
+                        <p:column headerText="#{msg['lbl.name']}">
+                            <b>#{pr.name}</b> <span class="muted">#{pr.brandName}</span>
+                        </p:column>
+                        <p:column headerText="#{msg['lbl.price']}" width="100" styleClass="text-right">#{sessionMb.fmtMoney(pr.price)}</p:column>
+                        <p:column headerText="#{msg['lbl.quantity']}" width="150" styleClass="text-center">
+                            <p:commandButton icon="pi pi-minus" actionListener="#{bookingMb.minus(pr)}" process="@this"
+                                             update="prodTable :bookingForm:reservedCount" styleClass="ui-button-secondary ui-button-flat"/>
+                            <b style="display:inline-block;min-width:2rem;text-align:center">#{bookingMb.qty(pr)}</b>
+                            <p:commandButton icon="pi pi-plus" actionListener="#{bookingMb.plus(pr)}" process="@this"
+                                             update="prodTable :bookingForm:reservedCount" styleClass="ui-button-secondary ui-button-flat"/>
+                        </p:column>
+                    </p:dataTable>
+                </div>
+
+                <!-- 7. notes + 8. payment -->
+                <div class="form-section">7. #{msg['op.booking.step.notes']} &#183; 8. #{msg['op.booking.step.payment']}</div>
+                <div class="field">
+                    <label>#{msg['op.lbl.preNotes']}</label>
+                    <p:inputTextarea value="#{bookingMb.preNotes}" rows="3" autoResize="false"/>
+                </div>
+                <div class="field">
+                    <label>#{msg['op.booking.step.payment']}</label>
+                    <p:selectOneButton value="#{bookingMb.paymentMode}">
+                        <f:selectItem itemValue="AT_BUSINESS" itemLabel="#{msg['op.booking.pay.AT_BUSINESS']}"/>
+                        <f:selectItem itemValue="ONLINE" itemLabel="#{msg['op.booking.pay.ONLINE']}" itemDisabled="true"/>
+                    </p:selectOneButton>
+                </div>
+            </div>
+
+            <div class="flex gap-2 mt-2" style="justify-content:flex-end">
+                <p:commandButton value="#{msg['action.cancel']}" type="button" onclick="PF('bookingDlg').hide()"
+                                 styleClass="ui-button-secondary"/>
+                <p:commandButton value="#{msg['op.booking.confirm']}" icon="pi pi-calendar-plus"
+                                 actionListener="#{bookingMb.book(owner)}" update=":bookingForm :form :messages"/>
+            </div>
+        </h:form>
+    </p:dialog>
+    <style type="text/css">
+        .slot-chips .ui-selectonebutton { display: flex; flex-wrap: wrap; gap: .35rem; }
+        .slot-chips .ui-selectonebutton .ui-button { border-radius: 999px !important; margin: 0; font-size: .8rem; }
+    </style>
+</ui:composition>

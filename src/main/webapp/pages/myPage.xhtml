@@ -1,0 +1,272 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <!-- "Mi página": the business landing page editor. Template + any color change the preview
+         at once (mypage.js); every other change is saved by itself and the preview reloads. -->
+    <ui:define name="content">
+        <link rel="stylesheet" href="#{request.contextPath}/resources/css/mypage.css?v=20261007a"/>
+        <ui:repeat value="#{myPageMb.templates}" var="t">
+            <link rel="stylesheet" href="#{t.fontsUrl}"/>
+        </ui:repeat>
+
+        <h:form id="form">
+            <div class="page-header">
+                <span class="page-icon"><i class="pi pi-globe"></i></span>
+                <h2>#{msg['menu.admin.page']}</h2>
+                <span class="page-subtitle">#{msg['pg.ed.subtitle']}</span>
+            </div>
+
+            <h:panelGroup rendered="#{not myPageMb.hasSlug}" layout="block" styleClass="card mp-warn">
+                <i class="pi pi-info-circle"></i>
+                <div>
+                    <strong>#{msg['pg.ed.noSlug']}</strong>
+                    <p class="muted" style="margin:.25rem 0 .6rem">#{msg['pg.ed.noSlug.hint']}</p>
+                    <a class="ui-button ui-button-primary mp-linkbtn" href="#{request.contextPath}/pages/business.xhtml">#{msg['pg.ed.goBusiness']}</a>
+                </div>
+            </h:panelGroup>
+
+            <h:inputHidden id="template" value="#{myPageMb.page.template}"/>
+            <h:inputHidden id="accent" value="#{myPageMb.page.accentColor}"/>
+            <p:remoteCommand name="mpSave" action="#{myPageMb.autoSave}" process="@form"
+                             update=":form:pubPanel :messages" oncomplete="mpAfterSave()"/>
+
+            <div class="mp-grid">
+                <!-- ======================= EDITOR ======================= -->
+                <div class="mp-editor">
+
+                    <!-- 1. Template -->
+                    <div class="card mp-step">
+                        <h3 class="mp-step-title"><span>1</span>#{msg['pg.ed.step.template']}</h3>
+                        <p class="muted small">#{msg['pg.ed.step.template.hint']}</p>
+                        <div class="mp-templates">
+                            <ui:repeat value="#{myPageMb.templates}" var="t">
+                                <button type="button" class="mp-tpl #{t.code eq myPageMb.page.template ? 'sel' : ''}"
+                                        data-code="#{t.code}" data-cls="#{t.cssClass}" data-dark="#{t.dark}"
+                                        data-bg="#{t.background}" data-fonts="#{t.fontsUrl}" data-default="#{t.defaultColor}"
+                                        onclick="mpPickTemplate(this)">
+                                    <span class="mp-tpl-swatch #{t.cssClass}-sw" style="background:#{t.background}">
+                                        <b>Aa</b><i></i>
+                                    </span>
+                                    <span class="mp-tpl-name">#{msg['pg.tpl.'.concat(t.code)]}</span>
+                                    <span class="mp-tpl-desc">#{msg['pg.tpl.'.concat(t.code).concat('.d')]}</span>
+                                </button>
+                            </ui:repeat>
+                        </div>
+                    </div>
+
+                    <!-- 2. Color -->
+                    <div class="card mp-step">
+                        <h3 class="mp-step-title"><span>2</span>#{msg['pg.ed.step.color']}</h3>
+                        <p class="muted small">#{msg['pg.ed.step.color.hint']}</p>
+                        <div class="mp-color-row">
+                            <label class="mp-color-pick" title="#{msg['pg.ed.color.pick']}">
+                                <input type="color" id="mpColor" value="#{myPageMb.page.accentColor}" oninput="mpSetColor(this.value, false)" onchange="mpSetColor(this.value, true)"/>
+                            </label>
+                            <input type="text" id="mpHex" class="mp-hex" maxlength="7" value="#{myPageMb.page.accentColor}"
+                                   onchange="mpSetColor(this.value, true)" aria-label="HEX"/>
+                            <button type="button" class="ui-button ui-button-secondary mp-logo-color" onclick="mpLogoColor('#{myPageMb.logoUrl}')">
+                                <i class="pi pi-image"></i>&#160;#{msg['pg.ed.color.logo']}
+                            </button>
+                        </div>
+                        <div class="mp-swatches">
+                            <ui:repeat value="#{['#D4AF37','#B8902F','#E4572E','#D6246E','#B5838D','#9A3B2E','#F2A33A','#4F7A4A','#0F7C77','#2457C5','#7C9CFF','#6C4CF1','#1F2937','#111111']}" var="c">
+                                <button type="button" class="mp-sw" style="background:#{c}" title="#{c}" onclick="mpSetColor('#{c}', true)"></button>
+                            </ui:repeat>
+                        </div>
+                        <p class="hint mp-contrast"><i class="pi pi-eye"></i>&#160;#{msg['pg.ed.color.contrast']}</p>
+                    </div>
+
+                    <!-- 3. Texts -->
+                    <div class="card mp-step">
+                        <div class="mp-step-head">
+                            <h3 class="mp-step-title"><span>3</span>#{msg['pg.ed.step.texts']}</h3>
+                            <p:commandButton value="#{msg['pg.ed.suggest']}" icon="pi pi-bolt" styleClass="ui-button-secondary"
+                                             action="#{myPageMb.suggest}" process="@this" update="texts :messages" oncomplete="mpReload()">
+                                <p:confirm header="#{msg['pg.ed.suggest']}" message="#{msg['pg.ed.suggest.confirm']}" icon="pi pi-question-circle"/>
+                            </p:commandButton>
+                        </div>
+                        <p class="muted small">#{msg['pg.ed.step.texts.hint']}</p>
+                        <p:outputPanel id="texts" styleClass="mp-fields">
+                            <div class="field">
+                                <label for="form:headline">#{msg['pg.ed.headline']}</label>
+                                <p:inputText id="headline" value="#{myPageMb.page.headline}" maxlength="80" styleClass="mp-auto" placeholder="#{msg['pg.sg.GENERIC.headline']}"/>
+                            </div>
+                            <div class="field">
+                                <label for="form:sub">#{msg['pg.ed.sub']}</label>
+                                <p:inputTextarea id="sub" value="#{myPageMb.page.subheadline}" maxlength="200" rows="2" autoResize="false" styleClass="mp-auto"/>
+                            </div>
+                            <div class="field">
+                                <label for="form:about">#{msg['pg.ed.about']} <span class="muted">#{msg['pg.ed.optional']}</span></label>
+                                <p:inputTextarea id="about" value="#{myPageMb.page.about}" maxlength="600" rows="4" autoResize="false" styleClass="mp-auto"/>
+                            </div>
+                            <label class="mp-label">#{msg['pg.ed.reasons']} <span class="muted">#{msg['pg.ed.optional']}</span></label>
+                            <div class="mp-reasons">
+                                <div class="mp-reason">
+                                    <p:inputText id="r1t" value="#{myPageMb.page.reason1Title}" maxlength="60" styleClass="mp-auto" placeholder="#{msg['pg.ed.reason.title']}"/>
+                                    <p:inputText id="r1x" value="#{myPageMb.page.reason1Text}" maxlength="140" styleClass="mp-auto" placeholder="#{msg['pg.ed.reason.text']}"/>
+                                </div>
+                                <div class="mp-reason">
+                                    <p:inputText id="r2t" value="#{myPageMb.page.reason2Title}" maxlength="60" styleClass="mp-auto" placeholder="#{msg['pg.ed.reason.title']}"/>
+                                    <p:inputText id="r2x" value="#{myPageMb.page.reason2Text}" maxlength="140" styleClass="mp-auto" placeholder="#{msg['pg.ed.reason.text']}"/>
+                                </div>
+                                <div class="mp-reason">
+                                    <p:inputText id="r3t" value="#{myPageMb.page.reason3Title}" maxlength="60" styleClass="mp-auto" placeholder="#{msg['pg.ed.reason.title']}"/>
+                                    <p:inputText id="r3x" value="#{myPageMb.page.reason3Text}" maxlength="140" styleClass="mp-auto" placeholder="#{msg['pg.ed.reason.text']}"/>
+                                </div>
+                            </div>
+                        </p:outputPanel>
+                    </div>
+
+                    <!-- 4. Photos -->
+                    <div class="card mp-step">
+                        <h3 class="mp-step-title"><span>4</span>#{msg['pg.ed.step.photos']}</h3>
+                        <p class="muted small">#{msg['pg.ed.step.photos.hint']}</p>
+                        <p:inputTextarea id="coverB64" value="#{myPageMb.coverBase64}" styleClass="mp-cover-b64" style="display:none"/>
+                        <p:inputTextarea id="galleryB64" value="#{myPageMb.galleryBase64}" styleClass="mp-gallery-b64" style="display:none"/>
+                        <p:commandButton id="coverUp" action="#{myPageMb.uploadCover}" process="@this coverB64" update="photos :messages"
+                                         oncomplete="mpPhotoDone()" style="display:none" styleClass="mp-cover-up"/>
+                        <p:commandButton id="galleryUp" action="#{myPageMb.uploadGallery}" process="@this galleryB64" update="photos :messages"
+                                         oncomplete="mpPhotoDone()" style="display:none" styleClass="mp-gallery-up"/>
+                        <p:outputPanel id="photos">
+                            <label class="mp-label">#{msg['pg.ed.cover']}</label>
+                            <div class="mp-cover">
+                                <h:panelGroup rendered="#{myPageMb.page.coverPhotoId ne null}" layout="block" styleClass="mp-cover-img">
+                                    <img src="#{myPageMb.photoUrl(myPageMb.page.coverPhotoId)}" alt=""/>
+                                    <p:commandLink action="#{myPageMb.deletePhoto(myPageMb.page.coverPhotoId)}" process="@this"
+                                                   update="photos :messages" oncomplete="mpReload()" styleClass="mp-del" title="#{msg['pg.ed.photo.delete']}">
+                                        <i class="pi pi-trash"></i>
+                                    </p:commandLink>
+                                </h:panelGroup>
+                                <label class="mp-drop">
+                                    <i class="pi pi-camera"></i>
+                                    <span>#{myPageMb.page.coverPhotoId ne null ? msg['pg.ed.cover.change'] : msg['pg.ed.cover.add']}</span>
+                                    <input type="file" accept="image/*" onchange="mpReadPhoto(this, 'cover')"/>
+                                </label>
+                            </div>
+                            <label class="mp-label">#{msg['pg.ed.gallery']} <span class="muted">(#{myPageMb.page.galleryPhotoIds.size()}/#{myPageMb.galleryLimit})</span></label>
+                            <div class="mp-gallery">
+                                <ui:repeat value="#{myPageMb.page.galleryPhotoIds}" var="gid">
+                                    <div class="mp-thumb">
+                                        <img src="#{myPageMb.photoUrl(gid)}" alt="" loading="lazy"/>
+                                        <p:commandLink action="#{myPageMb.deletePhoto(gid)}" process="@this"
+                                                       update=":form:photos :messages" oncomplete="mpReload()" styleClass="mp-del" title="#{msg['pg.ed.photo.delete']}">
+                                            <i class="pi pi-trash"></i>
+                                        </p:commandLink>
+                                    </div>
+                                </ui:repeat>
+                                <h:panelGroup rendered="#{not myPageMb.galleryFull}">
+                                    <label class="mp-thumb mp-add">
+                                        <i class="pi pi-plus"></i>
+                                        <span>#{msg['pg.ed.gallery.add']}</span>
+                                        <input type="file" accept="image/*" onchange="mpReadPhoto(this, 'gallery')"/>
+                                    </label>
+                                </h:panelGroup>
+                            </div>
+                            <p class="hint mp-uploading" id="mpUploading" style="display:none"><i class="pi pi-spin pi-spinner"></i>&#160;#{msg['pg.ed.uploading']}</p>
+                        </p:outputPanel>
+                    </div>
+
+                    <!-- 5. Contact and social -->
+                    <div class="card mp-step">
+                        <h3 class="mp-step-title"><span>5</span>#{msg['pg.ed.step.contact']}</h3>
+                        <p class="muted small">#{msg['pg.ed.step.contact.hint']}</p>
+                        <div class="mp-fields">
+                            <div class="field">
+                                <label for="form:address">#{msg['pg.ed.address']} <span class="muted">#{msg['pg.ed.optional']}</span></label>
+                                <p:inputText id="address" value="#{myPageMb.page.address}" maxlength="255" styleClass="mp-auto"/>
+                                <span class="hint">#{msg['pg.ed.address.hint']}</span>
+                            </div>
+                            <div class="mp-social">
+                                <div class="field">
+                                    <label for="form:ig">Instagram</label>
+                                    <p:inputText id="ig" value="#{myPageMb.page.instagram}" maxlength="80" styleClass="mp-auto" placeholder="@tunegocio"/>
+                                </div>
+                                <div class="field">
+                                    <label for="form:fb">Facebook</label>
+                                    <p:inputText id="fb" value="#{myPageMb.page.facebook}" maxlength="120" styleClass="mp-auto" placeholder="tunegocio"/>
+                                </div>
+                                <div class="field">
+                                    <label for="form:tt">TikTok</label>
+                                    <p:inputText id="tt" value="#{myPageMb.page.tiktok}" maxlength="80" styleClass="mp-auto" placeholder="@tunegocio"/>
+                                </div>
+                            </div>
+                            <div class="mp-auto-info">
+                                <i class="pi pi-whatsapp"></i>
+                                <span>#{msg['pg.ed.whatsapp.info']} <strong>#{myPageMb.business.contactPhone}</strong></span>
+                            </div>
+                            <label class="mp-label">#{msg['pg.ed.sections']}</label>
+                            <div class="mp-switches">
+                                <h:panelGroup rendered="#{myPageMb.business.moduleAppointments}" styleClass="mp-switch">
+                                    <p:toggleSwitch id="showServices" value="#{myPageMb.page.showServices}" onchange="mpQueueSave()"/>
+                                    <label for="form:showServices">#{msg['pg.ed.show.services']}</label>
+                                </h:panelGroup>
+                                <h:panelGroup rendered="#{myPageMb.business.moduleSales}" styleClass="mp-switch">
+                                    <p:toggleSwitch id="showProducts" value="#{myPageMb.page.showProducts}" onchange="mpQueueSave()"/>
+                                    <label for="form:showProducts">#{msg['pg.ed.show.products']}</label>
+                                </h:panelGroup>
+                                <h:panelGroup styleClass="mp-switch">
+                                    <p:toggleSwitch id="showReviews" value="#{myPageMb.page.showReviews}" onchange="mpQueueSave()"/>
+                                    <label for="form:showReviews">#{msg['pg.ed.show.reviews']}</label>
+                                </h:panelGroup>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 6. Publish -->
+                    <p:outputPanel id="pubPanel" styleClass="card mp-step mp-publish">
+                        <h3 class="mp-step-title"><span>6</span>#{msg['pg.ed.step.publish']}</h3>
+                        <div class="mp-status">
+                            <span class="mp-chip #{myPageMb.published ? 'on' : ''}">#{myPageMb.published ? msg['pg.ed.status.published'] : msg['pg.ed.status.draft']}</span>
+                            <span class="muted small">#{myPageMb.published ? msg['pg.ed.status.published.hint'] : msg['pg.ed.status.draft.hint']}</span>
+                        </div>
+                        <h:panelGroup rendered="#{myPageMb.hasSlug}" layout="block" styleClass="cv-link-box mp-linkbox">
+                            <input type="text" readonly="readonly" value="#{myPageMb.pageLink}" onclick="this.select()"/>
+                            <button type="button" class="ui-button ui-button-secondary cv-copy" onclick="mpCopy(this)" title="#{msg['links.copy']}"><i class="pi pi-copy"></i></button>
+                            <a class="ui-button ui-button-secondary cv-copy" href="#{myPageMb.pageLink}" target="_blank" rel="noopener" title="#{msg['links.open']}"><i class="pi pi-external-link"></i></a>
+                        </h:panelGroup>
+                        <div class="mp-pub-actions">
+                            <p:commandButton value="#{msg['pg.ed.save']}" icon="pi pi-check" action="#{myPageMb.saveNow}"
+                                             process="@form" update="pubPanel :messages" oncomplete="mpReload()" styleClass="ui-button-secondary"/>
+                            <p:commandButton value="#{msg['pg.ed.publish']}" icon="pi pi-send" action="#{myPageMb.publish}"
+                                             rendered="#{not myPageMb.published}" disabled="#{not myPageMb.hasSlug}"
+                                             process="@form" update="pubPanel :messages" oncomplete="mpReload()" styleClass="ui-button-primary"/>
+                            <p:commandButton value="#{msg['pg.ed.unpublish']}" icon="pi pi-eye-slash" action="#{myPageMb.unpublish}"
+                                             rendered="#{myPageMb.published}"
+                                             process="@form" update="pubPanel :messages" oncomplete="mpReload()" styleClass="ui-button-secondary"/>
+                        </div>
+                        <span class="mp-saved" id="mpSaved">#{msg['pg.ed.autosaved']}</span>
+                    </p:outputPanel>
+                </div>
+
+                <!-- ======================= PREVIEW ======================= -->
+                <div class="mp-preview">
+                    <div class="mp-preview-bar">
+                        <span class="muted small">#{msg['pg.ed.preview']}</span>
+                        <div class="mp-devices">
+                            <button type="button" class="mp-dev sel" data-mode="phone" onclick="mpDevice(this)"><i class="pi pi-mobile"></i></button>
+                            <button type="button" class="mp-dev" data-mode="desktop" onclick="mpDevice(this)"><i class="pi pi-desktop"></i></button>
+                        </div>
+                    </div>
+                    <div class="mp-stage" id="mpStage" data-mode="phone">
+                        <h:panelGroup rendered="#{myPageMb.hasSlug}">
+                            <iframe id="mpFrame" title="#{msg['pg.ed.preview']}" src="#{myPageMb.previewUrl}" data-base="#{request.contextPath}/b/#{myPageMb.business.slug}/pagina?preview=1"></iframe>
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{not myPageMb.hasSlug}" layout="block" styleClass="mp-noframe">
+                            <i class="pi pi-globe"></i><p>#{msg['pg.ed.noSlug']}</p>
+                        </h:panelGroup>
+                    </div>
+                </div>
+            </div>
+
+            <p:confirmDialog global="true" showEffect="fade">
+                <p:commandButton value="#{msg['action.yes']}" type="button" styleClass="ui-confirmdialog-yes ui-button-primary"/>
+                <p:commandButton value="#{msg['action.no']}" type="button" styleClass="ui-confirmdialog-no ui-button-secondary"/>
+            </p:confirmDialog>
+        </h:form>
+
+        <script src="#{request.contextPath}/resources/js/mypage.js?v=20261007a"></script>
+    </ui:define>
+</ui:composition>

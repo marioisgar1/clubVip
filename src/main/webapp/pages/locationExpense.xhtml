@@ -1,0 +1,126 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <div class="card">
+            <div class="page-header">
+                <span class="page-icon"><i class="pi pi-money-bill"></i></span>
+                <h2>#{msg['menu.catalog.expense']}</h2>
+                <span class="page-subtitle">#{msg['pos.expense.subtitle']}</span>
+            </div>
+
+            <h:form id="form">
+                <p:toolbar>
+                    <p:toolbarGroup>
+                        <p:commandButton value="#{msg['action.new']}" icon="pi pi-plus"
+                                         process="@this" actionListener="#{locationExpenseMb.prepareNew}"
+                                         update=":form:dialog" oncomplete="PF('locationExpenseDialog').show()"
+                                         styleClass="ui-button-primary" rendered="#{sessionMb.admin}"/>
+                        <p:commandButton icon="pi pi-refresh" title="#{msg['action.refresh']}"
+                                         process="@this" actionListener="#{locationExpenseMb.refresh}" update=":form:table :messages"
+                                         styleClass="ui-button-secondary ml-2"/>
+                    </p:toolbarGroup>
+                </p:toolbar>
+
+                <p:dataTable id="table" var="ex" value="#{locationExpenseMb.expenses}" paginator="true" rows="10"
+                             emptyMessage="#{msg['msg.noData']}" styleClass="mt-2" widgetVar="expenseTable"
+                             filteredValue="#{locationExpenseMb.filtered}" globalFilterOnly="true" reflow="true"
+                             paginatorAlwaysVisible="false" rowKey="#{ex.id}" stripedRows="true">
+                    <f:facet name="header">
+                        <div class="flex-between wrap gap-2">
+                            <span class="muted">#{locationExpenseMb.expenses.size()} #{msg['pos.expense.count']}</span>
+                            <p:inputText id="globalFilter" onkeyup="PF('expenseTable').filter()"
+                                         placeholder="#{msg['action.search']}"/>
+                        </div>
+                    </f:facet>
+                    <p:column headerText="#{msg['pos.lbl.saleLocation']}" sortBy="#{ex.saleLocationName}"
+                              filterBy="#{ex.saleLocationName}" filterMatchMode="contains">
+                        <span style="font-weight:600">#{ex.saleLocationName}</span>
+                        <h:panelGroup rendered="#{not empty ex.description}" styleClass="muted" layout="block">#{ex.description}</h:panelGroup>
+                    </p:column>
+                    <p:column headerText="#{msg['pos.lbl.startDate']}" sortBy="#{ex.startDate}" width="110">
+                        #{sessionMb.fmtDay(ex.startDate)}
+                    </p:column>
+                    <p:column headerText="#{msg['pos.lbl.endDate']}" sortBy="#{ex.endDate}" width="110">
+                        #{sessionMb.fmtDay(ex.endDate)}
+                    </p:column>
+                    <p:column headerText="#{msg['pos.lbl.daysCount']}" sortBy="#{ex.daysCount}" width="80" styleClass="text-right">
+                        #{ex.daysCount}
+                    </p:column>
+                    <p:column headerText="#{msg['pos.lbl.totalCost']}" sortBy="#{ex.totalCost}" width="120" styleClass="text-right">
+                        <strong>#{sessionMb.fmtMoney(ex.totalCost)}</strong>
+                    </p:column>
+                    <p:column headerText="#{msg['pos.lbl.dailyCost']}" sortBy="#{ex.dailyCost}" width="120" styleClass="text-right">
+                        <span class="muted">#{sessionMb.fmtMoney(ex.dailyCost)}</span>
+                    </p:column>
+                    <p:column headerText="" style="width:7rem;text-align:center" rendered="#{sessionMb.admin}">
+                        <p:commandButton icon="pi pi-pencil" title="#{msg['action.edit']}"
+                                         process="@this" actionListener="#{locationExpenseMb.prepareEdit(ex)}"
+                                         update=":form:dialog :messages" oncomplete="PF('locationExpenseDialog').show()"
+                                         styleClass="ui-button-rounded ui-button-text"/>
+                        <p:commandButton icon="pi pi-trash" title="#{msg['action.delete']}"
+                                         process="@this" actionListener="#{locationExpenseMb.delete(ex)}" update=":form:table :messages"
+                                         styleClass="ui-button-rounded ui-button-text ui-button-danger">
+                            <p:confirm header="#{msg['action.confirm']}" message="#{msg['msg.confirmDelete']}"
+                                       icon="pi pi-exclamation-triangle"/>
+                        </p:commandButton>
+                    </p:column>
+                </p:dataTable>
+
+                <p:dialog header="#{msg['menu.catalog.expense']}" widgetVar="locationExpenseDialog" modal="true" id="dialog"
+                          width="560" resizable="false" fitViewport="true" responsive="true" closeOnEscape="true">
+                    <div class="form-grid" style="margin-top:.5rem">
+                        <div class="field required span-2">
+                            <label for="form:expLocation">#{msg['pos.lbl.saleLocation']}</label>
+                            <p:selectOneMenu id="expLocation" value="#{locationExpenseMb.selected.saleLocationId}" required="true"
+                                             requiredMessage="#{msg['pos.lbl.saleLocation']}: #{msg['msg.required']}">
+                                <f:selectItem itemLabel="#{msg['lbl.select']}" itemValue="#{null}" noSelectionOption="true"/>
+                                <f:selectItems value="#{locationExpenseMb.saleLocations}" var="loc"
+                                               itemLabel="#{loc.name}" itemValue="#{loc.id}"/>
+                            </p:selectOneMenu>
+                        </div>
+                        <div class="field span-2">
+                            <label for="form:expDesc">#{msg['lbl.description']}</label>
+                            <p:inputText id="expDesc" value="#{locationExpenseMb.selected.description}" maxlength="150"
+                                         placeholder="#{msg['pos.expense.description.hint']}"/>
+                        </div>
+                        <div class="field required">
+                            <label for="form:expStart">#{msg['pos.lbl.startDate']}</label>
+                            <p:datePicker id="expStart" value="#{locationExpenseMb.selected.startDate}" pattern="yyyy-MM-dd"
+                                          showIcon="true" required="true" requiredMessage="#{msg['pos.lbl.startDate']}: #{msg['msg.required']}"/>
+                        </div>
+                        <div class="field required">
+                            <label for="form:expEnd">#{msg['pos.lbl.endDate']}</label>
+                            <p:datePicker id="expEnd" value="#{locationExpenseMb.selected.endDate}" pattern="yyyy-MM-dd"
+                                          showIcon="true" required="true" requiredMessage="#{msg['pos.lbl.endDate']}: #{msg['msg.required']}"/>
+                        </div>
+                        <div class="field required">
+                            <label for="form:expCost">#{msg['pos.lbl.totalCost']}</label>
+                            <p:inputNumber id="expCost" value="#{locationExpenseMb.selected.totalCost}" symbol="$ " decimalPlaces="2"
+                                           minValue="0" required="true" requiredMessage="#{msg['pos.lbl.totalCost']}: #{msg['msg.required']}"/>
+                            <span class="hint">#{msg['pos.expense.cost.hint']}</span>
+                        </div>
+                    </div>
+                    <f:facet name="footer">
+                        <p:commandButton value="#{msg['action.save']}" icon="pi pi-check"
+                                         actionListener="#{locationExpenseMb.save}" update=":form:table :messages"
+                                         styleClass="ui-button-primary"/>
+                        <p:commandButton value="#{msg['action.cancel']}" icon="pi pi-times"
+                                         onclick="PF('locationExpenseDialog').hide()" type="button"
+                                         styleClass="ui-button-secondary"/>
+                    </f:facet>
+                </p:dialog>
+
+                <p:confirmDialog global="true">
+                    <p:commandButton value="#{msg['action.yes']}" type="button"
+                                     styleClass="ui-confirmdialog-yes ui-button-primary"/>
+                    <p:commandButton value="#{msg['action.no']}" type="button"
+                                     styleClass="ui-confirmdialog-no ui-button-secondary"/>
+                </p:confirmDialog>
+            </h:form>
+        </div>
+    </ui:define>
+</ui:composition>

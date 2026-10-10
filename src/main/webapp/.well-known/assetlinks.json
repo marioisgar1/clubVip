@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.prolog.clubvip.rewards",
+      "sha256_cert_fingerprints": [
+        "F5:B5:9E:17:95:E9:EE:5F:B0:E5:3D:05:96:7B:CC:C2:F9:8F:6E:A7:40:38:CF:7E:9B:33:2C:F6:F1:06:89:B7"
+      ]
+    }
+  }
+]

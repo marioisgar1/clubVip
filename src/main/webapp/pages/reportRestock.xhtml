@@ -1,0 +1,48 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <!-- Products to restock: stock at or below its minimum, Línea and Outlet in separate tabs. -->
+    <ui:define name="content">
+        <div class="page-header">
+            <span class="page-icon"><i class="pi pi-cart-plus"></i></span>
+            <h2>#{msg['menu.report.restock']}</h2>
+            <span class="page-subtitle">#{msg['pos.report.restock.subtitle']}</span>
+        </div>
+
+        <h:form id="form">
+            <div class="card">
+                <p:toolbar styleClass="mb-2">
+                    <p:toolbarGroup>
+                        <p:commandButton value="#{msg['action.refresh']}" icon="pi pi-refresh"
+                                         actionListener="#{reportRestockMb.load}" update="@form :messages"
+                                         styleClass="ui-button-primary"/>
+                    </p:toolbarGroup>
+                </p:toolbar>
+
+                <p:tabView id="tabs">
+                    <p:tab title="#{msg['pub.store.line']} (#{reportRestockMb.line.size()})">
+                        <ui:include src="/WEB-INF/includes/restockTab.xhtml">
+                            <ui:param name="rows" value="#{reportRestockMb.line}"/>
+                            <ui:param name="tableId" value="lineTable"/>
+                            <ui:param name="outletTab" value="#{false}"/>
+                        </ui:include>
+                    </p:tab>
+                    <p:tab title="#{msg['pub.store.outlet']} (#{reportRestockMb.outlet.size()})">
+                        <ui:include src="/WEB-INF/includes/restockTab.xhtml">
+                            <ui:param name="rows" value="#{reportRestockMb.outlet}"/>
+                            <ui:param name="tableId" value="outletTable"/>
+                            <ui:param name="outletTab" value="#{true}"/>
+                        </ui:include>
+                    </p:tab>
+                </p:tabView>
+            </div>
+        </h:form>
+        <style type="text/css">
+            .cv-thumb { width: 56px; height: 56px; object-fit: cover; border-radius: 8px; border: 1px solid var(--vip-border); background: var(--vip-surface-2); }
+            .cv-thumb-empty { display: inline-flex; align-items: center; justify-content: center; color: var(--vip-text-muted); }
+        </style>
+    </ui:define>
+</ui:composition>

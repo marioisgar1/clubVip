@@ -1,0 +1,106 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <div class="card">
+            <div class="page-header">
+                <span class="page-icon"><i class="pi pi-map-marker"></i></span>
+                <h2>#{msg['menu.catalog.location']}</h2>
+                <span class="page-subtitle">#{msg['pos.location.subtitle']}</span>
+            </div>
+
+            <h:form id="form">
+                <p:toolbar>
+                    <p:toolbarGroup>
+                        <p:commandButton value="#{msg['action.new']}" icon="pi pi-plus"
+                                         process="@this" actionListener="#{saleLocationMb.prepareNew}"
+                                         update=":form:dialog" oncomplete="PF('saleLocationDialog').show()"
+                                         styleClass="ui-button-primary" rendered="#{sessionMb.admin}"/>
+                        <p:commandButton icon="pi pi-refresh" title="#{msg['action.refresh']}"
+                                         process="@this" actionListener="#{saleLocationMb.refresh}" update=":form:table :messages"
+                                         styleClass="ui-button-secondary ml-2"/>
+                    </p:toolbarGroup>
+                </p:toolbar>
+
+                <p:dataTable id="table" var="sl" value="#{saleLocationMb.saleLocations}" paginator="true" rows="10"
+                             emptyMessage="#{msg['msg.noData']}" styleClass="mt-2" widgetVar="locationTable"
+                             filteredValue="#{saleLocationMb.filtered}" globalFilterOnly="true" reflow="true"
+                             paginatorAlwaysVisible="false" rowKey="#{sl.id}" stripedRows="true">
+                    <f:facet name="header">
+                        <div class="flex-between wrap gap-2">
+                            <span class="muted">#{saleLocationMb.saleLocations.size()} #{msg['pos.location.count']}</span>
+                            <p:inputText id="globalFilter" onkeyup="PF('locationTable').filter()"
+                                         placeholder="#{msg['action.search']}"/>
+                        </div>
+                    </f:facet>
+                    <p:column headerText="#{msg['lbl.name']}" sortBy="#{sl.name}"
+                              filterBy="#{sl.name}" filterMatchMode="contains">
+                        <span style="font-weight:600">#{sl.name}</span>
+                    </p:column>
+                    <p:column headerText="#{msg['pos.lbl.locationType']}" sortBy="#{sl.locationType}" width="150"
+                              filterBy="#{saleLocationMb.typeLabel(sl.locationType)}" filterMatchMode="contains">
+                        <span class="badge badge-info">#{saleLocationMb.typeLabel(sl.locationType)}</span>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.address']}" sortBy="#{sl.address}"
+                              filterBy="#{sl.address}" filterMatchMode="contains">
+                        <h:outputText value="#{sl.address}" styleClass="muted"/>
+                    </p:column>
+                    <p:column headerText="" style="width:7rem;text-align:center" rendered="#{sessionMb.admin}">
+                        <p:commandButton icon="pi pi-pencil" title="#{msg['action.edit']}"
+                                         process="@this" actionListener="#{saleLocationMb.prepareEdit(sl)}"
+                                         update=":form:dialog :messages" oncomplete="PF('saleLocationDialog').show()"
+                                         styleClass="ui-button-rounded ui-button-text"/>
+                        <p:commandButton icon="pi pi-trash" title="#{msg['action.delete']}"
+                                         process="@this" actionListener="#{saleLocationMb.delete(sl)}" update=":form:table :messages"
+                                         styleClass="ui-button-rounded ui-button-text ui-button-danger">
+                            <p:confirm header="#{msg['action.confirm']}" message="#{msg['msg.confirmDelete']}"
+                                       icon="pi pi-exclamation-triangle"/>
+                        </p:commandButton>
+                    </p:column>
+                </p:dataTable>
+
+                <p:dialog header="#{msg['menu.catalog.location']}" widgetVar="saleLocationDialog" modal="true" id="dialog"
+                          width="520" resizable="false" fitViewport="true" responsive="true" closeOnEscape="true">
+                    <div class="form-grid" style="margin-top:.5rem">
+                        <div class="field required span-2">
+                            <label for="form:locName">#{msg['lbl.name']}</label>
+                            <p:inputText id="locName" value="#{saleLocationMb.selected.name}" maxlength="120" required="true"
+                                         requiredMessage="#{msg['lbl.name']}: #{msg['msg.required']}"/>
+                        </div>
+                        <div class="field span-2">
+                            <label for="form:locType">#{msg['pos.lbl.locationType']}</label>
+                            <p:selectOneMenu id="locType" value="#{saleLocationMb.selected.locationType}">
+                                <f:selectItem itemLabel="#{msg['lbl.select']}" itemValue="#{null}" noSelectionOption="true"/>
+                                <f:selectItems value="#{saleLocationMb.locationTypes}" var="t"
+                                               itemLabel="#{saleLocationMb.typeLabel(t)}" itemValue="#{t}"/>
+                            </p:selectOneMenu>
+                        </div>
+                        <div class="field span-2">
+                            <label for="form:locAddress">#{msg['lbl.address']}</label>
+                            <p:inputTextarea id="locAddress" value="#{saleLocationMb.selected.address}" rows="2"
+                                             maxlength="250" autoResize="false"/>
+                        </div>
+                    </div>
+                    <f:facet name="footer">
+                        <p:commandButton value="#{msg['action.save']}" icon="pi pi-check"
+                                         actionListener="#{saleLocationMb.save}" update=":form:table :messages"
+                                         styleClass="ui-button-primary"/>
+                        <p:commandButton value="#{msg['action.cancel']}" icon="pi pi-times"
+                                         onclick="PF('saleLocationDialog').hide()" type="button"
+                                         styleClass="ui-button-secondary"/>
+                    </f:facet>
+                </p:dialog>
+
+                <p:confirmDialog global="true">
+                    <p:commandButton value="#{msg['action.yes']}" type="button"
+                                     styleClass="ui-confirmdialog-yes ui-button-primary"/>
+                    <p:commandButton value="#{msg['action.no']}" type="button"
+                                     styleClass="ui-confirmdialog-no ui-button-secondary"/>
+                </p:confirmDialog>
+            </h:form>
+        </div>
+    </ui:define>
+</ui:composition>

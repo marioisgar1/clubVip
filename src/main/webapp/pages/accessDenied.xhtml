@@ -1,0 +1,17 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:ui="jakarta.faces.facelets"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <div class="card">
+            <div class="page-header">
+                <span class="page-icon"><i class="pi pi-lock"></i></span>
+                <h2>#{msg['accessDenied.title']}</h2>
+            </div>
+            <p>#{msg['accessDenied.text']}</p>
+            <h:outputLink value="#{request.contextPath}/pages/dashboard.xhtml" styleClass="ui-button ui-button-secondary">
+                <span class="ui-button-text">#{msg['action.back']}</span>
+            </h:outputLink>
+        </div>
+    </ui:define>
+</ui:composition>

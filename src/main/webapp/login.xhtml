@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="http://primefaces.org/ui">
+<f:view locale="#{sessionMb.locale}">
+<h:head>
+    <title>#{msg['app.title']} - #{msg['login.title']}</title>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <link rel="icon" type="image/png" href="#{request.contextPath}/resources/img/favicon.png"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Playfair+Display:wght@500;600;700&amp;display=swap"/>
+    <link rel="stylesheet" href="#{request.contextPath}/resources/css/clubvip.css?v=20261007a"/>
+</h:head>
+<h:body styleClass="#{sessionMb.themeClass}">
+    <div class="login-lang">
+        <h:form id="langForm">
+            <p:selectOneMenu value="#{sessionMb.language}" style="width:120px">
+                <f:selectItem itemValue="es" itemLabel="#{msg['lang.es']}"/>
+                <f:selectItem itemValue="en" itemLabel="#{msg['lang.en']}"/>
+                <p:ajax event="change" listener="#{sessionMb.changeLanguage(sessionMb.language)}"
+                        oncomplete="window.location.reload()"/>
+            </p:selectOneMenu>
+        </h:form>
+    </div>
+
+    <div class="login-wrapper">
+        <div class="login-card">
+            <div class="login-header">
+                <h:graphicImage library="img" name="logo.svg" alt="Club VIP"/>
+                <span class="login-caption">#{msg['app.caption']}</span>
+                <h1 class="login-title">#{msg['login.title']}</h1>
+            </div>
+            <h:form id="loginForm" styleClass="login-body">
+                <p:messages showDetail="true" closable="true"/>
+                <div class="field">
+                    <label for="loginForm:username">#{msg['login.username']}</label>
+                    <p:inputText id="username" value="#{loginMb.username}" required="true"
+                                 requiredMessage="#{msg['login.username.required']}"/>
+                </div>
+                <div class="field">
+                    <label for="loginForm:password">#{msg['login.password']}</label>
+                    <p:password id="password" value="#{loginMb.password}" required="true" feedback="false"
+                                requiredMessage="#{msg['login.password.required']}"/>
+                </div>
+                <p:commandButton id="btnLogin" value="#{msg['login.signin']}" action="#{loginMb.doLogin}"
+                                 update="@form" styleClass="ui-button-primary w-100"
+                                 icon="pi pi-sign-in"/>
+                <div class="login-links">
+                    <h:outputLink value="#{request.contextPath}/register.xhtml">
+                        <i class="pi pi-building"></i>&#160;#{msg['login.register']}
+                    </h:outputLink>
+                    <h:outputLink value="#{request.contextPath}/index.xhtml" styleClass="muted">
+                        <i class="pi pi-arrow-left"></i>&#160;#{msg['landing.login.back']}
+                    </h:outputLink>
+                    <span class="muted">#{msg['login.askus']}
+                        <a class="wa-link" target="_blank" rel="noopener"
+                           href="#{loginMb.whatsappLink}">
+                            <i class="pi pi-whatsapp"></i>#{msg['login.whatsapp']}</a>
+                    </span>
+                </div>
+            </h:form>
+        </div>
+    </div>
+</h:body>
+</f:view>
+</html>

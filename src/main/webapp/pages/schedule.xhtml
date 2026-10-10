@@ -1,0 +1,129 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <div class="card">
+            <div class="page-header">
+                <span class="page-icon"><i class="pi pi-calendar"></i></span>
+                <h2>#{msg['op.schedule.title']}</h2>
+                <span class="page-subtitle">#{scheduleMb.weekCount} #{msg['op.day.count']}</span>
+            </div>
+
+            <h:form id="form">
+                <p:toolbar>
+                    <p:toolbarGroup>
+                        <p:commandButton icon="pi pi-chevron-left" title="#{msg['op.schedule.prev']}"
+                                         actionListener="#{scheduleMb.previousWeek}" update="@form :messages"
+                                         styleClass="ui-button-secondary"/>
+                        <p:commandButton value="#{msg['op.schedule.today']}" actionListener="#{scheduleMb.thisWeek}"
+                                         update="@form :messages" styleClass="ui-button-secondary ml-2"/>
+                        <p:commandButton icon="pi pi-chevron-right" title="#{msg['op.schedule.next']}"
+                                         actionListener="#{scheduleMb.nextWeek}" update="@form :messages"
+                                         styleClass="ui-button-secondary ml-2"/>
+                        <span class="ml-2" style="font-weight:600">#{msg['op.schedule.week']} #{scheduleMb.weekLabel}</span>
+                    </p:toolbarGroup>
+                    <p:toolbarGroup align="right">
+                        <p:selectOneMenu value="#{scheduleMb.employeeId}" style="min-width:200px">
+                            <f:selectItem itemLabel="#{msg['op.schedule.allEmployees']}" itemValue="#{null}" noSelectionOption="true"/>
+                            <f:selectItems value="#{scheduleMb.employees}" var="e" itemLabel="#{e.fullName}" itemValue="#{e.id}"/>
+                            <p:ajax listener="#{scheduleMb.onEmployeeChange}" update="grid"/>
+                        </p:selectOneMenu>
+                        <p:commandButton value="#{msg['op.appointment.new']}" icon="pi pi-plus"
+                                         actionListener="#{bookingMb.openNew}" update=":bookingForm :messages"
+                                         oncomplete="PF('bookingDlg').show()" rendered="#{sessionMb.admin}" styleClass="ml-2"/>
+                    </p:toolbarGroup>
+                </p:toolbar>
+
+                <!-- legend -->
+                <div class="flex wrap gap-2 mt-2 mb-2 small">
+                    <span class="muted">#{msg['op.schedule.legend']}:</span>
+                    <ui:repeat var="e" value="#{scheduleMb.employees}">
+                        <span class="legend-item"><span class="legend-dot" style="background:#{scheduleMb.employeeColor(e.id)}"></span>#{e.fullName}</span>
+                    </ui:repeat>
+                </div>
+
+                <!-- week grid -->
+                <p:outputPanel id="grid">
+                    <div class="schedule-grid" style="grid-template-columns:#{scheduleMb.gridColumns}">
+                        <div class="head"></div>
+                        <ui:repeat var="d" value="#{scheduleMb.days}">
+                            <div class="head #{scheduleMb.isToday(d) ? 'today' : ''}">#{scheduleMb.dayLabel(d)}</div>
+                        </ui:repeat>
+                        <ui:repeat var="hr" value="#{scheduleMb.hours}">
+                            <div class="hour">#{scheduleMb.hourLabel(hr)}</div>
+                            <ui:repeat var="d" value="#{scheduleMb.days}">
+                                <div class="slot #{scheduleMb.isBreak(hr) ? 'slot-blocked' : ''} #{scheduleMb.isPast(d) ? 'slot-past' : ''}">
+                                    <h:panelGroup rendered="#{scheduleMb.isBreak(hr)}" styleClass="muted">#{msg['op.schedule.break']}</h:panelGroup>
+                                    <ui:repeat var="a" value="#{scheduleMb.cell(d, hr)}">
+                                        <p:commandLink actionListener="#{appointmentActionsMb.open(a)}" process="@this"
+                                                       update=":apptDetailForm :messages" oncomplete="PF('apptDetailDlg').show()"
+                                                       styleClass="chip #{a.appointmentStatus eq 'DONE' ? 'chip-done' : ''}"
+                                                       style="border-left-color:#{scheduleMb.employeeColor(a.employeeId)}"
+                                                       title="#{a.customerName} · #{a.startTime}-#{a.endTime}">
+                                            <span class="chip-time">#{a.startTime}</span>
+                                            <span class="chip-title">#{a.serviceName} &#183; #{a.employeeName}</span>
+                                            <span class="#{scheduleMb.statusBadge(a.appointmentStatus)} chip-badge">#{msg['status.'.concat(a.appointmentStatus)]}</span>
+                                        </p:commandLink>
+                                    </ui:repeat>
+                                    <p:commandLink actionListener="#{bookingMb.openForDate(d)}" process="@this"
+                                                   update=":bookingForm :messages" oncomplete="PF('bookingDlg').show()"
+                                                   rendered="#{sessionMb.admin and not scheduleMb.isPast(d) and not scheduleMb.isBreak(hr)}"
+                                                   styleClass="chip-add" title="#{msg['op.appointment.new']}">+</p:commandLink>
+                                </div>
+                            </ui:repeat>
+                        </ui:repeat>
+                    </div>
+                </p:outputPanel>
+
+                <!-- occupancy (admins) -->
+                <h:panelGroup rendered="#{sessionMb.admin}" layout="block" styleClass="mt-3">
+                    <h3 class="section-title"><i class="pi pi-chart-bar gold"></i>&#160;#{msg['op.schedule.occupancy']}</h3>
+                    <h:panelGroup rendered="#{empty scheduleMb.occupancy}" layout="block" styleClass="empty-state">
+                        <i class="pi pi-chart-bar"></i>#{msg['msg.noData']}</h:panelGroup>
+                    <ui:repeat var="o" value="#{scheduleMb.occupancy}">
+                        <div class="occ-row">
+                            <span class="occ-name"><span class="legend-dot" style="background:#{scheduleMb.employeeColor(o.employeeId)}"></span>#{o.employeeName}
+                                <span class="muted">#{o.specialty}</span></span>
+                            <span class="occ-bar"><span class="occ-fill" style="width:#{scheduleMb.occupancyWidth(o)}%"></span></span>
+                            <span class="occ-pct">#{scheduleMb.occupancyWidth(o)}%
+                                <span class="muted small">(#{o.bookedMinutes} / #{o.availableMinutes} #{msg['lbl.minutes']})</span></span>
+                        </div>
+                    </ui:repeat>
+                </h:panelGroup>
+            </h:form>
+        </div>
+
+        <ui:include src="/WEB-INF/includes/appointmentDialogs.xhtml">
+            <ui:param name="owner" value="#{scheduleMb}"/>
+        </ui:include>
+        <ui:include src="/WEB-INF/includes/bookingDialog.xhtml">
+            <ui:param name="owner" value="#{scheduleMb}"/>
+        </ui:include>
+
+        <style type="text/css">
+            .legend-item { display: inline-flex; align-items: center; gap: .35rem; margin-right: .6rem; }
+            .legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: .3rem; }
+            .schedule-grid .chip { display: block; background: var(--vip-surface-2); border: 1px solid var(--vip-border);
+                border-left: 3px solid var(--vip-gold-deep); border-radius: 4px; padding: .2rem .35rem; margin-bottom: .2rem;
+                color: var(--vip-text); text-decoration: none; line-height: 1.25; }
+            .schedule-grid .chip:hover { border-color: var(--vip-gold-deep); }
+            .schedule-grid .chip-done { background: rgba(14,122,67,.12); }
+            .schedule-grid .chip-time { font-weight: 700; margin-right: .3rem; }
+            .schedule-grid .chip-title { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .schedule-grid .chip-badge { font-size: .6rem; padding: .05rem .4rem; }
+            .schedule-grid .chip-add { display: block; text-align: center; color: var(--vip-text-muted); text-decoration: none;
+                font-weight: 700; opacity: .35; }
+            .schedule-grid .slot:hover .chip-add { opacity: 1; color: var(--vip-gold-deep); }
+            .occ-row { display: grid; grid-template-columns: 220px 1fr 160px; gap: .75rem; align-items: center; padding: .4rem 0;
+                border-bottom: 1px solid var(--vip-border); }
+            .occ-name { font-weight: 600; display: flex; align-items: center; gap: .3rem; flex-wrap: wrap; }
+            .occ-bar { display: block; height: 12px; background: var(--vip-surface-2); border-radius: 999px; overflow: hidden; }
+            .occ-fill { display: block; height: 100%; background: var(--vip-gold); border-radius: 999px; }
+            .occ-pct { font-weight: 600; text-align: right; }
+            @media (max-width: 700px) { .occ-row { grid-template-columns: 1fr; gap: .25rem; } .occ-pct { text-align: left; } }
+        </style>
+    </ui:define>
+</ui:composition>

@@ -1,0 +1,171 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/public-template.xhtml">
+    <ui:param name="pb" value="#{publicStoreMb}"/>
+    <!-- Link preview (WhatsApp, Facebook…): the shared product (?p=id) with its photo, else the store. -->
+    <ui:define name="meta">
+        <ui:fragment rendered="#{publicStoreMb.found}">
+            <meta name="description" content="#{publicStoreMb.shareDescription}"/>
+            <meta property="og:type" content="#{publicStoreMb.openOnLoad ? 'product' : 'website'}"/>
+            <meta property="og:title" content="#{publicStoreMb.shareTitle}"/>
+            <meta property="og:description" content="#{publicStoreMb.shareDescription}"/>
+            <meta property="og:url" content="#{publicStoreMb.shareUrl}"/>
+            <ui:fragment rendered="#{not empty publicStoreMb.shareImage}">
+                <meta property="og:image" content="#{publicStoreMb.shareImage}"/>
+            </ui:fragment>
+        </ui:fragment>
+    </ui:define>
+    <ui:define name="content">
+        <h:form id="form">
+            <h:panelGroup rendered="#{not publicStoreMb.hasStore}" layout="block" styleClass="pub-empty">
+                <i class="pi pi-shopping-bag"></i>
+                <h2>#{msg['pub.store.disabled']}</h2>
+                <h:panelGroup rendered="#{publicStoreMb.hasAppointments}">
+                    <a class="pub-primary" href="#{publicStoreMb.citasLink}"><i class="pi pi-calendar"></i>&#160;#{msg['pub.store.goBook']}</a>
+                </h:panelGroup>
+            </h:panelGroup>
+
+            <h:panelGroup rendered="#{publicStoreMb.hasStore}" layout="block">
+                <!-- Línea / Outlet (only when the store has both) -->
+                <p:outputPanel id="sections" rendered="#{publicStoreMb.hasSections}" styleClass="pub-sections">
+                    <p:commandLink action="#{publicStoreMb.showLine('line')}" process="@this" update=":form:sections :form:grid"
+                                   styleClass="pub-section#{publicStoreMb.line eq 'line' ? ' active' : ''}">
+                        #{msg['pub.store.line']} <span class="pub-section-count">#{publicStoreMb.lineCount}</span>
+                    </p:commandLink>
+                    <p:commandLink action="#{publicStoreMb.showLine('outlet')}" process="@this" update=":form:sections :form:grid"
+                                   styleClass="pub-section outlet#{publicStoreMb.line eq 'outlet' ? ' active' : ''}">
+                        <i class="pi pi-tag"></i>&#160;#{msg['pub.store.outlet']} <span class="pub-section-count">#{publicStoreMb.outletCount}</span>
+                    </p:commandLink>
+                </p:outputPanel>
+                <div class="pub-filters">
+                    <span class="ui-input-icon-left pub-search">
+                        <i class="pi pi-search"></i>
+                        <p:inputText value="#{publicStoreMb.query}" placeholder="#{msg['pub.store.search']}">
+                            <p:ajax event="keyup" delay="300" listener="#{publicStoreMb.resetPage}" update=":form:grid"/>
+                        </p:inputText>
+                    </span>
+                    <p:selectOneMenu value="#{publicStoreMb.family}" rendered="#{publicStoreMb.families.size() gt 1}">
+                        <f:selectItem itemLabel="#{msg['pub.store.allFamilies']}" itemValue=""/>
+                        <f:selectItems value="#{publicStoreMb.families}"/>
+                        <p:ajax listener="#{publicStoreMb.resetPage}" update=":form:grid"/>
+                    </p:selectOneMenu>
+                    <p:selectOneMenu value="#{publicStoreMb.brand}" rendered="#{publicStoreMb.brands.size() gt 1}">
+                        <f:selectItem itemLabel="#{msg['pub.store.allBrands']}" itemValue=""/>
+                        <f:selectItems value="#{publicStoreMb.brands}"/>
+                        <p:ajax listener="#{publicStoreMb.resetPage}" update=":form:grid"/>
+                    </p:selectOneMenu>
+                    <p:selectOneMenu value="#{publicStoreMb.model}" rendered="#{publicStoreMb.models.size() gt 1}">
+                        <f:selectItem itemLabel="#{msg['pub.store.allModels']}" itemValue=""/>
+                        <f:selectItems value="#{publicStoreMb.models}"/>
+                        <p:ajax listener="#{publicStoreMb.resetPage}" update=":form:grid"/>
+                    </p:selectOneMenu>
+                </div>
+
+                <p:outputPanel id="grid">
+                    <p class="muted small">#{publicStoreMb.filtered.size()} #{msg['pub.store.count']}</p>
+                    <h:panelGroup rendered="#{empty publicStoreMb.filtered}" layout="block" styleClass="pub-empty small">
+                        #{publicStoreMb.total eq 0 ? msg['pub.store.none'] : msg['pub.store.noMatch']}
+                    </h:panelGroup>
+                    <div class="pub-grid">
+                        <ui:repeat value="#{publicStoreMb.visible}" var="pr">
+                            <p:commandLink action="#{publicStoreMb.select(pr)}" process="@this" update=":form:productDlg"
+                                           oncomplete="PF('productDlg').show()" styleClass="pub-product">
+                                <div class="pub-photo">
+                                    <h:panelGroup rendered="#{pr.outlet}" styleClass="pub-outlet-badge">#{msg['pub.store.outlet']}</h:panelGroup>
+                                    <img src="#{publicStoreMb.photoUrl(pr)}" alt="" loading="lazy"
+                                         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
+                                    <span class="pub-photo-empty" style="display:none"><i class="pi pi-image"></i></span>
+                                </div>
+                                <span class="pub-product-name">#{pr.name}</span>
+                                <span class="pub-product-meta">#{pr.brandName}#{not empty pr.familyName ? ' · '.concat(pr.familyName) : ''}#{not empty pr.size ? ' · '.concat(pr.size) : ''}</span>
+                                <span class="pub-product-price">#{sessionMb.fmtMoney(pr.price)}</span>
+                            </p:commandLink>
+                        </ui:repeat>
+                    </div>
+                    <h:panelGroup rendered="#{publicStoreMb.hasMore}" layout="block" style="text-align:center;margin:1rem 0">
+                        <p:commandButton value="#{msg['pub.store.more']}" icon="pi pi-angle-down" action="#{publicStoreMb.showMore}"
+                                         process="@this" update=":form:grid" styleClass="ui-button-secondary"/>
+                    </h:panelGroup>
+                </p:outputPanel>
+
+                <p:dialog id="productDlg" widgetVar="productDlg" modal="true" responsive="true" width="440" styleClass="pub-product-dlg"
+                          header="#{publicStoreMb.selected.name}" closeOnEscape="true" fitViewport="true">
+                    <h:panelGroup rendered="#{publicStoreMb.selected ne null}" layout="block" styleClass="pub-product-detail">
+                        <!-- Gallery: main photo with arrows / swipe and a strip of thumbnails when there is more than one. -->
+                        <div class="pub-photo big pub-gallery" ontouchstart="pubGallerySwipeStart(event)" ontouchend="pubGallerySwipeEnd(this, event)">
+                            <img class="pub-gallery-main" src="#{publicStoreMb.selectedMainPhotoUrl}" alt=""
+                                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
+                            <span class="pub-photo-empty" style="display:none"><i class="pi pi-image"></i></span>
+                            <ui:fragment rendered="#{publicStoreMb.selectedPhotoIds.size() gt 1}">
+                                <button type="button" class="pub-gallery-nav prev" onclick="pubGalleryStep(this, -1)"><i class="pi pi-angle-left"></i></button>
+                                <button type="button" class="pub-gallery-nav next" onclick="pubGalleryStep(this, 1)"><i class="pi pi-angle-right"></i></button>
+                                <span class="pub-gallery-count">1 / #{publicStoreMb.selectedPhotoIds.size()}</span>
+                            </ui:fragment>
+                        </div>
+                        <ui:fragment rendered="#{publicStoreMb.selectedPhotoIds.size() gt 1}">
+                            <div class="pub-thumbs">
+                                <ui:repeat value="#{publicStoreMb.selectedPhotoIds}" var="phId" varStatus="st">
+                                    <button type="button" class="pub-thumb#{st.first ? ' active' : ''}" onclick="pubGalleryShow(this, #{st.index})">
+                                        <img src="#{publicStoreMb.storePhotoUrl(phId)}" alt="" loading="lazy"/>
+                                    </button>
+                                </ui:repeat>
+                            </div>
+                        </ui:fragment>
+                        <div class="pub-product-price big">#{sessionMb.fmtMoney(publicStoreMb.selected.price)}
+                            <h:panelGroup rendered="#{publicStoreMb.selected.outlet}" styleClass="pub-outlet-badge inline">#{msg['pub.store.outlet']}</h:panelGroup>
+                        </div>
+                        <h:panelGroup rendered="#{not empty publicStoreMb.selected.shortDescription}" layout="block">#{publicStoreMb.selected.shortDescription}</h:panelGroup>
+                        <dl class="pub-specs">
+                            <h:panelGroup rendered="#{not empty publicStoreMb.selected.familyName}"><dt>#{msg['pub.store.family']}</dt><dd>#{publicStoreMb.selected.familyName}</dd></h:panelGroup>
+                            <h:panelGroup rendered="#{not empty publicStoreMb.selected.brandName}"><dt>#{msg['pub.store.brand']}</dt><dd>#{publicStoreMb.selected.brandName}</dd></h:panelGroup>
+                            <h:panelGroup rendered="#{not empty publicStoreMb.selected.modelName}"><dt>#{msg['pub.store.model']}</dt><dd>#{publicStoreMb.selected.modelName}</dd></h:panelGroup>
+                            <h:panelGroup rendered="#{not empty publicStoreMb.selected.size}"><dt>#{msg['pub.store.size']}</dt><dd>#{publicStoreMb.selected.size}</dd></h:panelGroup>
+                            <h:panelGroup rendered="#{not empty publicStoreMb.selected.color}"><dt>#{msg['pub.store.color']}</dt><dd>#{publicStoreMb.selected.color}</dd></h:panelGroup>
+                            <h:panelGroup rendered="#{not empty publicStoreMb.selected.barcode}"><dt>#{msg['pub.store.code']}</dt><dd>#{publicStoreMb.selected.barcode}</dd></h:panelGroup>
+                        </dl>
+                        <h:panelGroup rendered="#{not empty publicStoreMb.whatsApp(publicStoreMb.selected)}">
+                            <a class="pub-primary wide" href="#{publicStoreMb.whatsApp(publicStoreMb.selected)}" target="_blank" rel="noopener">
+                                <i class="pi pi-whatsapp"></i>&#160;#{msg['pub.store.interested']}</a>
+                        </h:panelGroup>
+                    </h:panelGroup>
+                </p:dialog>
+                <ui:fragment rendered="#{publicStoreMb.openOnLoad}">
+                    <script>window.addEventListener('load', function () { PF('productDlg').show(); });</script>
+                </ui:fragment>
+                <script>
+                    // Product detail gallery: the thumbnails hold the photo URLs; the main image follows them.
+                    function pubGalleryShow(el, i) {
+                        var root = el.closest('.pub-product-detail');
+                        var thumbs = root.querySelectorAll('.pub-thumb');
+                        if (!thumbs.length) return;
+                        i = (i + thumbs.length) % thumbs.length;
+                        var main = root.querySelector('.pub-gallery-main');
+                        main.style.display = '';
+                        main.nextElementSibling.style.display = 'none';
+                        main.src = thumbs[i].querySelector('img').src;
+                        thumbs.forEach(function (t, k) { t.classList.toggle('active', k === i); });
+                        thumbs[i].scrollIntoView({block: 'nearest', inline: 'nearest'});
+                        root.dataset.index = i;
+                        var count = root.querySelector('.pub-gallery-count');
+                        if (count) count.textContent = (i + 1) + ' / ' + thumbs.length;
+                    }
+                    function pubGalleryStep(el, delta) {
+                        var root = el.closest('.pub-product-detail');
+                        pubGalleryShow(el, (parseInt(root.dataset.index || '0', 10)) + delta);
+                    }
+                    var pubSwipeX = null;
+                    function pubGallerySwipeStart(e) { pubSwipeX = e.touches[0].clientX; }
+                    function pubGallerySwipeEnd(el, e) {
+                        if (pubSwipeX === null) return;
+                        var dx = e.changedTouches[0].clientX - pubSwipeX;
+                        pubSwipeX = null;
+                        if (Math.abs(dx) > 40) pubGalleryStep(el, dx &lt; 0 ? 1 : -1);
+                    }
+                </script>
+            </h:panelGroup>
+        </h:form>
+    </ui:define>
+</ui:composition>

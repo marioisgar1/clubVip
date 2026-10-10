@@ -1,0 +1,119 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <div class="card">
+            <div class="page-header">
+                <span class="page-icon"><i class="pi pi-key"></i></span>
+                <h2>#{msg['menu.security.permission']}</h2>
+            </div>
+
+            <h:form id="form">
+                <p:toolbar>
+                    <p:toolbarGroup>
+                        <p:commandButton value="#{msg['action.new']}" icon="pi pi-plus" actionListener="#{permissionMb.prepareNew}"
+                                         update="dialog" oncomplete="PF('permissionDialog').show()"/>
+                    </p:toolbarGroup>
+                </p:toolbar>
+
+                <p:dataTable id="table" var="pe" value="#{permissionMb.permissions}" rows="15" paginator="true"
+                             paginatorPosition="bottom" paginatorAlwaysVisible="false" reflow="true" stripedRows="true"
+                             emptyMessage="#{msg['msg.noData']}" rowKey="#{pe.id}" widgetVar="permissionTable" styleClass="mt-2"
+                             filteredValue="#{permissionMb.filtered}" globalFilterOnly="true">
+                    <f:facet name="header">
+                        <div class="flex-between">
+                            <span class="muted">#{msg['rel.permission.list']}</span>
+                            <p:inputText onkeyup="PF('permissionTable').filter()" placeholder="#{msg['action.search']}"/>
+                        </div>
+                    </f:facet>
+                    <p:column headerText="#{msg['lbl.code']}" sortBy="#{pe.code}" filterBy="#{pe.code}" width="190">
+                        <code>#{pe.code}</code>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.name']}" sortBy="#{pe.name}" filterBy="#{pe.name}">
+                        <span style="font-weight:600">#{permissionMb.nameOf(pe)}</span>
+                        <div class="muted small">#{pe.name}</div>
+                    </p:column>
+                    <p:column headerText="#{msg['rel.permission.menuGroup']}" sortBy="#{pe.menuGroup}" filterBy="#{pe.menuGroup}" width="130">
+                        <span class="badge badge-muted">#{pe.menuGroup}</span>
+                    </p:column>
+                    <p:column headerText="#{msg['rel.permission.outcomeWeb']}" sortBy="#{pe.outcomeWeb}" filterBy="#{pe.outcomeWeb}">
+                        <span class="small">#{pe.outcomeWeb}</span>
+                        <h:panelGroup rendered="#{not empty pe.outcomeApp}" layout="block" styleClass="muted small">app: #{pe.outcomeApp}</h:panelGroup>
+                    </p:column>
+                    <p:column headerText="#{msg['rel.permission.icon']}" width="60">
+                        <i class="#{pe.icon} gold"></i>
+                    </p:column>
+                    <p:column headerText="#{msg['rel.permission.sortOrder']}" width="70" sortBy="#{pe.sortOrder}" styleClass="text-right">#{pe.sortOrder}</p:column>
+                    <p:column headerText="#{msg['rel.permission.isMenu']}" width="80">
+                        <span class="#{pe.isMenu ? 'badge badge-success' : 'badge badge-muted'}">#{pe.isMenu ? msg['action.yes'] : msg['action.no']}</span>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.actions']}" width="110" styleClass="text-right">
+                        <p:commandButton icon="pi pi-pencil" title="#{msg['action.edit']}" actionListener="#{permissionMb.prepareEdit(pe)}"
+                                         update=":form:dialog" oncomplete="PF('permissionDialog').show()" styleClass="ui-button-rounded ui-button-text"/>
+                        <p:commandButton icon="pi pi-trash" title="#{msg['action.delete']}" actionListener="#{permissionMb.delete(pe)}"
+                                         update="table :messages" styleClass="ui-button-rounded ui-button-text ui-button-danger">
+                            <p:confirm header="#{msg['action.confirm']}" message="#{msg['msg.confirmDelete']}" icon="pi pi-exclamation-triangle"/>
+                        </p:commandButton>
+                    </p:column>
+                </p:dataTable>
+
+                <p:dialog id="dialog" header="#{msg['menu.security.permission']}" widgetVar="permissionDialog" modal="true"
+                          width="600" resizable="false" responsive="true">
+                    <div class="form-grid">
+                        <div class="field required">
+                            <label>#{msg['lbl.code']}</label>
+                            <p:inputText value="#{permissionMb.selected.code}" maxlength="50" style="text-transform:uppercase"/>
+                        </div>
+                        <div class="field required">
+                            <label>#{msg['lbl.name']}</label>
+                            <p:inputText value="#{permissionMb.selected.name}" maxlength="100"/>
+                            <span class="hint">#{msg['rel.permission.name.hint']}</span>
+                        </div>
+                        <div class="field span-2">
+                            <label>#{msg['lbl.description']}</label>
+                            <p:inputText value="#{permissionMb.selected.description}" maxlength="255"/>
+                        </div>
+                        <div class="field required">
+                            <label>#{msg['rel.permission.menuGroup']}</label>
+                            <p:inputText value="#{permissionMb.selected.menuGroup}" maxlength="30" style="text-transform:uppercase"/>
+                            <span class="hint">#{msg['rel.permission.menuGroup.hint']}</span>
+                        </div>
+                        <div class="field">
+                            <label>#{msg['rel.permission.icon']}</label>
+                            <p:inputText value="#{permissionMb.selected.icon}" maxlength="60" placeholder="pi pi-home"/>
+                        </div>
+                        <div class="field">
+                            <label>#{msg['rel.permission.outcomeWeb']}</label>
+                            <p:inputText value="#{permissionMb.selected.outcomeWeb}" maxlength="120" placeholder="/pages/example.xhtml"/>
+                        </div>
+                        <div class="field">
+                            <label>#{msg['rel.permission.outcomeApp']}</label>
+                            <p:inputText value="#{permissionMb.selected.outcomeApp}" maxlength="120"/>
+                        </div>
+                        <div class="field">
+                            <label>#{msg['rel.permission.sortOrder']}</label>
+                            <p:spinner value="#{permissionMb.selected.sortOrder}" min="0" max="999"/>
+                        </div>
+                        <div class="field">
+                            <label>#{msg['rel.permission.isMenu']}</label>
+                            <p:toggleSwitch value="#{permissionMb.selected.isMenu}"/>
+                        </div>
+                    </div>
+                    <f:facet name="footer">
+                        <p:commandButton value="#{msg['action.save']}" icon="pi pi-check" action="#{permissionMb.save}" update="dialog table :messages"/>
+                        <p:commandButton value="#{msg['action.cancel']}" icon="pi pi-times" type="button"
+                                         onclick="PF('permissionDialog').hide()" styleClass="ui-button-secondary"/>
+                    </f:facet>
+                </p:dialog>
+
+                <p:confirmDialog global="true">
+                    <p:commandButton value="#{msg['action.yes']}" type="button" styleClass="ui-confirmdialog-yes"/>
+                    <p:commandButton value="#{msg['action.no']}" type="button" styleClass="ui-confirmdialog-no ui-button-secondary"/>
+                </p:confirmDialog>
+            </h:form>
+        </div>
+    </ui:define>
+</ui:composition>

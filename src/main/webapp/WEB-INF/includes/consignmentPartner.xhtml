@@ -1,0 +1,15 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:ui="jakarta.faces.facelets">
+    <!-- Logo (or monogram), name and city of the other business of a consignment row. Expects var "a" (ConsignmentAgreementVo). -->
+    <div class="cons-partner">
+        <h:panelGroup rendered="#{not empty a.partner.logoBase64}">
+            <img class="cons-logo-sm" src="#{consignmentMb.logoSrc(a.partner)}" alt=""/>
+        </h:panelGroup>
+        <h:panelGroup rendered="#{empty a.partner.logoBase64}" styleClass="cons-monogram cons-monogram-sm">#{consignmentMb.initials(a.partner)}</h:panelGroup>
+        <span>
+            <b>#{a.partner.name}</b>
+            <span class="muted" style="display:block">#{a.partner.city}</span>
+        </span>
+    </div>
+</ui:composition>

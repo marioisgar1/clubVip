@@ -1,0 +1,215 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <style>
+            .occupancy-list { list-style:none; margin:0; padding:0; }
+            .occupancy-list li { display:grid; grid-template-columns: 220px 1fr 70px; gap:1rem; align-items:center; padding:.5rem 0; border-bottom:1px solid var(--vip-border); }
+            .occupancy-list li:last-child { border-bottom:none; }
+            .occupancy-list .who { display:flex; flex-direction:column; }
+            .occupancy-list .who .name { font-weight:600; }
+            .occupancy-list .pct { font-family:var(--vip-font-heading); font-size:1.15rem; text-align:right; }
+            @media (max-width:700px) { .occupancy-list li { grid-template-columns: 1fr 60px; } .occupancy-list li .bar { grid-column: span 2; } }
+            .chart-box { height:280px; }
+        </style>
+        <div class="page-header">
+            <span class="page-icon"><i class="pi pi-chart-bar"></i></span>
+            <h2>#{msg['rel.report.title']}</h2>
+            <span class="page-subtitle">#{msg['rel.report.subtitle']}</span>
+        </div>
+
+        <h:form id="form">
+            <div class="card">
+                <p:toolbar styleClass="mb-2">
+                    <p:toolbarGroup>
+                        <span class="field-inline" style="margin-right:1rem">
+                            <label>#{msg['rel.report.from']}</label>
+                            <p:datePicker value="#{reportMb.from}" pattern="dd/MM/yyyy" showIcon="true" style="width:150px"/>
+                        </span>
+                        <span class="field-inline" style="margin-right:1rem">
+                            <label>#{msg['rel.report.to']}</label>
+                            <p:datePicker value="#{reportMb.to}" pattern="dd/MM/yyyy" showIcon="true" style="width:150px"/>
+                        </span>
+                        <p:commandButton value="#{msg['rel.report.apply']}" icon="pi pi-search" actionListener="#{reportMb.applyRange}"
+                                         update="tabs :messages" style="margin-top:1rem"/>
+                    </p:toolbarGroup>
+                </p:toolbar>
+
+                <p:tabView id="tabs">
+                    <!-- (a) Day -->
+                    <p:tab title="#{msg['rel.report.tab.day']}">
+                        <div class="flex gap-2 wrap mb-2">
+                            <span class="field-inline">
+                                <label>#{msg['lbl.date']}</label>
+                                <p:datePicker value="#{reportMb.date}" pattern="dd/MM/yyyy" showIcon="true" style="width:150px">
+                                    <p:ajax event="dateSelect" listener="#{reportMb.loadDaily}" update="dayPanel :messages"/>
+                                </p:datePicker>
+                            </span>
+                        </div>
+                        <h:panelGroup id="dayPanel" layout="block">
+                            <div class="kpi-grid">
+                                <div class="kpi-card kpi-ink">
+                                    <span class="kpi-label">#{msg['rel.report.day.appointments']}</span>
+                                    <span class="kpi-value">#{reportMb.daily.appointmentsCount != null ? reportMb.daily.appointmentsCount : 0}</span>
+                                    <span class="kpi-hint">#{msg['rel.report.day.attended']}: #{reportMb.daily.attended != null ? reportMb.daily.attended : 0}
+                                        &#183; #{msg['rel.report.day.pending']}: #{reportMb.daily.pending != null ? reportMb.daily.pending : 0}</span>
+                                </div>
+                                <div class="kpi-card">
+                                    <span class="kpi-label">#{msg['rel.report.day.cancelled']}</span>
+                                    <span class="kpi-value">#{reportMb.daily.cancelled != null ? reportMb.daily.cancelled : 0}</span>
+                                    <span class="kpi-hint">#{msg['rel.report.day.noShow']}: #{reportMb.daily.noShow != null ? reportMb.daily.noShow : 0}</span>
+                                </div>
+                                <div class="kpi-card">
+                                    <span class="kpi-label">#{msg['rel.report.revenue']}</span>
+                                    <span class="kpi-value">#{sessionMb.fmtMoney(reportMb.daily.revenue)}</span>
+                                    <span class="kpi-hint">#{msg['rel.report.day.services']}: #{sessionMb.fmtMoney(reportMb.daily.servicesRevenue)}
+                                        &#183; #{msg['rel.report.day.products']}: #{sessionMb.fmtMoney(reportMb.daily.productsRevenue)}</span>
+                                </div>
+                            </div>
+                            <div class="kpi-grid" style="grid-template-columns:repeat(auto-fit, minmax(280px, 1fr))">
+                                <div>
+                                    <h3 class="section-title">#{msg['rel.report.byEmployee']}</h3>
+                                    <p:dataTable var="e" value="#{reportMb.daily.byEmployee}" reflow="true" stripedRows="true" emptyMessage="#{msg['msg.noData']}">
+                                        <p:column headerText="#{msg['lbl.employee']}">#{e.name}</p:column>
+                                        <p:column headerText="#{msg['rel.report.count']}" styleClass="text-right" width="70">#{e.count}</p:column>
+                                        <p:column headerText="#{msg['rel.report.amount']}" styleClass="text-right">#{sessionMb.fmtMoney(e.amount)}</p:column>
+                                    </p:dataTable>
+                                </div>
+                                <div>
+                                    <h3 class="section-title">#{msg['rel.report.byService']}</h3>
+                                    <p:dataTable var="s" value="#{reportMb.daily.byService}" reflow="true" stripedRows="true" emptyMessage="#{msg['msg.noData']}">
+                                        <p:column headerText="#{msg['lbl.service']}">#{s.name}</p:column>
+                                        <p:column headerText="#{msg['rel.report.count']}" styleClass="text-right" width="70">#{s.count}</p:column>
+                                        <p:column headerText="#{msg['rel.report.amount']}" styleClass="text-right">#{sessionMb.fmtMoney(s.amount)}</p:column>
+                                    </p:dataTable>
+                                </div>
+                                <div>
+                                    <h3 class="section-title">#{msg['rel.report.byPaymentMethod']}</h3>
+                                    <p:dataTable var="pm" value="#{reportMb.daily.byPaymentMethod}" reflow="true" stripedRows="true" emptyMessage="#{msg['msg.noData']}">
+                                        <p:column headerText="#{msg['rel.report.paymentMethod']}">#{reportMb.paymentMethodLabel(pm.name)}</p:column>
+                                        <p:column headerText="#{msg['rel.report.count']}" styleClass="text-right" width="70">#{pm.count}</p:column>
+                                        <p:column headerText="#{msg['rel.report.amount']}" styleClass="text-right">#{sessionMb.fmtMoney(pm.amount)}</p:column>
+                                    </p:dataTable>
+                                </div>
+                            </div>
+                        </h:panelGroup>
+                    </p:tab>
+
+                    <!-- (b) Revenue -->
+                    <p:tab title="#{msg['rel.report.tab.revenue']}">
+                        <div class="kpi-grid">
+                            <div class="kpi-card kpi-ink">
+                                <span class="kpi-label">#{msg['rel.report.revenue']}</span>
+                                <span class="kpi-value">#{sessionMb.fmtMoney(reportMb.revenue.total)}</span>
+                                <span class="kpi-hint">#{sessionMb.fmtDay(reportMb.revenue.from)} - #{sessionMb.fmtDay(reportMb.revenue.to)}</span>
+                            </div>
+                            <div class="kpi-card">
+                                <span class="kpi-label">#{msg['rel.report.day.appointments']}</span>
+                                <span class="kpi-value">#{reportMb.revenue.appointments != null ? reportMb.revenue.appointments : 0}</span>
+                                <span class="kpi-hint">#{msg['rel.report.attendedInRange']}</span>
+                            </div>
+                            <div class="kpi-card">
+                                <span class="kpi-label">#{msg['rel.report.variation']}</span>
+                                <span class="kpi-value">
+                                    <span class="#{reportMb.variationBadge}" style="font-size:1rem;padding:.3rem .8rem">
+                                        <h:outputText value="#{reportMb.variation}"><f:convertNumber maxFractionDigits="1" minFractionDigits="1"/></h:outputText>%
+                                    </span>
+                                </span>
+                                <span class="kpi-hint">#{msg['rel.report.previousPeriod']}: #{sessionMb.fmtMoney(reportMb.revenue.previousPeriodTotal)}</span>
+                            </div>
+                        </div>
+                        <h:panelGroup rendered="#{reportMb.hasRevenueDays}" layout="block" styleClass="chart-box mb-2">
+                            <p:barChart model="#{reportMb.revenueChart}" style="width:100%;height:100%"/>
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{not reportMb.hasRevenueDays}" layout="block" styleClass="empty-state">
+                            <i class="pi pi-chart-bar"></i>#{msg['msg.noData']}
+                        </h:panelGroup>
+                        <p:dataTable var="d" value="#{reportMb.revenue.days}" rows="15" paginator="true" paginatorPosition="bottom"
+                                     paginatorAlwaysVisible="false" reflow="true" stripedRows="true" emptyMessage="#{msg['msg.noData']}">
+                            <p:column headerText="#{msg['lbl.date']}" sortBy="#{d.date}">#{sessionMb.fmtDay(d.date)}</p:column>
+                            <p:column headerText="#{msg['rel.report.day.appointments']}" styleClass="text-right" sortBy="#{d.appointments}">#{d.appointments}</p:column>
+                            <p:column headerText="#{msg['rel.report.revenue']}" styleClass="text-right" sortBy="#{d.revenue}">#{sessionMb.fmtMoney(d.revenue)}</p:column>
+                        </p:dataTable>
+                    </p:tab>
+
+                    <!-- (c) Top services -->
+                    <p:tab title="#{msg['rel.report.tab.topServices']}">
+                        <p:dataTable var="t" value="#{reportMb.topServices}" rows="15" paginator="true" paginatorPosition="bottom"
+                                     paginatorAlwaysVisible="false" reflow="true" stripedRows="true" emptyMessage="#{msg['msg.noData']}" rowIndexVar="i">
+                            <p:column headerText="#" width="50" styleClass="text-right">#{i + 1}</p:column>
+                            <p:column headerText="#{msg['lbl.service']}" sortBy="#{t.name}">#{t.name}</p:column>
+                            <p:column headerText="#{msg['rel.report.count']}" styleClass="text-right" sortBy="#{t.count}">#{t.count}</p:column>
+                            <p:column headerText="#{msg['rel.report.amount']}" styleClass="text-right" sortBy="#{t.amount}">#{sessionMb.fmtMoney(t.amount)}</p:column>
+                        </p:dataTable>
+                    </p:tab>
+
+                    <!-- (d) Occupancy -->
+                    <p:tab title="#{msg['rel.report.tab.occupancy']}">
+                        <p class="muted">#{msg['rel.report.occupancy.hint']} #{sessionMb.fmtDay(reportMb.from.toString())}</p>
+                        <h:panelGroup rendered="#{empty reportMb.occupancy}" layout="block" styleClass="empty-state">
+                            <i class="pi pi-clock"></i>#{msg['msg.noData']}
+                        </h:panelGroup>
+                        <ul class="occupancy-list">
+                            <ui:repeat var="o" value="#{reportMb.occupancy}">
+                                <li>
+                                    <span class="who">
+                                        <span class="name">#{o.employeeName}</span>
+                                        <span class="muted">#{o.specialty}
+                                            &#183; #{o.bookedMinutes != null ? o.bookedMinutes : 0} / #{o.availableMinutes != null ? o.availableMinutes : 0} #{msg['lbl.minutes']}</span>
+                                    </span>
+                                    <span class="bar"><p:progressBar value="#{reportMb.occupancyValue(o)}" labelTemplate="{value}%" style="height:16px"/></span>
+                                    <span class="pct">#{reportMb.occupancyValue(o)}%</span>
+                                </li>
+                            </ui:repeat>
+                        </ul>
+                    </p:tab>
+
+                    <!-- (e) Product margin -->
+                    <p:tab title="#{msg['rel.report.tab.margin']}">
+                        <div class="summary-bar">
+                            <span class="summary-item">#{msg['rel.report.revenue']}: <strong>#{sessionMb.fmtMoney(reportMb.marginRevenueTotal)}</strong></span>
+                            <span class="summary-item">#{msg['rel.report.margin']}: <strong class="gold">#{sessionMb.fmtMoney(reportMb.marginTotal)}</strong></span>
+                        </div>
+                        <p:dataTable var="m" value="#{reportMb.productMargin}" rows="15" paginator="true" paginatorPosition="bottom"
+                                     paginatorAlwaysVisible="false" reflow="true" stripedRows="true" emptyMessage="#{msg['msg.noData']}">
+                            <p:column headerText="#{msg['rel.report.product']}" sortBy="#{m.productName}">#{m.productName}</p:column>
+                            <p:column headerText="#{msg['rel.report.unitsSold']}" styleClass="text-right" sortBy="#{m.unitsSold}">#{m.unitsSold}</p:column>
+                            <p:column headerText="#{msg['rel.report.revenue']}" styleClass="text-right" sortBy="#{m.revenue}">#{sessionMb.fmtMoney(m.revenue)}</p:column>
+                            <p:column headerText="#{msg['rel.report.cost']}" styleClass="text-right" sortBy="#{m.cost}">#{sessionMb.fmtMoney(m.cost)}</p:column>
+                            <p:column headerText="#{msg['rel.report.margin']}" styleClass="text-right" sortBy="#{m.margin}"><strong>#{sessionMb.fmtMoney(m.margin)}</strong></p:column>
+                            <p:column headerText="%" styleClass="text-right" width="80" sortBy="#{m.marginPercent}">
+                                <h:outputText value="#{m.marginPercent}"><f:convertNumber maxFractionDigits="1"/></h:outputText>
+                            </p:column>
+                        </p:dataTable>
+                    </p:tab>
+
+                    <!-- (f) Customers -->
+                    <p:tab title="#{msg['rel.report.tab.customers']}">
+                        <div class="kpi-grid">
+                            <div class="kpi-card kpi-ink">
+                                <span class="kpi-label">#{msg['rel.report.customers.total']}</span>
+                                <span class="kpi-value">#{reportMb.customerStats.total != null ? reportMb.customerStats.total : 0}</span>
+                            </div>
+                            <div class="kpi-card">
+                                <span class="kpi-label">#{msg['rel.report.customers.newWeek']}</span>
+                                <span class="kpi-value">#{reportMb.customerStats.newThisWeek != null ? reportMb.customerStats.newThisWeek : 0}</span>
+                            </div>
+                            <div class="kpi-card">
+                                <span class="kpi-label">#{msg['rel.report.customers.inactive']}</span>
+                                <span class="kpi-value">#{reportMb.customerStats.inactive != null ? reportMb.customerStats.inactive : 0}</span>
+                            </div>
+                            <div class="kpi-card">
+                                <span class="kpi-label">#{msg['rel.report.customers.birthdaysToday']}</span>
+                                <span class="kpi-value">#{reportMb.customerStats.birthdaysToday != null ? reportMb.customerStats.birthdaysToday : 0}</span>
+                                <span class="kpi-hint">#{msg['rel.report.customers.birthdaysMonth']}: #{reportMb.customerStats.birthdaysMonth != null ? reportMb.customerStats.birthdaysMonth : 0}</span>
+                            </div>
+                        </div>
+                    </p:tab>
+                </p:tabView>
+            </div>
+        </h:form>
+    </ui:define>
+</ui:composition>

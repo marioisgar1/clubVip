@@ -1,0 +1,81 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <div class="page-header">
+            <span class="page-icon"><i class="pi pi-wallet"></i></span>
+            <h2>#{msg['rel.myPayroll.title']}</h2>
+            <span class="page-subtitle">#{myPayrollMb.employee.fullName}
+                <h:outputText rendered="#{not empty myPayrollMb.employee.specialty}" value=" &#183; #{myPayrollMb.employee.specialty}"/>
+            </span>
+        </div>
+
+        <h:form id="form">
+            <div class="kpi-grid">
+                <div class="kpi-card kpi-ink">
+                    <span class="kpi-label">#{msg['rel.myPayroll.scheme']}</span>
+                    <span class="kpi-value" style="font-size:1.3rem">
+                        <h:outputText rendered="#{not empty myPayrollMb.employee.payScheme}" value="#{msg['rel.payScheme.'.concat(myPayrollMb.employee.payScheme)]}"/>
+                    </span>
+                    <span class="kpi-hint">
+                        <h:outputText rendered="#{not empty myPayrollMb.employee.commissionPercent}" value="#{msg['rel.payroll.commission']} #{myPayrollMb.employee.commissionPercent}%"/>
+                        <h:outputText rendered="#{not empty myPayrollMb.employee.salaryAmount}" value=" &#183; #{msg['rel.payroll.salary']} #{sessionMb.fmtMoney(myPayrollMb.employee.salaryAmount)}"/>
+                    </span>
+                </div>
+                <div class="kpi-card">
+                    <span class="kpi-label">#{msg['rel.myPayroll.frequency']}</span>
+                    <span class="kpi-value" style="font-size:1.3rem">
+                        <h:outputText rendered="#{not empty myPayrollMb.employee.payFrequency}" value="#{msg['rel.payFrequency.'.concat(myPayrollMb.employee.payFrequency)]}"/>
+                    </span>
+                    <span class="kpi-hint">#{msg['rel.myPayroll.currentPeriod']}: #{myPayrollMb.currentPeriodLabel}</span>
+                </div>
+                <div class="kpi-card">
+                    <span class="kpi-label">#{msg['rel.payroll.services']}</span>
+                    <span class="kpi-value">#{myPayrollMb.current.servicesCount != null ? myPayrollMb.current.servicesCount : 0}</span>
+                    <span class="kpi-hint">#{msg['rel.payroll.billed']}: #{sessionMb.fmtMoney(myPayrollMb.current.billedAmount)}</span>
+                </div>
+                <div class="kpi-card">
+                    <span class="kpi-label">#{msg['rel.payroll.commission']}</span>
+                    <span class="kpi-value">#{sessionMb.fmtMoney(myPayrollMb.current.commissionAmount)}</span>
+                    <span class="kpi-hint">#{msg['rel.payroll.salary']}: #{sessionMb.fmtMoney(myPayrollMb.current.salaryAmount)}</span>
+                </div>
+                <div class="kpi-card">
+                    <span class="kpi-label">#{msg['rel.payroll.toPay']}</span>
+                    <span class="kpi-value gold">#{sessionMb.fmtMoney(myPayrollMb.current.totalAmount)}</span>
+                    <span class="kpi-hint">#{msg['rel.myPayroll.currentPeriod']}</span>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="card">
+                    <h3 class="section-title"><i class="pi pi-percentage gold"></i>&#160;#{msg['rel.myPayroll.currentCommissions']}</h3>
+                    <p:dataTable var="c" value="#{myPayrollMb.commissions}" rows="10" paginator="true" paginatorPosition="bottom"
+                                 paginatorAlwaysVisible="false" reflow="true" stripedRows="true" emptyMessage="#{msg['rel.payroll.noPending']}">
+                        <p:column headerText="#{msg['lbl.date']}" sortBy="#{c.earnedDate}" width="110">#{sessionMb.fmtDay(c.earnedDate)}</p:column>
+                        <p:column headerText="#{msg['lbl.service']}" sortBy="#{c.serviceName}">#{c.serviceName}</p:column>
+                        <p:column headerText="#{msg['rel.payroll.serviceAmount']}" styleClass="text-right">#{sessionMb.fmtMoney(c.serviceAmount)}</p:column>
+                        <p:column headerText="%" styleClass="text-right" width="60">#{c.commissionPercent}</p:column>
+                        <p:column headerText="#{msg['rel.payroll.commission']}" styleClass="text-right"><strong>#{sessionMb.fmtMoney(c.commissionAmount)}</strong></p:column>
+                    </p:dataTable>
+                </div>
+                <div class="card">
+                    <h3 class="section-title"><i class="pi pi-history gold"></i>&#160;#{msg['rel.myPayroll.history']}</h3>
+                    <p:dataTable var="pp" value="#{myPayrollMb.periods}" rows="10" paginator="true" paginatorPosition="bottom"
+                                 paginatorAlwaysVisible="false" reflow="true" stripedRows="true" emptyMessage="#{msg['msg.noData']}">
+                        <p:column headerText="#{msg['rel.payroll.period']}" sortBy="#{pp.periodStart}">
+                            #{sessionMb.fmtDay(pp.periodStart)} - #{sessionMb.fmtDay(pp.periodEnd)}
+                        </p:column>
+                        <p:column headerText="#{msg['rel.payroll.services']}" styleClass="text-right" width="70">#{pp.servicesCount}</p:column>
+                        <p:column headerText="#{msg['lbl.total']}" styleClass="text-right"><strong>#{sessionMb.fmtMoney(pp.totalAmount)}</strong></p:column>
+                        <p:column headerText="#{msg['lbl.status']}" width="110">
+                            <span class="#{myPayrollMb.statusBadge(pp.payStatus)}">#{msg['status.'.concat(pp.payStatus)]}</span>
+                        </p:column>
+                    </p:dataTable>
+                </div>
+            </div>
+        </h:form>
+    </ui:define>
+</ui:composition>

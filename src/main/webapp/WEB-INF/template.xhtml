@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:ui="jakarta.faces.facelets"
+      xmlns:p="http://primefaces.org/ui">
+<f:view locale="#{sessionMb.locale}">
+<h:head>
+    <title>#{sessionMb.hasBusiness ? sessionMb.businessName.concat(' · Club VIP') : msg['app.title']}</title>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <link rel="icon" href="#{sessionMb.hasBusinessLogo ? sessionMb.businessLogoUrl : request.contextPath.concat('/resources/img/favicon.png')}"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Playfair+Display:wght@500;600;700&amp;display=swap"/>
+    <!-- Plain link with a version so a CSS change is not hidden by the Production resource cache. -->
+    <link rel="stylesheet" href="#{request.contextPath}/resources/css/clubvip.css?v=20261007b"/>
+</h:head>
+<h:body styleClass="#{sessionMb.themeClass}">
+
+    <div class="layout-topbar">
+        <div class="topbar-left">
+            <a href="#" class="sidebar-toggle" onclick="document.body.classList.toggle('sidebar-open');return false;"
+               title="#{msg['app.menu']}"><i class="pi pi-bars"></i></a>
+            <!-- Branding: a business with a logo shows only its logo; without one, its monogram and
+                 name. Users without a business (operator) keep the Club VIP wordmark. -->
+            <h:panelGroup id="topbarBrand" layout="block" styleClass="topbar-brand">
+                <a class="logo" href="#{request.contextPath}/pages/dashboard.xhtml" title="#{sessionMb.businessName}">
+                    <h:panelGroup rendered="#{sessionMb.hasBusinessLogo}">
+                        <img class="business-logo" src="#{sessionMb.businessLogoUrl}" alt="#{sessionMb.businessName}"/>
+                    </h:panelGroup>
+                    <h:panelGroup rendered="#{sessionMb.hasBusiness and not sessionMb.hasBusinessLogo}"
+                                  styleClass="business-monogram">#{sessionMb.businessInitials}</h:panelGroup>
+                    <h:graphicImage rendered="#{not sessionMb.hasBusiness}" library="img" name="logo.svg"
+                                    alt="Club VIP" styleClass="club-logo"/>
+                </a>
+                <h:panelGroup rendered="#{not sessionMb.hasBusinessLogo}" layout="block" styleClass="topbar-business">
+                    <span class="business-name">
+                        #{sessionMb.hasBusiness ? sessionMb.businessName : msg['app.caption']}
+                        <h:panelGroup rendered="#{sessionMb.businessVerified}" styleClass="verified-badge"
+                                      title="#{msg['lbl.verified']}">&#10004;</h:panelGroup>
+                    </span>
+                </h:panelGroup>
+            </h:panelGroup>
+        </div>
+        <div class="topbar-actions">
+            <h:form id="topbarForm">
+                <p:selectOneButton value="#{sessionMb.theme}" styleClass="theme-switch">
+                    <f:selectItem itemValue="light" itemLabel="#{msg['theme.light']}"/>
+                    <f:selectItem itemValue="dim" itemLabel="#{msg['theme.dim']}"/>
+                    <f:selectItem itemValue="dark" itemLabel="#{msg['theme.dark']}"/>
+                    <p:ajax event="change" listener="#{sessionMb.changeTheme(sessionMb.theme)}" update="@none"
+                            oncomplete="window.location.reload()"/>
+                </p:selectOneButton>
+                <p:selectOneMenu value="#{sessionMb.language}" styleClass="lang-switch" style="width:110px">
+                    <f:selectItem itemValue="es" itemLabel="#{msg['lang.es']}"/>
+                    <f:selectItem itemValue="en" itemLabel="#{msg['lang.en']}"/>
+                    <p:ajax event="change" listener="#{sessionMb.changeLanguage(sessionMb.language)}"
+                            oncomplete="window.location.reload()"/>
+                </p:selectOneMenu>
+                <span class="topbar-user" title="#{sessionMb.user.username}">
+                    <span class="avatar">#{sessionMb.initials}</span>
+                    <span class="topbar-user-text">
+                        <span class="user-name">#{sessionMb.user.fullName}</span>
+                        <span class="user-profile">#{sessionMb.user.profileName}</span>
+                    </span>
+                </span>
+                <p:commandLink action="#{sessionMb.logout}" title="#{msg['logout']}" styleClass="logout-link"
+                               ajax="false">
+                    <i class="pi pi-sign-out"></i>
+                </p:commandLink>
+            </h:form>
+        </div>
+    </div>
+
+    <div class="layout-sidebar">
+        <h:form id="menuForm">
+            <p:menu model="#{sessionMb.menuModel}"/>
+        </h:form>
+    </div>
+    <div class="sidebar-backdrop" onclick="document.body.classList.remove('sidebar-open')"></div>
+
+    <div class="layout-content">
+        <p:growl id="messages" showDetail="true" life="4000"/>
+        <ui:insert name="content"/>
+    </div>
+
+</h:body>
+</f:view>
+</html>

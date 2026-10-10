@@ -1,0 +1,419 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <h:form id="form">
+            <div class="page-header">
+                <span class="page-icon"><i class="pi pi-building"></i></span>
+                <h2>#{msg['menu.admin.business']}</h2>
+                <span class="page-subtitle">#{msg['cat.business.subtitle']}</span>
+            </div>
+
+            <!-- Header card: logo, name, category, verification and subscription -->
+            <p:outputPanel id="headerCard">
+                <div class="card cv-biz-header">
+                    <div class="cv-biz-logo">
+                        <h:panelGroup rendered="#{not empty businessMb.business.logoBase64}">
+                            <img alt="" src="data:image/png;base64,#{businessMb.business.logoBase64}"/>
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{empty businessMb.business.logoBase64}" styleClass="cv-biz-logo-empty">
+                            <i class="pi pi-image"></i>
+                        </h:panelGroup>
+                    </div>
+                    <div class="cv-biz-info">
+                        <h3 style="margin:0">#{businessMb.business.name}</h3>
+                        <span class="muted">#{businessMb.business.categoryName}
+                            <h:outputText value=" &#183; #{businessMb.business.specialty}" rendered="#{not empty businessMb.business.specialty}"/>
+                        </span>
+                        <div class="flex wrap gap-2 mt-2">
+                            <h:panelGroup rendered="#{businessMb.verified}" styleClass="badge badge-success" style="font-size:.85rem">
+                                <span class="verified-badge" style="margin-right:.3rem">&#10004;</span>#{msg['cat.business.verified']}
+                            </h:panelGroup>
+                            <h:panelGroup rendered="#{businessMb.pendingVerification}" styleClass="badge badge-warning" style="font-size:.85rem">
+                                <i class="pi pi-clock"></i>&#160;#{msg['cat.business.inReview']}
+                            </h:panelGroup>
+                            <h:panelGroup rendered="#{businessMb.rejected}" styleClass="badge badge-danger" style="font-size:.85rem">
+                                <i class="pi pi-times-circle"></i>&#160;#{msg['cat.business.rejected']}
+                            </h:panelGroup>
+                            <h:panelGroup rendered="#{not empty businessMb.business.subscriptionStatus}"
+                                          styleClass="#{businessMb.subscriptionBadge()}" style="font-size:.85rem">
+                                #{msg['cat.business.subscription']}: #{msg['status.'.concat(businessMb.business.subscriptionStatus)]}
+                                <h:outputText value=" &#183; #{msg['cat.business.until']} #{sessionMb.fmtDay(businessMb.business.subscriptionUntil)}"
+                                              rendered="#{not empty businessMb.business.subscriptionUntil}"/>
+                            </h:panelGroup>
+                        </div>
+                        <h:panelGroup rendered="#{businessMb.rejected}" layout="block" styleClass="cv-reject mt-2">
+                            <strong>#{msg['cat.business.rejectionReason']}:</strong> #{businessMb.business.rejectionReason}
+                            <span class="muted" style="display:block">#{msg['cat.business.reupload.hint']}</span>
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{businessMb.verified and not empty businessMb.business.verifiedAt}" styleClass="muted" layout="block">
+                            #{msg['cat.business.verifiedAt']}
+                            <h:outputText value="#{businessMb.business.verifiedAt}">
+                                <f:convertDateTime pattern="dd/MM/yyyy HH:mm" timeZone="America/Mexico_City"/>
+                            </h:outputText>
+                        </h:panelGroup>
+                        <span class="muted" style="display:block">
+                            <span class="stars">#{businessMb.business.ratingAverage != null ? businessMb.business.ratingAverage : 0}</span>
+                            &#160;(#{businessMb.business.ratingCount != null ? businessMb.business.ratingCount : 0} #{msg['dashboard.kpi.reviews']})
+                        </span>
+                    </div>
+                </div>
+            </p:outputPanel>
+
+            <div class="cv-biz-grid">
+                <!-- Profile form -->
+                <div class="card">
+                    <h3 class="section-title"><i class="pi pi-pencil gold"></i>&#160;#{msg['cat.business.profile']}</h3>
+                    <div class="form-grid">
+                        <div class="form-section">#{msg['register.section.business']}</div>
+                        <div class="field required">
+                            <label for="form:name">#{msg['register.businessName']}</label>
+                            <p:inputText id="name" value="#{businessMb.business.name}" required="true" maxlength="120"
+                                         requiredMessage="#{msg['register.businessName']}: #{msg['msg.required']}"/>
+                        </div>
+                        <div class="field">
+                            <label for="form:ownerName">#{msg['register.ownerName']}</label>
+                            <p:inputText id="ownerName" value="#{businessMb.business.ownerName}" maxlength="120"/>
+                        </div>
+                        <div class="field">
+                            <label for="form:category">#{msg['lbl.category']}</label>
+                            <p:selectOneMenu id="category" value="#{businessMb.business.categoryId}">
+                                <f:selectItem itemLabel="#{msg['lbl.select']}" itemValue="#{null}" noSelectionOption="true"/>
+                                <f:selectItems value="#{businessMb.categories}" var="c" itemLabel="#{c.name}" itemValue="#{c.id}"/>
+                            </p:selectOneMenu>
+                        </div>
+                        <div class="field">
+                            <label for="form:specialty">#{msg['lbl.specialty']}</label>
+                            <p:inputText id="specialty" value="#{businessMb.business.specialty}" maxlength="120"/>
+                        </div>
+                        <div class="field span-2">
+                            <label for="form:description">#{msg['lbl.description']}</label>
+                            <p:inputTextarea id="description" value="#{businessMb.business.description}" rows="3" autoResize="false"
+                                             maxlength="1000" placeholder="#{msg['cat.business.description.hint']}"/>
+                        </div>
+                        <div class="field span-2">
+                            <label>#{msg['register.mode']}</label>
+                            <p:selectOneRadio id="operationMode" value="#{businessMb.business.operationMode}" layout="responsive" columns="3">
+                                <f:selectItem itemValue="FIXED"  itemLabel="#{msg['register.mode.FIXED']}"/>
+                                <f:selectItem itemValue="MOBILE" itemLabel="#{msg['register.mode.MOBILE']}"/>
+                                <f:selectItem itemValue="ONLINE" itemLabel="#{msg['register.mode.ONLINE']}"/>
+                            </p:selectOneRadio>
+                            <span class="hint">#{msg['register.mode.hint']}</span>
+                        </div>
+                        <div class="field span-2">
+                            <label for="form:address">#{msg['lbl.address']}</label>
+                            <p:inputText id="address" value="#{businessMb.business.address}" maxlength="250"/>
+                        </div>
+                        <div class="field">
+                            <label for="form:city">#{msg['lbl.city']}</label>
+                            <p:inputText id="city" value="#{businessMb.business.city}" maxlength="120"/>
+                        </div>
+                        <div class="field">
+                            <label>#{msg['cat.business.coordinates']}</label>
+                            <div class="flex gap-2">
+                                <p:inputNumber id="latitude" value="#{businessMb.business.latitude}" decimalPlaces="6" minValue="-90" maxValue="90"
+                                               placeholder="#{msg['cat.business.latitude']}" thousandSeparator="" style="width:50%"/>
+                                <p:inputNumber id="longitude" value="#{businessMb.business.longitude}" decimalPlaces="6" minValue="-180" maxValue="180"
+                                               placeholder="#{msg['cat.business.longitude']}" thousandSeparator="" style="width:50%"/>
+                            </div>
+                            <span class="hint">#{msg['cat.business.coordinates.hint']}</span>
+                        </div>
+
+                        <div class="form-section">#{msg['pos.business.section.modules']}</div>
+                        <div class="field">
+                            <div class="check-inline">
+                                <p:toggleSwitch id="moduleAppointments" value="#{businessMb.business.moduleAppointments}"/>
+                                <label for="form:moduleAppointments" style="margin:0">#{msg['pos.business.moduleAppointments']}</label>
+                            </div>
+                            <span class="hint">#{msg['pos.business.moduleAppointments.hint']}</span>
+                        </div>
+                        <div class="field">
+                            <div class="check-inline">
+                                <p:toggleSwitch id="moduleSales" value="#{businessMb.business.moduleSales}"/>
+                                <label for="form:moduleSales" style="margin:0">#{msg['pos.business.moduleSales']}</label>
+                            </div>
+                            <span class="hint">#{msg['pos.business.moduleSales.hint']}</span>
+                        </div>
+                        <div class="field">
+                            <div class="check-inline">
+                                <p:toggleSwitch id="moduleConsignment" value="#{businessMb.business.moduleConsignment}"/>
+                                <label for="form:moduleConsignment" style="margin:0">#{msg['pos.business.moduleConsignment']}</label>
+                            </div>
+                            <span class="hint">#{msg['pos.business.moduleConsignment.hint']}</span>
+                        </div>
+                        <div class="field">
+                            <div class="check-inline">
+                                <p:toggleSwitch id="pointsEnabled" value="#{businessMb.business.pointsEnabled}"/>
+                                <label for="form:pointsEnabled" style="margin:0">#{msg['rw.business.points']}</label>
+                            </div>
+                            <span class="hint">#{msg['rw.business.points.hint']}</span>
+                        </div>
+                        <div class="field">
+                            <label for="form:pesosPerPoint">#{msg['rw.business.pesosPerPoint']}</label>
+                            <p:inputNumber id="pesosPerPoint" value="#{businessMb.business.pointsPesosPerPoint}" minValue="1" maxValue="100000"
+                                           decimalPlaces="0" symbol="$ " symbolPosition="p"/>
+                            <span class="hint">#{msg['rw.business.pesosPerPoint.hint']}</span>
+                        </div>
+                        <div class="field">
+                            <label for="form:exchangeMaxDays">#{msg['pos.business.exchangeMaxDays']}</label>
+                            <p:spinner id="exchangeMaxDays" value="#{businessMb.business.exchangeMaxDays}" min="0" max="365"/>
+                            <span class="hint">#{msg['pos.business.exchangeMaxDays.hint']}</span>
+                        </div>
+                        <div class="field">
+                            <span class="hint" style="margin-top:1.6rem;display:block">#{msg['pos.business.modules.hint']}</span>
+                        </div>
+
+                        <div class="form-section">#{msg['cat.business.section.hours']}</div>
+                        <div class="field span-2">
+                            <ui:include src="/WEB-INF/includes/weekly-hours.xhtml">
+                                <ui:param name="week" value="#{businessMb.week}"/>
+                                <ui:param name="withBreak" value="#{true}"/>
+                            </ui:include>
+                        </div>
+                        <div class="field">
+                            <label for="form:slotMinutes">#{msg['cat.business.slotMinutes']}</label>
+                            <p:selectOneMenu id="slotMinutes" value="#{businessMb.business.slotMinutes}">
+                                <f:selectItem itemValue="15" itemLabel="15 #{msg['lbl.minutes']}"/>
+                                <f:selectItem itemValue="20" itemLabel="20 #{msg['lbl.minutes']}"/>
+                                <f:selectItem itemValue="30" itemLabel="30 #{msg['lbl.minutes']}"/>
+                                <f:selectItem itemValue="60" itemLabel="60 #{msg['lbl.minutes']}"/>
+                            </p:selectOneMenu>
+                            <span class="hint">#{msg['cat.business.slotMinutes.hint']}</span>
+                        </div>
+                        <div class="field">
+                            <label for="form:bookingHorizonDays">#{msg['cat.business.bookingHorizon']}</label>
+                            <p:spinner id="bookingHorizonDays" value="#{businessMb.business.bookingHorizonDays}" min="1" max="365"/>
+                            <span class="hint">#{msg['cat.business.bookingHorizon.hint']}</span>
+                        </div>
+
+                        <div class="form-section">#{msg['register.section.contact']}</div>
+                        <div class="field">
+                            <label for="form:contactPhone">#{msg['register.contactPhone']}</label>
+                            <p:inputText id="contactPhone" value="#{businessMb.business.contactPhone}" maxlength="20"/>
+                            <span class="hint">#{msg['register.contactPhone.hint']}</span>
+                        </div>
+                        <div class="field">
+                            <label for="form:groupPhone">#{msg['register.groupPhone']}</label>
+                            <p:inputText id="groupPhone" value="#{businessMb.business.groupPhone}" maxlength="20"/>
+                        </div>
+                        <div class="field">
+                            <label for="form:bankName">#{msg['register.bankName']}</label>
+                            <p:inputText id="bankName" value="#{businessMb.business.bankName}" maxlength="80"/>
+                        </div>
+                        <div class="field">
+                            <label for="form:bankAccount">#{msg['register.bankAccount']}</label>
+                            <p:inputText id="bankAccount" value="#{businessMb.business.bankAccount}" maxlength="30"
+                                         placeholder="#{empty businessMb.business.bankAccountMasked ? '' : businessMb.business.bankAccountMasked}"/>
+                            <span class="hint">#{msg['cat.business.bankAccount.hint']}</span>
+                        </div>
+                        <div class="field span-2">
+                            <span class="muted">
+                                <i class="pi #{businessMb.business.onlinePaymentEnabled ? 'pi-check-circle gold' : 'pi-info-circle'}"></i>&#160;
+                                #{businessMb.business.onlinePaymentEnabled ? msg['cat.business.onlinePayment.on'] : msg['cat.business.onlinePayment.off']}
+                            </span>
+                        </div>
+
+                        <div class="form-section">#{msg['cat.business.section.customers']}</div>
+                        <div class="field span-2">
+                            <label for="form:autoReply">#{msg['cat.business.autoReply']}</label>
+                            <p:inputTextarea id="autoReply" value="#{businessMb.business.autoReplyMessage}" rows="3" autoResize="false"
+                                             maxlength="500" placeholder="#{msg['cat.business.autoReply.hint']}"/>
+                        </div>
+                        <div class="field">
+                            <label for="form:inactiveMonths">#{msg['cat.business.inactiveMonths']}</label>
+                            <p:spinner id="inactiveMonths" value="#{businessMb.business.inactiveMonths}" min="1" max="36"/>
+                            <span class="hint">#{msg['cat.business.inactiveMonths.hint']}</span>
+                        </div>
+                    </div>
+                    <div class="text-right mt-2">
+                        <p:commandButton value="#{msg['action.save']}" icon="pi pi-check" actionListener="#{businessMb.save}"
+                                         update="@form :messages" styleClass="ui-button-primary"/>
+                    </div>
+                </div>
+
+                <!-- Side actions -->
+                <div>
+                    <!-- Public links for social media (/b/{slug}/citas, /b/{slug}/tienda) -->
+                    <div class="card cv-links">
+                        <h3 class="section-title"><i class="pi pi-share-alt gold"></i>&#160;#{msg['links.title']}</h3>
+                        <p class="muted small" style="margin-top:0">#{msg['links.subtitle']}</p>
+                        <div class="field">
+                            <label for="form:slug">#{msg['links.slug']}</label>
+                            <p:inputText id="slug" value="#{businessMb.business.slug}" maxlength="60" style="width:100%"
+                                         onkeyup="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'-')"/>
+                            <span class="hint">#{msg['links.slug.hint']}</span>
+                        </div>
+                        <h:panelGroup rendered="#{not empty businessMb.business.slug}" layout="block">
+                            <div class="cv-link-row">
+                                <label>#{msg['links.page']}</label>
+                                <div class="cv-link-box">
+                                    <input type="text" readonly="readonly" value="#{businessMb.pageLink}" onclick="this.select()"/>
+                                    <button type="button" class="ui-button ui-button-secondary cv-copy" onclick="cvCopyLink(this)"
+                                            title="#{msg['links.copy']}"><i class="pi pi-copy"></i></button>
+                                    <a class="ui-button ui-button-secondary cv-copy" href="#{businessMb.pageLink}" target="_blank"
+                                       rel="noopener" title="#{msg['links.open']}"><i class="pi pi-external-link"></i></a>
+                                </div>
+                                <a class="cv-page-edit" href="#{request.contextPath}/pages/myPage.xhtml"><i class="pi pi-palette"></i>&#160;#{msg['links.page.edit']}</a>
+                            </div>
+                            <h:panelGroup rendered="#{businessMb.business.moduleAppointments}" layout="block" styleClass="cv-link-row">
+                                <label>#{msg['links.citas']}</label>
+                                <div class="cv-link-box">
+                                    <input type="text" readonly="readonly" value="#{businessMb.citasLink}" onclick="this.select()"/>
+                                    <button type="button" class="ui-button ui-button-secondary cv-copy" onclick="cvCopyLink(this)"
+                                            title="#{msg['links.copy']}"><i class="pi pi-copy"></i></button>
+                                    <a class="ui-button ui-button-secondary cv-copy" href="#{businessMb.citasLink}" target="_blank"
+                                       rel="noopener" title="#{msg['links.open']}"><i class="pi pi-external-link"></i></a>
+                                </div>
+                            </h:panelGroup>
+                            <h:panelGroup rendered="#{businessMb.business.moduleSales}" layout="block" styleClass="cv-link-row">
+                                <label>#{msg['links.tienda']}</label>
+                                <div class="cv-link-box">
+                                    <input type="text" readonly="readonly" value="#{businessMb.tiendaLink}" onclick="this.select()"/>
+                                    <button type="button" class="ui-button ui-button-secondary cv-copy" onclick="cvCopyLink(this)"
+                                            title="#{msg['links.copy']}"><i class="pi pi-copy"></i></button>
+                                    <a class="ui-button ui-button-secondary cv-copy" href="#{businessMb.tiendaLink}" target="_blank"
+                                       rel="noopener" title="#{msg['links.open']}"><i class="pi pi-external-link"></i></a>
+                                </div>
+                            </h:panelGroup>
+                            <span class="hint">#{msg['links.saveFirst']}</span>
+                        </h:panelGroup>
+                        <script type="text/javascript">
+                        //<![CDATA[
+                        function cvCopyLink(btn) {
+                            var input = btn.parentNode.querySelector('input');
+                            var done = function () {
+                                btn.innerHTML = '<i class="pi pi-check"></i>';
+                                setTimeout(function () { btn.innerHTML = '<i class="pi pi-copy"></i>'; }, 1500);
+                            };
+                            if (navigator.clipboard && window.isSecureContext) {
+                                navigator.clipboard.writeText(input.value).then(done);
+                            } else {
+                                input.select(); document.execCommand('copy'); done();
+                            }
+                        }
+                        //]]>
+                        </script>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="section-title"><i class="pi pi-image gold"></i>&#160;#{msg['cat.business.logo']}</h3>
+                        <p:inputTextarea id="logoB64" value="#{businessMb.newLogoBase64}" styleClass="logoB64" style="display:none"/>
+                        <div class="file-picker">
+                            <label class="ui-button ui-button-secondary" style="cursor:pointer">
+                                <i class="pi pi-image" style="margin-right:.4rem"></i>#{msg['register.chooseLogo']}
+                                <input type="file" accept="image/*" style="display:none" onchange="cvReadLogo(this)"/>
+                            </label>
+                            <img id="logoPreview" alt="" class="logo-preview" style="display:none"/>
+                        </div>
+                        <span class="hint" style="display:block;margin:.4rem 0">#{msg['register.logo.hint']}</span>
+                        <p:commandButton value="#{msg['cat.business.changeLogo']}" icon="pi pi-upload"
+                                         actionListener="#{businessMb.uploadLogo}" process="@this logoB64"
+                                         update=":form:headerCard :messages :topbarBrand" oncomplete="cvResetLogo()"
+                                         styleClass="ui-button-primary"/>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="section-title"><i class="pi pi-file gold"></i>&#160;#{msg['cat.business.license']}</h3>
+                        <p:outputPanel id="licenseStatus">
+                            <h:panelGroup rendered="#{businessMb.business.hasLicense}" layout="block" styleClass="mb-2">
+                                <i class="pi pi-file-pdf gold"></i>&#160;<strong>#{businessMb.business.licenseFileName}</strong>
+                                <span class="muted" style="display:block">
+                                    <h:outputText value="#{msg['cat.business.license.loaded']}" rendered="#{not businessMb.verified}"/>
+                                    <h:outputText value="#{msg['cat.business.license.verified']}" rendered="#{businessMb.verified}"/>
+                                </span>
+                            </h:panelGroup>
+                            <h:panelGroup rendered="#{not businessMb.business.hasLicense}" layout="block" styleClass="muted mb-2">
+                                #{businessMb.business.requiresLicense ? msg['cat.business.license.required'] : msg['cat.business.license.optional']}
+                            </h:panelGroup>
+                        </p:outputPanel>
+                        <p:inputTextarea id="licenseB64" value="#{businessMb.licenseBase64}" styleClass="licenseB64" style="display:none"/>
+                        <p:inputText id="licenseName" value="#{businessMb.licenseFileName}" styleClass="licenseName" style="display:none"/>
+                        <p:inputText id="licenseType" value="#{businessMb.licenseContentType}" styleClass="licenseType" style="display:none"/>
+                        <div class="file-picker">
+                            <label class="ui-button ui-button-secondary" style="cursor:pointer">
+                                <i class="pi pi-file" style="margin-right:.4rem"></i>#{msg['register.chooseLicense']}
+                                <input type="file" accept="application/pdf,image/*" style="display:none" onchange="cvReadLicense(this)"/>
+                            </label>
+                            <span id="licenseFileLabel" class="file-name"></span>
+                        </div>
+                        <span class="hint" style="display:block;margin:.4rem 0">#{msg['cat.business.license.hint']}</span>
+                        <p:commandButton value="#{msg['cat.business.uploadLicense']}" icon="pi pi-upload"
+                                         actionListener="#{businessMb.uploadLicense}" process="@this licenseB64 licenseName licenseType"
+                                         update=":form:headerCard :form:licenseStatus :messages" oncomplete="cvResetLicense()"
+                                         styleClass="ui-button-primary"/>
+                    </div>
+                </div>
+            </div>
+        </h:form>
+
+        <style type="text/css">
+            .cv-biz-header { display: flex; gap: 1.25rem; align-items: flex-start; }
+            .cv-biz-logo img, .cv-biz-logo-empty { width: 96px; height: 96px; object-fit: contain; border-radius: 12px; border: 1px solid var(--vip-border); background: var(--vip-ink); padding: 6px; }
+            .cv-biz-logo-empty { display: inline-flex; align-items: center; justify-content: center; color: var(--vip-gold); font-size: 2rem; box-sizing: border-box; }
+            .cv-biz-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .2rem; }
+            .cv-biz-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr); gap: 1rem; align-items: start; }
+            .cv-reject { padding: .6rem .8rem; border-radius: 8px; background: rgba(161,26,42,.10); border: 1px solid rgba(161,26,42,.25); }
+            @media (max-width: 900px) { .cv-biz-grid { grid-template-columns: 1fr; } .cv-biz-header { flex-direction: column; } }
+        </style>
+        <script type="text/javascript">
+        //<![CDATA[
+        function cvReadLogo(input) {
+            if (!input.files || !input.files[0]) { return; }
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                var img = new Image();
+                img.onload = function () {
+                    var max = 512;
+                    var scale = Math.min(1, max / Math.max(img.width, img.height));
+                    var w = Math.round(img.width * scale);
+                    var h = Math.round(img.height * scale);
+                    var canvas = document.createElement('canvas');
+                    canvas.width = w;
+                    canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    var dataUrl = canvas.toDataURL('image/png');
+                    var ta = document.querySelector('textarea.logoB64');
+                    if (ta) { ta.value = dataUrl; }
+                    var preview = document.getElementById('logoPreview');
+                    if (preview) { preview.src = dataUrl; preview.style.display = 'inline-block'; }
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+        function cvResetLogo() {
+            var ta = document.querySelector('textarea.logoB64');
+            if (ta) { ta.value = ''; }
+            var preview = document.getElementById('logoPreview');
+            if (preview) { preview.removeAttribute('src'); preview.style.display = 'none'; }
+        }
+        function cvReadLicense(input) {
+            if (!input.files || !input.files[0]) { return; }
+            var file = input.files[0];
+            if (file.size > 8 * 1024 * 1024) { alert('Max 8 MB'); input.value = ''; return; }
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                var ta = document.querySelector('textarea.licenseB64');
+                if (ta) { ta.value = e.target.result; }
+                var n = document.querySelector('input.licenseName');
+                if (n) { n.value = file.name; }
+                var t = document.querySelector('input.licenseType');
+                if (t) { t.value = file.type || 'application/octet-stream'; }
+                var lbl = document.getElementById('licenseFileLabel');
+                if (lbl) { lbl.textContent = file.name; }
+            };
+            reader.readAsDataURL(file);
+        }
+        function cvResetLicense() {
+            var ta = document.querySelector('textarea.licenseB64');
+            if (ta) { ta.value = ''; }
+            var lbl = document.getElementById('licenseFileLabel');
+            if (lbl) { lbl.textContent = ''; }
+        }
+        //]]>
+        </script>
+    </ui:define>
+</ui:composition>

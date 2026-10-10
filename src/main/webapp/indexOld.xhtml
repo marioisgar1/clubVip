@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="http://primefaces.org/ui"
+      lang="#{sessionMb.language}">
+<f:view locale="#{sessionMb.locale}">
+<h:head>
+    <title>#{msg['lp.title']}</title>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+    <meta name="description" content="#{msg['lp.hero.lead']}"/>
+    <link rel="icon" type="image/png" href="#{request.contextPath}/resources/img/favicon.png"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;600&amp;family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&amp;display=swap"/>
+    <link rel="stylesheet" href="#{request.contextPath}/resources/css/home.css?v=20261005b"/>
+</h:head>
+<h:body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10h17M8 14h2M14 14h2M8 17.5h2"/></symbol>
+    <symbol id="i-pos" viewBox="0 0 24 24"><path d="M6 3h12v18l-2-1.4-2 1.4-2-1.4-2 1.4-2-1.4L6 21z"/><path d="M9 8h6M9 11.5h6M9 15h3"/></symbol>
+    <symbol id="i-box" viewBox="0 0 24 24"><path d="M12 3 20 7v10l-8 4-8-4V7z"/><path d="m4 7 8 4 8-4M12 11v10"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.5 3.2-5.5 6.5-5.5s5.9 2 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.8c2 .7 3.2 2.5 3.5 5.2"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 20l1.3-3.9A8 8 0 1 1 8 19z"/><path d="M9 10.5h.01M12 10.5h.01M15 10.5h.01"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h4"/></symbol>
+    <symbol id="i-pct" viewBox="0 0 24 24"><path d="M19 5 5 19"/><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="17" r="2.5"/></symbol>
+    <symbol id="i-scan" viewBox="0 0 24 24"><path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16M8 9v6M11 9v6M14 9v6M17 9v6"/></symbol>
+    <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H18v4"/><rect x="4" y="9" width="16" height="11" rx="2"/><path d="M16 14.5h.01"/></symbol>
+    <symbol id="i-swap" viewBox="0 0 24 24"><path d="M4 8h13l-3.5-3.5M20 16H7l3.5 3.5"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v5M12 16h.01"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20h16M7 16v-4M11 16V8M15 16v-6M19 16V5"/></symbol>
+    <symbol id="i-badge" viewBox="0 0 24 24"><rect x="4" y="3.5" width="16" height="17" rx="2.5"/><circle cx="12" cy="10" r="2.8"/><path d="M8 17c.7-2 2.2-3 4-3s3.3 1 4 3"/></symbol>
+    <symbol id="i-store" viewBox="0 0 24 24"><path d="M4 9.5 5.5 4h13L20 9.5M4 9.5h16M4 9.5a2.7 2.7 0 0 0 5.3 0 2.7 2.7 0 0 0 5.4 0 2.7 2.7 0 0 0 5.3 0M5.5 12v8h13v-8M10 20v-4.5h4V20"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></symbol>
+</svg>
+
+<!-- ============================ NAV ============================ -->
+<header class="nav">
+    <div class="wrap">
+        <a class="logo" href="#top"><h:graphicImage library="img" name="logo.svg" alt="Club VIP"/></a>
+        <nav class="nav-links" aria-label="#{msg['lp.nav.aria']}">
+            <a href="#citas">#{msg['lp.v.citas']}</a>
+            <a href="#venta">#{msg['lp.v.pos']}</a>
+            <a href="#consignacion">#{msg['lp.v.cons']}</a>
+            <a href="#equipo">#{msg['lp.nav.payroll']}</a>
+            <a href="#vitrina">#{msg['lp.nav.link']}</a>
+            <a href="#para-quien">#{msg['lp.nav.who']}</a>
+        </nav>
+        <div class="nav-cta">
+            <h:form id="langForm" styleClass="lp-lang">
+                <p:selectOneMenu value="#{sessionMb.language}">
+                    <f:selectItem itemValue="es" itemLabel="#{msg['lang.es']}"/>
+                    <f:selectItem itemValue="en" itemLabel="#{msg['lang.en']}"/>
+                    <p:ajax event="change" listener="#{sessionMb.changeLanguage(sessionMb.language)}"
+                            oncomplete="window.location.reload()"/>
+                </p:selectOneMenu>
+            </h:form>
+            <a class="nav-login" href="#{request.contextPath}/login.xhtml">#{msg['lp.nav.login']}</a>
+            <a class="btn btn-gold" href="#{request.contextPath}/register.xhtml">#{msg['lp.cta.register']}</a>
+        </div>
+    </div>
+</header>
+
+<main>
+<!-- ============================ HERO ============================ -->
+<section class="ink hero" id="top">
+    <div class="wrap hero-grid">
+        <div>
+            <div class="eyebrow">#{msg['lp.hero.eyebrow']}</div>
+            <h1 role="tablist" aria-label="#{msg['lp.hero.aria']}" id="heroTabs">
+                <button type="button" class="hl" role="tab" id="tab-citas" aria-controls="p-citas" aria-selected="true"><span class="hl-tag">#{msg['lp.v.citas']}</span><h:outputText value="#{msg['lp.hero.l1']}" escape="false"/><span class="hl-bar"></span></button>
+                <button type="button" class="hl" role="tab" id="tab-venta" aria-controls="p-venta" aria-selected="false" tabindex="-1"><span class="hl-tag">#{msg['lp.v.pos']}</span><h:outputText value="#{msg['lp.hero.l2']}" escape="false"/></button>
+                <button type="button" class="hl" role="tab" id="tab-cons" aria-controls="p-cons" aria-selected="false" tabindex="-1"><span class="hl-tag">#{msg['lp.v.cons']}</span><h:outputText value="#{msg['lp.hero.l3']}" escape="false"/></button>
+                <button type="button" class="hl" role="tab" id="tab-team" aria-controls="p-team" aria-selected="false" tabindex="-1"><span class="hl-tag">#{msg['lp.v.team']}</span><h:outputText value="#{msg['lp.hero.l4']}" escape="false"/></button>
+            </h1>
+            <p class="lead">#{msg['lp.hero.lead']}</p>
+            <div class="hero-cta">
+                <a class="btn btn-gold" href="#{request.contextPath}/register.xhtml">#{msg['lp.cta.register']} <svg class="ico"><use href="#i-arrow"/></svg></a>
+                <a class="btn btn-line" href="#modulos">#{msg['lp.cta.build']}</a>
+            </div>
+            <div class="trust">
+                <span><svg class="ico"><use href="#i-link"/></svg>#{msg['lp.hero.trust1']}</span>
+                <span><svg class="ico"><use href="#i-phone"/></svg>#{msg['lp.hero.trust3']}</span>
+            </div>
+        </div>
+
+        <div class="device" aria-live="polite">
+            <!-- Citas -->
+            <div class="panel on" id="p-citas" role="tabpanel" aria-labelledby="tab-citas">
+                <div class="dev-top"><b>#{msg['lp.mock.today']}</b><span>#{msg['lp.mock.today.date']} · Studio Lumière</span></div>
+                <div class="appt"><time>10:00</time><div>#{msg['lp.mock.a1']}<small>#{msg['lp.mock.a1.who']}</small></div><span class="chip ok">#{msg['lp.mock.confirmed']}</span></div>
+                <div class="appt"><time>11:30</time><div>#{msg['lp.mock.a2']}<small>#{msg['lp.mock.a2.who']}</small></div><span class="chip ok">#{msg['lp.mock.confirmed']}</span></div>
+                <div class="appt"><time>12:00</time><div>#{msg['lp.mock.a3']}<small>#{msg['lp.mock.a3.who']}</small></div><span class="chip warn">#{msg['lp.mock.reminder']}</span></div>
+                <div class="appt free"><time>13:30</time><div>#{msg['lp.mock.a4']}<small>#{msg['lp.mock.a4.who']}</small></div><span class="chip gold">#{msg['lp.mock.available']}</span></div>
+                <div class="appt"><time>16:00</time><div>#{msg['lp.mock.a5']}<small>#{msg['lp.mock.a5.who']}</small></div><span class="chip gold">#{msg['lp.mock.prize']}</span></div>
+                <div class="kpis">
+                    <div><b>9</b><small>#{msg['lp.mock.k.appts']}</small></div>
+                    <div><b>$8.4k</b><small>#{msg['lp.mock.k.revenue']}</small></div>
+                    <div><b>2</b><small>#{msg['lp.mock.k.new']}</small></div>
+                </div>
+                <div class="linkbox"><svg class="ico" style="width:16px;height:16px"><use href="#i-link"/></svg><span>clubvip.club/b/studio-lumiere/citas</span></div>
+            </div>
+            <!-- Venta -->
+            <div class="panel" id="p-venta" role="tabpanel" aria-labelledby="tab-venta">
+                <div class="dev-top"><b>#{msg['lp.mock.sale']}</b><span>#{msg['lp.mock.folio']} 0251 · 12:41</span></div>
+                <div class="ticket" style="margin-top:12px">
+                    <div class="t-head"><b>BOUTIQUE ROCÍO</b><br/>08/10/2026 · #{msg['lp.mock.seller']}: Lupita</div>
+                    <div class="t-row"><span>#{msg['lp.mock.item1']} ×1</span><span>$649.00</span></div>
+                    <div class="t-row"><span>#{msg['lp.mock.item2']} ×2</span><span>$378.00</span></div>
+                    <div class="t-row"><span>#{msg['lp.mock.item3']} ×1</span><span>$899.00</span></div>
+                    <div class="t-row total"><span>#{msg['lp.mock.total']}</span><span>$1,926.00</span></div>
+                    <div class="t-plan">
+                        <div class="t-row"><span>#{msg['lp.mock.plan']}</span><span></span></div>
+                        <div class="t-row"><span>#{msg['lp.mock.paidToday']}</span><span>$642.00</span></div>
+                        <div class="t-row"><span>#{msg['lp.mock.balance']}</span><span>$1,284.00</span></div>
+                    </div>
+                    <div class="t-foot">#{msg['lp.mock.customer']}: Carmen R. · #{msg['lp.mock.nextPay']} 23/10</div>
+                </div>
+                <div class="kpis" style="margin-top:22px">
+                    <div><b>14</b><small>#{msg['lp.mock.k.sales']}</small></div>
+                    <div><b>$21k</b><small>#{msg['lp.mock.k.sold']}</small></div>
+                    <div><b>3</b><small>#{msg['lp.mock.k.collected']}</small></div>
+                </div>
+            </div>
+            <!-- Consignación -->
+            <div class="panel" id="p-cons" role="tabpanel" aria-labelledby="tab-cons">
+                <div class="dev-top"><b>#{msg['lp.v.cons']}</b><span>#{msg['lp.mock.statement']}</span></div>
+                <div class="stmt-head" style="margin-top:12px">
+                    <div><h4>Boutique Alma</h4><small>#{msg['lp.mock.allyStore']}</small></div>
+                    <span class="chip gold">#{msg['lp.mock.month']}</span>
+                </div>
+                <div class="bar" aria-hidden="true"><i style="width:39.6%;background:var(--gold-deep)"></i><i style="width:8.3%;background:#C9C5B8"></i><i style="width:52.1%;background:var(--ink)"></i></div>
+                <div class="legend"><span><i style="background:var(--gold-deep)"></i>#{msg['lp.mock.sold']} 19</span><span><i style="background:#C9C5B8"></i>#{msg['lp.mock.returned']} 4</span><span><i style="background:var(--ink)"></i>#{msg['lp.mock.inStore']} 25</span></div>
+                <div class="srow" style="margin-top:8px"><span>#{msg['lp.mock.shipments']}</span><span class="mono">ENV-0003 · ENV-0004</span></div>
+                <div class="srow"><span>#{msg['lp.mock.pieces']}</span><span>48</span></div>
+                <div class="srow"><span>#{msg['lp.mock.storeSales']}</span><span>$12,350.00</span></div>
+                <div class="srow neg"><span>#{msg['lp.mock.storeCommission']}</span><span>−$3,087.50</span></div>
+                <div class="srow due"><span>#{msg['lp.mock.owed']}</span><span>$9,262.50</span></div>
+            </div>
+            <!-- Equipo -->
+            <div class="panel" id="p-team" role="tabpanel" aria-labelledby="tab-team">
+                <div class="dev-top"><b>#{msg['lp.mock.payroll']}</b><span>#{msg['lp.mock.period']}</span></div>
+                <div class="pay" style="margin-top:8px">
+                    <div class="pay-row"><span class="pay-av">AN</span><div>Ana<small>#{msg['lp.mock.p1']}</small></div><b>$5,920</b></div>
+                    <div class="pay-row"><span class="pay-av">FE</span><div>Fer<small>#{msg['lp.mock.p2']}</small></div><b>$4,920</b></div>
+                    <div class="pay-row"><span class="pay-av">LU</span><div>Lupita<small>#{msg['lp.mock.p3']}</small></div><b>$4,500</b></div>
+                    <div class="pay-row total"><span></span><div>#{msg['lp.mock.cutTotal']}</div><b>$15,340</b></div>
+                </div>
+                <div class="kpis">
+                    <div><b>3</b><small>#{msg['lp.mock.k.people']}</small></div>
+                    <div><b>0</b><small>#{msg['lp.mock.k.excel']}</small></div>
+                    <div><b>✓</b><small>#{msg['lp.mock.k.ready']}</small></div>
+                </div>
+                <div class="linkbox"><svg class="ico" style="width:16px;height:16px"><use href="#i-phone"/></svg><span>#{msg['lp.mock.ownApp']}</span></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================ PAINS ============================ -->
+<section class="ink band" style="padding-top:0">
+    <div class="wrap">
+        <div class="eyebrow">#{msg['lp.pain.eyebrow']}</div>
+        <div class="pains">
+            <div class="pain">
+                <q>#{msg['lp.pain.1']}</q>
+                <div class="pain-fix"><svg class="ico"><use href="#i-cal"/></svg><span><b>#{msg['lp.v.citas']}</b> #{msg['lp.pain.1.fix']}</span></div>
+            </div>
+            <div class="pain">
+                <q>#{msg['lp.pain.2']}</q>
+                <div class="pain-fix"><svg class="ico"><use href="#i-pos"/></svg><span><b>#{msg['lp.v.pos']}</b> #{msg['lp.pain.2.fix']}</span></div>
+            </div>
+            <div class="pain">
+                <q>#{msg['lp.pain.3']}</q>
+                <div class="pain-fix"><svg class="ico"><use href="#i-box"/></svg><span><b>#{msg['lp.v.cons']}</b> #{msg['lp.pain.3.fix']}</span></div>
+            </div>
+            <div class="pain">
+                <q>#{msg['lp.pain.4']}</q>
+                <div class="pain-fix"><svg class="ico"><use href="#i-users"/></svg><span><b>#{msg['lp.v.team']}</b> #{msg['lp.pain.4.fix']}</span></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================ MODULES ============================ -->
+<section class="band" id="modulos">
+    <div class="wrap">
+        <div class="mods-head">
+            <div>
+                <div class="eyebrow">#{msg['lp.cta.build']}</div>
+                <h2>#{msg['lp.mods.title']}</h2>
+            </div>
+            <p class="lead">#{msg['lp.mods.lead']}</p>
+        </div>
+        <div class="mods" id="mods">
+            <button class="mod" type="button" aria-pressed="true" data-key="citas" data-name="#{msg['lp.v.citas']}" data-gain="#{msg['lp.mods.gain.citas']}">
+                <div class="mod-top"><span class="mod-ico"><svg class="ico"><use href="#i-cal"/></svg></span><span class="switch" aria-hidden="true"></span></div>
+                <h3>#{msg['lp.v.citas']}</h3>
+                <p>#{msg['lp.mods.citas']}</p>
+                <ul><li>#{msg['lp.mods.citas.1']}</li><li>#{msg['lp.mods.citas.2']}</li><li>#{msg['lp.mods.citas.3']}</li><li>#{msg['lp.mods.citas.4']}</li></ul>
+            </button>
+            <button class="mod" type="button" aria-pressed="true" data-key="pos" data-name="#{msg['lp.v.pos']}" data-gain="#{msg['lp.mods.gain.pos']}">
+                <div class="mod-top"><span class="mod-ico"><svg class="ico"><use href="#i-pos"/></svg></span><span class="switch" aria-hidden="true"></span></div>
+                <h3>#{msg['lp.v.pos']}</h3>
+                <p>#{msg['lp.mods.pos']}</p>
+                <ul><li>#{msg['lp.mods.pos.1']}</li><li>#{msg['lp.mods.pos.2']}</li><li>#{msg['lp.mods.pos.3']}</li><li>#{msg['lp.mods.pos.4']}</li></ul>
+            </button>
+            <button class="mod" type="button" aria-pressed="false" data-key="cons" data-name="#{msg['lp.v.cons']}" data-gain="#{msg['lp.mods.gain.cons']}">
+                <div class="mod-top"><span class="mod-ico"><svg class="ico"><use href="#i-box"/></svg></span><span class="switch" aria-hidden="true"></span></div>
+                <h3>#{msg['lp.v.cons']}</h3>
+                <p>#{msg['lp.mods.cons']}</p>
+                <ul><li>#{msg['lp.mods.cons.1']}</li><li>#{msg['lp.mods.cons.2']}</li><li>#{msg['lp.mods.cons.3']}</li></ul>
+            </button>
+            <button class="mod" type="button" aria-pressed="true" data-key="team" data-name="#{msg['lp.v.team']}" data-gain="#{msg['lp.mods.gain.team']}">
+                <div class="mod-top"><span class="mod-ico"><svg class="ico"><use href="#i-users"/></svg></span><span class="switch" aria-hidden="true"></span></div>
+                <h3>#{msg['lp.v.team']}</h3>
+                <p>#{msg['lp.mods.team']}</p>
+                <ul><li>#{msg['lp.mods.team.1']}</li><li>#{msg['lp.mods.team.2']}</li><li>#{msg['lp.mods.team.3']}</li><li>#{msg['lp.mods.team.4']}</li></ul>
+            </button>
+        </div>
+        <div class="summary" id="modSummary" aria-live="polite"
+             data-prefix="#{msg['lp.mods.sum.prefix']}" data-empty="#{msg['lp.mods.sum.empty']}" data-empty-hint="#{msg['lp.mods.sum.emptyHint']}"
+             data-all="#{msg['lp.mods.sum.all']}" data-for="#{msg['lp.mods.sum.for']}" data-and="#{msg['lp.mods.sum.and']}"
+             data-note-on="#{msg['lp.mods.sum.noteOn']}" data-note-off="#{msg['lp.mods.sum.noteOff']}">
+            <b id="sumText"></b>
+            <span id="sumHint"></span>
+        </div>
+    </div>
+</section>
+
+<!-- ============================ VITRINA ============================ -->
+<section class="ink band" id="vitrina">
+    <div class="wrap vit">
+        <div>
+            <div class="eyebrow">#{msg['lp.vit.eyebrow']}</div>
+            <h2>#{msg['lp.vit.title']}</h2>
+            <p class="lead" style="margin-top:16px">#{msg['lp.vit.lead']}</p>
+            <div class="vit-links">
+                <div class="vit-link"><svg class="ico"><use href="#i-store"/></svg><div><b>#{msg['lp.vit.store']}</b><code>#{msg['lp.vit.store.url']}</code><small>#{msg['lp.vit.store.text']}</small></div></div>
+                <div class="vit-link"><svg class="ico"><use href="#i-cal"/></svg><div><b>#{msg['lp.vit.book']}</b><code>#{msg['lp.vit.book.url']}</code><small>#{msg['lp.vit.book.text']}</small></div></div>
+            </div>
+            <div class="vit-chips"><span>Instagram</span><span>Facebook</span><span>TikTok</span><span>WhatsApp Business</span><span>Google Maps</span><span>#{msg['lp.vit.qr']}</span></div>
+        </div>
+        <div class="ig" aria-label="#{msg['lp.vit.igAria']}">
+            <div class="ig-head">
+                <div class="ig-av">LA</div>
+                <div class="ig-stats"><div><b>212</b>#{msg['lp.vit.ig.posts']}</div><div><b>8.4k</b>#{msg['lp.vit.ig.followers']}</div><div><b>301</b>#{msg['lp.vit.ig.following']}</div></div>
+            </div>
+            <div class="ig-bio">
+                <b>#{msg['lp.vit.ig.name']}</b>
+                #{msg['lp.vit.ig.bio']}
+                <span class="ig-url"><svg class="ico" style="width:14px;height:14px"><use href="#i-link"/></svg>clubvip.club/b/la-alacena/tienda</span>
+            </div>
+            <div class="ig-shop">
+                <div class="ig-item"><div class="ig-ph" style="--h:32"></div><span>#{msg['lp.vit.ig.p1']}</span><b>$480</b></div>
+                <div class="ig-item"><div class="ig-ph" style="--h:12"></div><span>#{msg['lp.vit.ig.p2']}</span><b>$390</b></div>
+                <div class="ig-item"><div class="ig-ph" style="--h:350"></div><span>#{msg['lp.vit.ig.p3']}</span><b>$160</b></div>
+            </div>
+            <div class="ig-cta">#{msg['pub.store.interested']}</div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================ CLIENTES ============================ -->
+<section class="band" id="clientes">
+    <div class="wrap">
+        <div class="mods-head">
+            <div>
+                <div class="eyebrow">#{msg['lp.cli.eyebrow']}</div>
+                <h2>#{msg['lp.cli.title']}</h2>
+            </div>
+            <p class="lead">#{msg['lp.cli.lead']}</p>
+        </div>
+        <div class="paths">
+            <div class="path path-member">
+                <span class="path-tag">#{msg['lp.cli.app.tag']}</span>
+                <h3>#{msg['lp.cli.app.title']}</h3>
+                <ul>
+                    <li><svg class="ico"><use href="#i-check"/></svg>#{msg['lp.cli.app.1']}</li>
+                    <li><svg class="ico"><use href="#i-check"/></svg>#{msg['lp.cli.app.2']}</li>
+                    <li><svg class="ico"><use href="#i-check"/></svg>#{msg['lp.cli.app.3']}</li>
+                    <li><svg class="ico"><use href="#i-check"/></svg>#{msg['lp.cli.app.4']}</li>
+                </ul>
+                <div class="notifs" aria-label="#{msg['lp.cli.notifAria']}">
+                    <div class="notif"><span class="notif-ico">C</span><div><b>Studio Lumière</b>#{msg['lp.cli.n1']}</div><small>#{msg['lp.cli.now']}</small></div>
+                    <div class="notif"><span class="notif-ico">C</span><div><b>#{msg['lp.cli.n2.t']}</b>#{msg['lp.cli.n2']}</div><small>2 h</small></div>
+                    <div class="notif"><span class="notif-ico">C</span><div><b>#{msg['lp.cli.n3.t']}</b>#{msg['lp.cli.n3']}</div><small>#{msg['lp.cli.yesterday']}</small></div>
+                </div>
+            </div>
+            <div class="path path-guest">
+                <span class="path-tag">#{msg['lp.cli.web.tag']}</span>
+                <h3>#{msg['lp.cli.web.title']}</h3>
+                <ul>
+                    <li><svg class="ico"><use href="#i-check"/></svg>#{msg['lp.cli.web.1']}</li>
+                    <li><svg class="ico"><use href="#i-check"/></svg>#{msg['lp.cli.web.2']}</li>
+                    <li><svg class="ico"><use href="#i-check"/></svg>#{msg['lp.cli.web.3']}</li>
+                    <li><svg class="ico"><use href="#i-check"/></svg>#{msg['lp.cli.web.4']}</li>
+                </ul>
+                <div class="path-note"><svg class="ico"><use href="#i-star"/></svg><span>#{msg['lp.cli.web.note']}</span></div>
+            </div>
+        </div>
+        <div class="loyal">
+            <div class="loyal-copy">
+                <b>#{msg['lp.cli.loyal.title']}</b>
+                <span>#{msg['lp.cli.loyal.text']}</span>
+            </div>
+            <div class="stamps" aria-hidden="true"><i class="on">✓</i><i class="on">✓</i><i class="on">✓</i><i class="on">✓</i><i>5</i><i class="gift">★</i></div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================ CITAS ============================ -->
+<section class="vert" id="citas" style="background:var(--paper)">
+    <div class="wrap vert-grid">
+        <div class="vert-copy">
+            <div class="vert-name"><span class="mod-ico"><svg class="ico"><use href="#i-cal"/></svg></span><span class="eyebrow">#{msg['lp.v.citas']}</span></div>
+            <h2>#{msg['lp.citas.title']}</h2>
+            <p class="lead">#{msg['lp.citas.lead']}</p>
+            <div class="feats">
+                <div class="feat"><svg class="ico"><use href="#i-link"/></svg><div><h3>#{msg['lp.citas.f1']}</h3><p><code>#{msg['lp.vit.book.url']}</code> #{msg['lp.citas.f1.t']}</p></div></div>
+                <div class="feat"><svg class="ico"><use href="#i-users"/></svg><div><h3>#{msg['lp.citas.f2']}</h3><p>#{msg['lp.citas.f2.t']}</p></div></div>
+                <div class="feat"><svg class="ico"><use href="#i-star"/></svg><div><h3>#{msg['lp.citas.f4']}</h3><p>#{msg['lp.citas.f4.t']}</p></div></div>
+                <div class="feat"><svg class="ico"><use href="#i-file"/></svg><div><h3>#{msg['lp.citas.f5']}</h3><p>#{msg['lp.citas.f5.t']}</p></div></div>
+                <div class="feat"><svg class="ico"><use href="#i-pct"/></svg><div><h3>#{msg['lp.citas.f6']}</h3><p>#{msg['lp.citas.f6.t']}</p></div></div>
+            </div>
+        </div>
+        <div class="stage" aria-label="#{msg['lp.citas.stage']}">
+            <div class="stage-cap"><span>#{msg['lp.citas.stage']}</span><span>#{msg['lp.citas.noAccount']}</span></div>
+            <div class="book-biz"><div class="book-logo">SL</div><div><b>Studio Lumière</b><small>#{msg['lp.citas.biz']}</small></div></div>
+            <div class="book-step">1 · #{msg['lp.citas.s1']}</div>
+            <div class="svc sel"><div>#{msg['lp.mock.a3']}<small>#{msg['lp.citas.svc1']}</small></div><b>$1,150</b></div>
+            <div class="svc"><div>#{msg['lp.mock.a1']}<small>#{msg['lp.citas.svc2']}</small></div><b>$380</b></div>
+            <div class="book-step">2 · #{msg['lp.citas.s2']}</div>
+            <div class="days">
+                <div class="day">#{msg['lp.d.mon']}<b>12</b></div><div class="day sel">#{msg['lp.d.tue']}<b>13</b></div><div class="day">#{msg['lp.d.wed']}<b>14</b></div><div class="day">#{msg['lp.d.thu']}<b>15</b></div><div class="day">#{msg['lp.d.fri']}<b>16</b></div><div class="day off">#{msg['lp.d.sun']}<b>18</b></div>
+            </div>
+            <div class="book-step">3 · #{msg['lp.citas.s3']}</div>
+            <div class="slots"><span class="slot gone">9:00</span><span class="slot">10:30</span><span class="slot sel">12:00</span><span class="slot gone">14:00</span><span class="slot">16:30</span></div>
+            <div class="wa"><small>WhatsApp · Studio Lumière</small>#{msg['lp.citas.wa']}</div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================ POS ============================ -->
+<section class="vert flip" id="venta">
+    <div class="wrap vert-grid">
+        <div class="vert-copy">
+            <div class="vert-name"><span class="mod-ico"><svg class="ico"><use href="#i-pos"/></svg></span><span class="eyebrow">#{msg['lp.v.pos']}</span></div>
+            <h2>#{msg['lp.pos.title']}</h2>
+            <p class="lead">#{msg['lp.pos.lead']}</p>
+            <div class="feats">
+                <div class="feat"><svg class="ico"><use href="#i-scan"/></svg><div><h3>#{msg['lp.pos.f1']}</h3><p>#{msg['lp.pos.f1.t']}</p></div></div>
+                <div class="feat"><svg class="ico"><use href="#i-wallet"/></svg><div><h3>#{msg['lp.pos.f2']}</h3><p>#{msg['lp.pos.f2.t']}</p></div></div>
+                <div class="feat"><svg class="ico"><use href="#i-alert"/></svg><div><h3>#{msg['lp.pos.f3']}</h3><p>#{msg['lp.pos.f3.t']}</p></div></div>
+                <div class="feat"><svg class="ico"><use href="#i-swap"/></svg><div><h3>#{msg['lp.pos.f4']}</h3><p>#{msg['lp.pos.f4.t']}</p></div></div>
+                <div class="feat"><svg class="ico"><use href="#i-chart"/></svg><div><h3>#{msg['lp.pos.f5']}</h3><p>#{msg['lp.pos.f5.t']}</p></div></div>
+                <div class="feat"><svg class="ico"><use href="#i-badge"/></svg><div><h3>#{msg['lp.pos.f6']}</h3><p>#{msg['lp.pos.f6.t']}</p></div></div>
+            </div>
+        </div>
+        <div class="stage" aria-label="#{msg['lp.pos.stage']}">
+            <div class="stage-cap"><span>#{msg['lp.pos.stage']}</span><span>#{msg['lp.mock.folio']} 0251</span></div>
+            <div class="ticket">
+                <div class="t-head"><b>BOUTIQUE ROCÍO</b><br/>08/10/2026 12:41 · #{msg['lp.mock.seller']}: Lupita</div>
+                <div class="t-row"><span>#{msg['lp.mock.item1']} ×1</span><span>$649.00</span></div>
+                <div class="t-row"><span>#{msg['lp.mock.item2']} ×2</span><span>$378.00</span></div>
+                <div class="t-row"><span>#{msg['lp.mock.item3']} ×1</span><span>$899.00</span></div>
+                <div class="t-row total"><span>#{msg['lp.mock.total']}</span><span>$1,926.00</span></div>
+                <div class="t-plan">
+                    <div class="t-row"><span>#{msg['lp.mock.plan']}</span><span></span></div>
+                    <div class="t-row"><span>08/10 · #{msg['lp.mock.payment']} 1 · #{msg['lp.mock.card']}</span><span>$642.00</span></div>
+                    <div class="t-row"><span>23/10 · #{msg['lp.mock.payment']} 2</span><span>$642.00</span></div>
+                    <div class="t-row"><span>07/11 · #{msg['lp.mock.payment']} 3</span><span>$642.00</span></div>
+                </div>
+                <div class="t-row" style="margin-top:8px"><span>#{msg['lp.mock.balance']}</span><span>$1,284.00</span></div>
+                <div class="t-foot">#{msg['lp.mock.customer']}: Carmen R. · #{msg['lp.mock.history']}</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================ CONSIGNACIÓN ============================ -->
+<section class="vert" id="consignacion" style="background:var(--paper)">
+    <div class="wrap vert-grid">
+        <div class="vert-copy">
+            <div class="vert-name"><span class="mod-ico"><svg class="ico"><use href="#i-box"/></svg></span><span class="eyebrow">#{msg['lp.v.cons']}</span></div>
+            <h2>#{msg['lp.cons.title']}</h2>
+            <p class="lead">#{msg['lp.cons.lead']}</p>
+        </div>
+        <div class="stage" aria-label="#{msg['lp.mock.statement']}">
+            <div class="stage-cap"><span>#{msg['lp.mock.statement']}</span><span>#{msg['lp.mock.month']}</span></div>
+            <div class="stmt-head"><div><h4>Boutique Alma</h4><small>#{msg['lp.mock.allyStore']}</small></div><span class="chip ok">#{msg['lp.cons.upToDate']}</span></div>
+            <div class="bar" aria-hidden="true"><i style="width:39.6%;background:var(--gold-deep)"></i><i style="width:8.3%;background:#C9C5B8"></i><i style="width:52.1%;background:var(--ink)"></i></div>
+            <div class="legend"><span><i style="background:var(--gold-deep)"></i>#{msg['lp.mock.sold']} 19</span><span><i style="background:#C9C5B8"></i>#{msg['lp.mock.returned']} 4</span><span><i style="background:var(--ink)"></i>#{msg['lp.mock.inStore']} 25</span></div>
+            <div class="srow" style="margin-top:8px"><span>#{msg['lp.mock.shipments']}</span><span class="mono">ENV-0003 · ENV-0004</span></div>
+            <div class="srow"><span>#{msg['lp.mock.pieces']}</span><span>48</span></div>
+            <div class="srow"><span>#{msg['lp.mock.storeSales']}</span><span>$12,350.00</span></div>
+            <div class="srow neg"><span>#{msg['lp.mock.storeCommission']} (25%)</span><span>−$3,087.50</span></div>
+            <div class="srow due"><span>#{msg['lp.mock.owed']}</span><span>$9,262.50</span></div>
+        </div>
+    </div>
+    <div class="wrap">
+        <div class="flow">
+            <div class="step"><h3>#{msg['lp.cons.s1']}</h3><p>#{msg['lp.cons.s1.t']}</p></div>
+            <div class="step"><h3>#{msg['lp.cons.s2']}</h3><p>#{msg['lp.cons.s2.t']}</p></div>
+            <div class="step"><h3>#{msg['lp.cons.s3']}</h3><p>#{msg['lp.cons.s3.t']}</p></div>
+            <div class="step"><h3>#{msg['lp.cons.s4']}</h3><p>#{msg['lp.cons.s4.t']}</p></div>
+        </div>
+        <div class="store-side">
+            <svg class="ico"><use href="#i-store"/></svg>
+            <div><b>#{msg['lp.cons.store']}</b><p>#{msg['lp.cons.store.t']}</p></div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================ EQUIPO ============================ -->
+<section class="vert flip" id="equipo">
+    <div class="wrap vert-grid">
+        <div class="vert-copy">
+            <div class="vert-name"><span class="mod-ico"><svg class="ico"><use href="#i-users"/></svg></span><span class="eyebrow">#{msg['lp.v.team']}</span></div>
+            <h2>#{msg['lp.team.title']}</h2>
+            <p class="lead">#{msg['lp.team.lead']}</p>
+            <div class="feats">
+                <div class="feat"><svg class="ico"><use href="#i-wallet"/></svg><div><h3>#{msg['lp.team.f1']}</h3><p>#{msg['lp.team.f1.t']}</p></div></div>
+                <div class="feat"><svg class="ico"><use href="#i-pct"/></svg><div><h3>#{msg['lp.team.f2']}</h3><p>#{msg['lp.team.f2.t']}</p></div></div>
+                <div class="feat"><svg class="ico"><use href="#i-file"/></svg><div><h3>#{msg['lp.team.f3']}</h3><p>#{msg['lp.team.f3.t']}</p></div></div>
+                <div class="feat"><svg class="ico"><use href="#i-check"/></svg><div><h3>#{msg['lp.team.f4']}</h3><p>#{msg['lp.team.f4.t']}</p></div></div>
+                <div class="feat"><svg class="ico"><use href="#i-phone"/></svg><div><h3>#{msg['lp.team.f5']}</h3><p>#{msg['lp.team.f5.t']}</p></div></div>
+                <div class="feat"><svg class="ico"><use href="#i-badge"/></svg><div><h3>#{msg['lp.team.f6']}</h3><p>#{msg['lp.team.f6.t']}</p></div></div>
+            </div>
+        </div>
+        <div class="stage" aria-label="#{msg['lp.team.stage']}">
+            <div class="stage-cap"><span>#{msg['lp.team.stage']}</span><span>#{msg['lp.mock.period']}</span></div>
+            <div class="tbl">
+                <table class="pay-table">
+                    <thead><tr><th>#{msg['lp.team.th.person']}</th><th>#{msg['lp.team.th.billed']}</th><th>#{msg['lp.team.th.commission']}</th><th>#{msg['lp.team.th.salary']}</th><th>#{msg['lp.team.th.pay']}</th></tr></thead>
+                    <tbody>
+                        <tr><td>Ana<small>#{msg['lp.team.r1']}</small></td><td>$14,800</td><td>$5,920</td><td>—</td><td>$5,920</td></tr>
+                        <tr><td>Fer<small>#{msg['lp.team.r2']}</small></td><td>$9,600</td><td>$1,920</td><td>$3,000</td><td>$4,920</td></tr>
+                        <tr><td>Lupita<small>#{msg['lp.mock.p3']}</small></td><td>—</td><td>—</td><td>$4,500</td><td>$4,500</td></tr>
+                    </tbody>
+                    <tfoot><tr><td>#{msg['lp.team.periodTotal']}</td><td></td><td></td><td></td><td>$15,340</td></tr></tfoot>
+                </table>
+            </div>
+            <div class="pay-actions"><span class="primary">#{msg['lp.team.generate']}</span><span>#{msg['lp.team.markPaid']}</span></div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================ TOGETHER ============================ -->
+<section class="ink band">
+    <div class="wrap together">
+        <div>
+            <div class="eyebrow">#{msg['lp.tog.eyebrow']}</div>
+            <h2>#{msg['lp.tog.title']}</h2>
+            <p class="lead" style="margin-top:16px">#{msg['lp.tog.lead']}</p>
+            <p class="story"><b>#{msg['lp.tog.story.b']}</b> #{msg['lp.tog.story']}</p>
+        </div>
+        <div class="hub" aria-label="#{msg['lp.tog.aria']}">
+            <div class="hub-row">
+                <div class="hub-in"><b>#{msg['lp.v.citas']}</b>#{msg['lp.tog.in1']}</div>
+                <div class="hub-in"><b>#{msg['lp.tog.sale']}</b>#{msg['lp.tog.in2']}</div>
+                <div class="hub-in"><b>#{msg['lp.v.cons']}</b>#{msg['lp.tog.in3']}</div>
+                <div class="hub-in"><b>#{msg['lp.nav.payroll']}</b>#{msg['lp.tog.in4']}</div>
+            </div>
+            <div class="hub-arrows" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+            <div class="hub-core">
+                <div><b>#{msg['lp.tog.c1']}</b><span>#{msg['lp.tog.c1.t']}</span></div>
+                <div><b>#{msg['lp.tog.c2']}</b><span>#{msg['lp.tog.c2.t']}</span></div>
+                <div><b>#{msg['lp.tog.c3']}</b><span>#{msg['lp.tog.c3.t']}</span></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================ CALC ============================ -->
+<section class="band">
+    <div class="wrap">
+        <div class="mods-head">
+            <div>
+                <div class="eyebrow">#{msg['lp.calc.eyebrow']}</div>
+                <h2>#{msg['lp.calc.title']}</h2>
+            </div>
+            <p class="lead">#{msg['lp.calc.lead']}</p>
+        </div>
+        <div class="calc">
+            <div class="calc-in">
+                <div class="field">
+                    <label for="noShow">#{msg['lp.calc.noShow']} <output id="noShowOut" for="noShow">4</output></label>
+                    <input type="range" id="noShow" min="0" max="20" step="1" value="4"/>
+                </div>
+                <div class="field">
+                    <label for="ticket">#{msg['lp.calc.ticket']} <output id="ticketOut" for="ticket">$450</output></label>
+                    <input type="range" id="ticket" min="100" max="3000" step="50" value="450"/>
+                </div>
+                <div class="field">
+                    <label for="extra">#{msg['lp.calc.extra']} <output id="extraOut" for="extra">$120</output></label>
+                    <small>#{msg['lp.calc.extra.hint']}</small>
+                    <input type="range" id="extra" min="0" max="1000" step="10" value="120"/>
+                </div>
+            </div>
+            <div class="calc-out" aria-live="polite">
+                <span class="eyebrow">#{msg['lp.calc.out']}</span>
+                <div class="big" id="lossOut">$11,000</div>
+                <div class="yr" id="yearOut" data-suffix="#{msg['lp.calc.perYear']}"></div>
+                <p>#{msg['lp.calc.out.t']}</p>
+            </div>
+        </div>
+        <p class="calc-note">#{msg['lp.calc.note']}</p>
+    </div>
+</section>
+
+<!-- ============================ WHO ============================ -->
+<section class="band" id="para-quien" style="background:var(--paper);border-top:1px solid var(--line)">
+    <div class="wrap">
+        <div class="eyebrow">#{msg['lp.nav.who']}</div>
+        <h2>#{msg['lp.who.title']}</h2>
+        <p class="lead" style="margin-top:16px">#{msg['lp.who.lead']}</p>
+        <div class="who">
+            <div class="who-card"><h3>#{msg['lp.who.1']}</h3><p>#{msg['lp.who.1.t']}</p><div class="tags"><span class="tag">#{msg['lp.v.citas']}</span><span class="tag on">#{msg['lp.tog.sale']}</span><span class="tag on">#{msg['lp.v.cons']}</span><span class="tag">#{msg['lp.nav.payroll']}</span></div></div>
+            <div class="who-card"><h3>#{msg['lp.who.2']}</h3><p>#{msg['lp.who.2.t']}</p><div class="tags"><span class="tag on">#{msg['lp.v.citas']}</span><span class="tag on">#{msg['lp.tog.sale']}</span><span class="tag on">#{msg['lp.v.cons']}</span><span class="tag on">#{msg['lp.nav.payroll']}</span></div></div>
+            <div class="who-card"><h3>#{msg['lp.who.3']}</h3><p>#{msg['lp.who.3.t']}</p><div class="tags"><span class="tag">#{msg['lp.v.citas']}</span><span class="tag on">#{msg['lp.tog.sale']}</span><span class="tag on">#{msg['lp.v.cons']}</span><span class="tag">#{msg['lp.nav.payroll']}</span></div></div>
+            <div class="who-card"><h3>#{msg['lp.who.4']}</h3><p>#{msg['lp.who.4.t']}</p><div class="tags"><span class="tag on">#{msg['lp.v.citas']}</span><span class="tag on">#{msg['lp.tog.sale']}</span><span class="tag">#{msg['lp.v.cons']}</span><span class="tag on">#{msg['lp.nav.payroll']}</span></div></div>
+            <div class="who-card"><h3>#{msg['lp.who.5']}</h3><p>#{msg['lp.who.5.t']}</p><div class="tags"><span class="tag">#{msg['lp.v.citas']}</span><span class="tag on">#{msg['lp.tog.sale']}</span><span class="tag on">#{msg['lp.v.cons']}</span><span class="tag on">#{msg['lp.nav.payroll']}</span></div></div>
+            <div class="who-card"><h3>#{msg['lp.who.6']}</h3><p>#{msg['lp.who.6.t']}</p><div class="tags"><span class="tag on">#{msg['lp.v.citas']}</span><span class="tag on">#{msg['lp.tog.sale']}</span><span class="tag">#{msg['lp.v.cons']}</span><span class="tag">#{msg['lp.nav.payroll']}</span></div></div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================ FAQ ============================ -->
+<section class="band" id="preguntas">
+    <div class="wrap faq-grid">
+        <div>
+            <div class="eyebrow">#{msg['lp.faq.eyebrow']}</div>
+            <h2>#{msg['lp.faq.title']}</h2>
+        </div>
+        <div class="faq">
+            <details open="open"><summary>#{msg['lp.faq.q1']}</summary><p>#{msg['lp.faq.a1']}</p></details>
+            <details><summary>#{msg['lp.faq.q2']}</summary><p>#{msg['lp.faq.a2']}</p></details>
+            <details><summary>#{msg['lp.faq.q3']}</summary><p>#{msg['lp.faq.a3']}</p></details>
+            <details><summary>#{msg['lp.faq.q4']}</summary><p>#{msg['lp.faq.a4']}</p></details>
+            <details><summary>#{msg['lp.faq.q5']}</summary><p>#{msg['lp.faq.a5']}</p></details>
+            <details><summary>#{msg['lp.faq.q6']}</summary><p>#{msg['lp.faq.a6']}</p></details>
+            <details><summary>#{msg['lp.faq.q7']}</summary><p>#{msg['lp.faq.a7']}</p></details>
+        </div>
+    </div>
+</section>
+
+<!-- ============================ FINAL ============================ -->
+<section class="ink final" id="empezar">
+    <div class="wrap">
+        <div class="eyebrow">#{msg['lp.final.eyebrow']}</div>
+        <h2><h:outputText value="#{msg['lp.final.title']}" escape="false"/></h2>
+        <p class="lead">#{msg['lp.final.lead']}</p>
+        <div class="hero-cta">
+            <a class="btn btn-gold" href="#{request.contextPath}/register.xhtml">#{msg['lp.cta.register']} <svg class="ico"><use href="#i-arrow"/></svg></a>
+            <a class="btn btn-line" href="#{request.contextPath}/login.xhtml">#{msg['lp.nav.login']}</a>
+            <a class="btn btn-wa" href="#{loginMb.whatsappLink}" target="_blank" rel="noopener"><svg class="ico"><use href="#i-chat"/></svg> #{msg['landing.plan.wa']}</a>
+        </div>
+    </div>
+</section>
+</main>
+
+<footer>
+    <div class="wrap">
+        <a class="logo" href="#top"><h:graphicImage library="img" name="logo.svg" alt="Club VIP"/></a>
+        <span>#{msg['lp.footer.verticals']}</span>
+        <span><a href="https://clubvip.club" target="_blank" rel="noopener">clubvip.club</a> · <a href="#{request.contextPath}/register.xhtml#privacidad">#{msg['landing.footer.privacy']}</a> · © 2026 Club VIP</span>
+    </div>
+</footer>
+
+<script src="#{request.contextPath}/resources/js/home.js?v=20261005a"></script>
+</h:body>
+</f:view>
+</html>

@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:p="http://primefaces.org/ui"
+      lang="#{sessionMb.language}">
+<f:view locale="#{sessionMb.locale}">
+<h:head>
+    <title>#{msg['lp.title']}</title>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+    <meta name="description" content="#{msg['hm.hero.kicker']}: #{msg['hm.hero.title']}"/>
+    <link rel="icon" type="image/png" href="#{request.contextPath}/resources/img/favicon.png"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;display=swap"/>
+    <link rel="stylesheet" href="#{request.contextPath}/resources/css/homepage.css?v=20261010d"/>
+</h:head>
+<h:body styleClass="hp">
+
+<!-- ============================ NAV ============================ -->
+<header class="hp-nav">
+    <div class="hp-nav-in">
+        <a class="hp-logo" href="#top">CLUB <b>VIP</b></a>
+        <div class="hp-menu" id="hpMenu">
+            <nav class="hp-links" aria-label="#{msg['lp.nav.aria']}">
+                <a href="#propulsores">#{msg['hm.nav.boost']}</a>
+                <a href="#agenda">#{msg['hm.nav.agenda']}</a>
+                <a href="#venta">#{msg['lp.v.pos']}</a>
+                <a href="#consignacion">#{msg['lp.v.cons']}</a>
+                <a href="#nomina">#{msg['lp.nav.payroll']}</a>
+                <a href="#modulos">#{msg['hm.nav.modules']}</a>
+                <a href="#link">#{msg['lp.nav.link']}</a>
+                <a href="#recompensas">#{msg['hm.nav.rewards']}</a>
+                <a href="#preguntas">#{msg['hm.nav.faq']}</a>
+            </nav>
+            <div class="hp-menu-tools">
+                <h:form id="langForm" styleClass="hp-lang">
+                    <p:commandLink styleClass="#{sessionMb.language eq 'es' ? 'on' : ''}" process="@this" update="@none"
+                                   action="#{sessionMb.changeLanguage('es')}" oncomplete="window.location.reload()">#{msg['hm.lang.es']}</p:commandLink>
+                    <p:commandLink styleClass="#{sessionMb.language eq 'en' ? 'on' : ''}" process="@this" update="@none"
+                                   action="#{sessionMb.changeLanguage('en')}" oncomplete="window.location.reload()">#{msg['hm.lang.en']}</p:commandLink>
+                </h:form>
+            </div>
+        </div>
+        <a class="hp-login" href="#{request.contextPath}/login.xhtml">#{msg['lp.nav.login']}</a>
+        <a class="hp-btn hp-btn-sm" href="#{request.contextPath}/register.xhtml">#{msg['lp.cta.register']}</a>
+        <button type="button" class="hp-burger" id="hpBurger" aria-controls="hpMenu" aria-expanded="false" aria-label="#{msg['hm.nav.menu']}"><span></span></button>
+    </div>
+</header>
+
+<main>
+<!-- ============================ HERO ============================ -->
+<section class="hp-hero" id="top">
+    <div class="hp-hero-copy">
+        <p class="hp-hero-kicker">#{msg['hm.hero.kicker']}</p>
+        <h1>#{msg['hm.hero.title']}</h1>
+        <p class="hp-hero-lead"><h:outputText value="#{msg['hm.hero.lead']}" escape="false"/></p>
+        <div class="hp-hero-cta">
+            <a class="hp-btn" href="#{request.contextPath}/register.xhtml">#{msg['lp.cta.register']}</a>
+            <a class="hp-btn hp-btn-ghost" href="#modulos">#{msg['hm.hero.modules']}</a>
+        </div>
+    </div>
+    <div class="hp-hero-media">
+        <img class="hp-hero-main" src="#{request.contextPath}/resources/img/home/hero-owner.jpg" alt=""/>
+        <div class="hp-hero-side">
+            <div class="hp-hero-phone"><img src="#{request.contextPath}/resources/img/home/phone-agenda.png" alt="#{msg['hm.link.img3']}"/></div>
+            <img src="#{request.contextPath}/resources/img/home/shipping.jpg" alt=""/>
+        </div>
+    </div>
+</section>
+
+<!-- ============================ CONECTA ============================ -->
+<section class="hp-connect" style="background-image:url('#{request.contextPath}/resources/img/home/mi-negocio.jpg')">
+    <div class="hp-connect-card">
+        <h2><h:outputText value="#{msg['hm.conn.title']}" escape="false"/></h2>
+        <p class="hp-connect-sub">#{msg['hm.conn.sub']}</p>
+        <p><h:outputText value="#{msg['hm.conn.lead']}" escape="false"/></p>
+    </div>
+</section>
+
+<div class="hp-places"><h2>#{msg['hm.places']}</h2></div>
+
+<!-- ============================ PROPULSORES ============================ -->
+<section class="hp-boost" id="propulsores">
+    <a class="hp-boost-item" href="#agenda" style="background-image:url('#{request.contextPath}/resources/img/home/mod-agenda.jpg')">
+        <span class="hp-boost-card"><span class="hp-boost-tag">#{msg['hm.boost.1']}</span><span class="hp-boost-t">#{msg['hm.boost.1.t']}</span></span>
+    </a>
+    <a class="hp-boost-item" href="#venta" style="background-image:url('#{request.contextPath}/resources/img/home/mod-pos.jpg')">
+        <span class="hp-boost-card"><span class="hp-boost-tag">#{msg['hm.boost.2']}</span><span class="hp-boost-t">#{msg['hm.boost.2.t']}</span></span>
+    </a>
+    <a class="hp-boost-item" href="#consignacion" style="background-image:url('#{request.contextPath}/resources/img/home/shipping.jpg')">
+        <span class="hp-boost-card"><span class="hp-boost-tag">#{msg['hm.boost.3']}</span><span class="hp-boost-t">#{msg['hm.boost.3.t']}</span></span>
+    </a>
+    <a class="hp-boost-item" href="#nomina" style="background-image:url('#{request.contextPath}/resources/img/home/mod-team.jpg')">
+        <span class="hp-boost-card"><span class="hp-boost-tag">#{msg['hm.boost.4']}</span><span class="hp-boost-t">#{msg['hm.boost.4.t']}</span></span>
+    </a>
+</section>
+
+<!-- ============================ AGENDA ============================ -->
+<section class="hp-agenda" id="agenda">
+    <div class="hp-wrap hp-split">
+        <div class="hp-agenda-copy">
+            <h2>#{msg['hm.ag.title']}</h2>
+            <p><h:outputText value="#{msg['hm.ag.lead']}" escape="false"/></p>
+            <p><strong>#{msg['hm.ag.1']}</strong> #{msg['hm.ag.1.t']}</p>
+            <p><strong>#{msg['hm.ag.2']}</strong> #{msg['hm.ag.2.t']}</p>
+            <p><strong>#{msg['hm.ag.3']}</strong> #{msg['hm.ag.3.t']}</p>
+            <p><strong>#{msg['hm.ag.4']}</strong> #{msg['hm.ag.4.t']}</p>
+        </div>
+        <div class="hp-agenda-media">
+            <img src="#{request.contextPath}/resources/img/home/agenda-phone.png" alt="#{msg['hm.ag.img']}" loading="lazy"/>
+        </div>
+    </div>
+</section>
+
+<!-- ============================ PUNTO DE VENTA ============================ -->
+<section class="hp-pos" id="venta" style="background-image:url('#{request.contextPath}/resources/img/home/pos-phone.jpg')">
+    <div class="hp-pos-panel">
+        <h2><h:outputText value="#{msg['hm.pos.title']}" escape="false"/></h2>
+        <p class="hp-lead">#{msg['hm.pos.lead']}</p>
+        <dl class="hp-feats">
+            <dt>#{msg['hm.pos.1']}</dt><dd>#{msg['hm.pos.1.t']}</dd>
+            <dt>#{msg['hm.pos.2']}</dt><dd>#{msg['hm.pos.2.t']}</dd>
+            <dt>#{msg['hm.pos.3']}</dt><dd>#{msg['hm.pos.3.t']}</dd>
+            <dt>#{msg['hm.pos.4']}</dt><dd>#{msg['hm.pos.4.t']}</dd>
+            <dt>#{msg['hm.pos.5']}</dt><dd>#{msg['hm.pos.5.t']}</dd>
+            <dt>#{msg['hm.pos.6']}</dt><dd>#{msg['hm.pos.6.t']}</dd>
+        </dl>
+    </div>
+    <span class="hp-sr">#{msg['hm.pos.img']}</span>
+</section>
+
+<!-- ============================ CONSIGNACION ============================ -->
+<section class="hp-cons" id="consignacion">
+    <img src="#{request.contextPath}/resources/img/home/consignment.jpg" alt="#{msg['hm.cons.img']}" loading="lazy"/>
+    <div class="hp-cons-copy">
+        <h2><h:outputText value="#{msg['hm.cons.title']}" escape="false"/></h2>
+        <p><h:outputText value="#{msg['hm.cons.lead']}" escape="false"/></p>
+    </div>
+</section>
+
+<!-- ============================ NOMINA ============================ -->
+<section class="hp-pay" id="nomina">
+    <div class="hp-pay-copy">
+        <h2>#{msg['hm.pay.title']}</h2>
+        <p class="hp-lead">#{msg['hm.pay.lead']}</p>
+        <dl class="hp-feats">
+            <dt>#{msg['hm.pay.1']}</dt><dd>#{msg['hm.pay.1.t']}</dd>
+            <dt>#{msg['hm.pay.2']}</dt><dd>#{msg['hm.pay.2.t']}</dd>
+            <dt>#{msg['hm.pay.3']}</dt><dd>#{msg['hm.pay.3.t']}</dd>
+            <dt>#{msg['hm.pay.4']}</dt><dd>#{msg['hm.pay.4.t']}</dd>
+            <dt>#{msg['hm.pay.5']}</dt><dd>#{msg['hm.pay.5.t']}</dd>
+            <dt>#{msg['hm.pay.6']}</dt><dd>#{msg['hm.pay.6.t']}</dd>
+        </dl>
+    </div>
+    <div class="hp-pay-media" style="background-image:url('#{request.contextPath}/resources/img/home/payroll.jpg')">
+        <div class="hp-cut">
+            <div class="hp-cut-head"><span>#{msg['hm.pay.cut']}</span><span>#{msg['hm.pay.period']}</span></div>
+            <table>
+                <thead><tr><th>#{msg['hm.pay.col.person']}</th><th>#{msg['hm.pay.col.billed']}</th><th>#{msg['hm.pay.col.commission']}</th><th>#{msg['hm.pay.col.salary']}</th><th>#{msg['hm.pay.col.toPay']}</th></tr></thead>
+                <tbody>
+                    <tr><td>Ana<small>#{msg['hm.pay.r1']}</small></td><td>$14,800</td><td>$5,920</td><td>—</td><td>$5,920</td></tr>
+                    <tr><td>Fer<small>#{msg['hm.pay.r2']}</small></td><td>$9,600</td><td>$1,920</td><td>$3,000</td><td>$4,920</td></tr>
+                    <tr><td>Lupita<small>#{msg['hm.pay.r3']}</small></td><td>—</td><td>—</td><td>$4,500</td><td>$4,500</td></tr>
+                </tbody>
+            </table>
+            <div class="hp-cut-total"><span>#{msg['hm.pay.total']}</span><b>$15,340</b></div>
+            <div class="hp-cut-actions"><span class="hp-pill on">#{msg['hm.pay.generate']}</span><span class="hp-pill">#{msg['hm.pay.markPaid']}</span></div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================ MODULOS ============================ -->
+<section class="hp-mods" id="modulos">
+    <div class="hp-wrap hp-split">
+        <div class="hp-mods-media">
+            <img src="#{request.contextPath}/resources/img/home/modules-hand.png" alt="#{msg['hm.mods.img']}" loading="lazy"/>
+        </div>
+        <div class="hp-mods-copy">
+            <h2 class="hp-light">#{msg['hm.mods.title']}</h2>
+            <h2>#{msg['hm.mods.title2']}</h2>
+            <p><h:outputText value="#{msg['hm.mods.lead']}" escape="false"/></p>
+            <div class="hp-example">
+                <p><h:outputText value="#{msg['hm.mods.example']}" escape="false"/></p>
+                <p><strong>#{msg['hm.mods.example2']}</strong></p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================ PARA QUIEN ============================ -->
+<section class="hp-who" id="para-quien">
+    <div class="hp-wrap">
+        <h2>#{msg['hm.who.title']}</h2>
+        <div class="hp-who-lead">
+            <p><h:outputText value="#{msg['hm.who.lead']}" escape="false"/></p>
+            <button type="button" class="hp-switch" id="whoSwitch" aria-pressed="true" aria-label="#{msg['hm.mods.title2']}">
+                <span>#{msg['hm.who.off']}</span><i></i><span>#{msg['hm.who.on']}</span>
+            </button>
+        </div>
+        <div class="hp-who-grid">
+            <div class="hp-who-card"><h3>#{msg['lp.who.1']}</h3><p>#{msg['lp.who.1.t']}</p><div class="hp-tags"><span>#{msg['hm.nav.agenda']}</span><span class="on">#{msg['hm.who.sale']}</span><span class="on">#{msg['lp.v.cons']}</span><span>#{msg['lp.nav.payroll']}</span></div></div>
+            <div class="hp-who-card"><h3>#{msg['lp.who.2']}</h3><p>#{msg['lp.who.2.t']}</p><div class="hp-tags"><span class="on">#{msg['hm.nav.agenda']}</span><span class="on">#{msg['hm.who.sale']}</span><span class="on">#{msg['lp.v.cons']}</span><span class="on">#{msg['lp.nav.payroll']}</span></div></div>
+            <div class="hp-who-card"><h3>#{msg['lp.who.3']}</h3><p>#{msg['lp.who.3.t']}</p><div class="hp-tags"><span>#{msg['hm.nav.agenda']}</span><span class="on">#{msg['hm.who.sale']}</span><span class="on">#{msg['lp.v.cons']}</span><span>#{msg['lp.nav.payroll']}</span></div></div>
+            <div class="hp-who-card"><h3>#{msg['lp.who.4']}</h3><p>#{msg['lp.who.4.t']}</p><div class="hp-tags"><span class="on">#{msg['hm.nav.agenda']}</span><span class="on">#{msg['hm.who.sale']}</span><span>#{msg['lp.v.cons']}</span><span class="on">#{msg['lp.nav.payroll']}</span></div></div>
+            <div class="hp-who-card"><h3>#{msg['lp.who.5']}</h3><p>#{msg['lp.who.5.t']}</p><div class="hp-tags"><span>#{msg['hm.nav.agenda']}</span><span class="on">#{msg['hm.who.sale']}</span><span class="on">#{msg['lp.v.cons']}</span><span class="on">#{msg['lp.nav.payroll']}</span></div></div>
+            <div class="hp-who-card"><h3>#{msg['lp.who.6']}</h3><p>#{msg['lp.who.6.t']}</p><div class="hp-tags"><span class="on">#{msg['hm.nav.agenda']}</span><span class="on">#{msg['hm.who.sale']}</span><span>#{msg['lp.v.cons']}</span><span>#{msg['lp.nav.payroll']}</span></div></div>
+        </div>
+        <div class="hp-center"><a class="hp-btn hp-btn-wide" href="#{request.contextPath}/register.xhtml">#{msg['hm.who.cta']}</a></div>
+    </div>
+</section>
+
+<!-- ============================ TU LINK ============================ -->
+<section class="hp-link" id="link">
+    <div class="hp-wrap">
+        <h2><h:outputText value="#{msg['hm.link.title']}" escape="false"/></h2>
+        <div class="hp-link-grid">
+            <div class="hp-link-col">
+                <p><h:outputText value="#{msg['hm.link.1']}" escape="false"/></p>
+                <figure class="hp-phone tilt-l">
+                    <img src="#{request.contextPath}/resources/img/home/phone-modules.png" alt="#{msg['hm.link.img1']}" loading="lazy"/>
+                    <figcaption class="hp-url">www.clubvip.club/<b>beautysalon</b>/modulos</figcaption>
+                </figure>
+            </div>
+            <div class="hp-link-col">
+                <p><h:outputText value="#{msg['hm.link.2']}" escape="false"/></p>
+                <figure class="hp-phone">
+                    <img src="#{request.contextPath}/resources/img/home/phone-store.png" alt="#{msg['hm.link.img2']}" loading="lazy"/>
+                    <figcaption class="hp-url">www.clubvip.club/<b>beautysalon</b>/tienda</figcaption>
+                </figure>
+            </div>
+            <div class="hp-link-col">
+                <p><h:outputText value="#{msg['hm.link.3']}" escape="false"/></p>
+                <figure class="hp-phone tilt-r">
+                    <img src="#{request.contextPath}/resources/img/home/phone-agenda.png" alt="#{msg['hm.link.img3']}" loading="lazy"/>
+                    <figcaption class="hp-url">www.clubvip.club/<b>beautysalon</b>/agenda</figcaption>
+                </figure>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================ RECOMPENSAS ============================ -->
+<section class="hp-rw" id="recompensas">
+    <div class="hp-wrap">
+        <div class="hp-split">
+            <div class="hp-rw-copy">
+                <div class="hp-rw-logo">CLUB <b>VIP</b><span>#{msg['hm.rw.badge']}</span></div>
+                <h2 class="hp-light"><h:outputText value="#{msg['hm.rw.title']}" escape="false"/></h2>
+                <p><h:outputText value="#{msg['hm.rw.lead']}" escape="false"/></p>
+                <img class="hp-stores" src="#{request.contextPath}/resources/img/home/store-badges.png" alt="#{msg['hm.rw.stores']}" loading="lazy"/>
+                <p class="hp-rw-list-t"><strong>#{msg['hm.rw.list']}</strong></p>
+                <ul class="hp-checks">
+                    <li>#{msg['hm.rw.1']}</li>
+                    <li>#{msg['hm.rw.2']}</li>
+                    <li>#{msg['hm.rw.3']}</li>
+                    <li>#{msg['hm.rw.4']}</li>
+                </ul>
+            </div>
+            <div class="hp-rw-media">
+                <img src="#{request.contextPath}/resources/img/home/reward-cards.png" alt="#{msg['hm.rw.cards']}" loading="lazy"/>
+                <div class="hp-notes">
+                    <div class="hp-note"><span class="hp-av">CV</span><div><div class="hp-note-h"><b>CLUBVIP</b><small>#{msg['hm.rw.ago']}</small></div><b>#{msg['hm.rw.n1.biz']}</b><p><h:outputText value="#{msg['hm.rw.n1']}" escape="false"/></p></div></div>
+                    <div class="hp-note dark"><span class="hp-av">CV</span><div><div class="hp-note-h"><b>CLUBVIP</b><small>#{msg['hm.rw.ago']}</small></div><b>#{msg['hm.rw.n2.biz']}</b><p>#{msg['hm.rw.n2']}</p></div></div>
+                    <div class="hp-note grey"><span class="hp-av">CV</span><div><div class="hp-note-h"><b>CLUBVIP</b><small>#{msg['hm.rw.ago']}</small></div><b>#{msg['hm.rw.n3.biz']}</b><p><h:outputText value="#{msg['hm.rw.n3']}" escape="false"/></p></div></div>
+                </div>
+            </div>
+        </div>
+        <div class="hp-loyal">
+            <div>
+                <h3>#{msg['hm.rw.loyal']}</h3>
+                <p>#{msg['hm.rw.loyal.t']}</p>
+            </div>
+            <div class="hp-stamps" role="img" aria-label="#{msg['hm.rw.loyal.aria']}">
+                <span class="done">✓</span><span class="done">✓</span><span class="done">✓</span><span class="grey">✓</span><span class="next">5</span><span class="prize">★</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================ CALC + TE SUENA ============================ -->
+<section class="hp-calc">
+    <div class="hp-calc-in">
+        <h2 class="hp-light"><h:outputText value="#{msg['hm.calc.title']}" escape="false"/></h2>
+        <div class="hp-field">
+            <label for="noShow">#{msg['lp.calc.noShow']} <output id="noShowOut" for="noShow">4</output></label>
+            <input type="range" id="noShow" min="0" max="20" step="1" value="4"/>
+        </div>
+        <div class="hp-field">
+            <label for="ticket">#{msg['lp.calc.ticket']} <output id="ticketOut" for="ticket">$450</output></label>
+            <input type="range" id="ticket" min="100" max="3000" step="50" value="450"/>
+        </div>
+        <div class="hp-field">
+            <label for="extra">#{msg['lp.calc.extra']} <output id="extraOut" for="extra">$120</output></label>
+            <small>#{msg['lp.calc.extra.hint']}</small>
+            <input type="range" id="extra" min="0" max="1000" step="10" value="120"/>
+        </div>
+        <p class="hp-calc-lead">#{msg['lp.calc.lead']}</p>
+        <p class="hp-calc-note">#{msg['lp.calc.note']}</p>
+        <div class="hp-calc-out" aria-live="polite">
+            <span>#{msg['lp.calc.out']}</span>
+            <div class="hp-big" id="lossOut">$9,870</div>
+            <div class="hp-yr" id="yearOut" data-suffix="#{msg['lp.calc.perYear']}"></div>
+            <p>#{msg['lp.calc.out.t']}</p>
+        </div>
+    </div>
+    <div class="hp-pain">
+        <h2>#{msg['lp.pain.eyebrow']}</h2>
+        <blockquote><p>“#{msg['lp.pain.1']}”</p><footer><b>#{msg['hm.pain.1']}</b> #{msg['lp.pain.1.fix']}</footer></blockquote>
+        <blockquote><p>“#{msg['lp.pain.3']}”</p><footer><b>#{msg['hm.pain.2']}</b> #{msg['lp.pain.3.fix']}</footer></blockquote>
+        <blockquote><p>“#{msg['lp.pain.2']}”</p><footer><b>#{msg['hm.pain.3']}</b> #{msg['lp.pain.2.fix']}</footer></blockquote>
+        <blockquote><p>“#{msg['lp.pain.4']}”</p><footer><b>#{msg['hm.pain.4']}</b> #{msg['lp.pain.4.fix']}</footer></blockquote>
+    </div>
+</section>
+
+<!-- ============================ FAQ ============================ -->
+<section class="hp-faq" id="preguntas">
+    <div class="hp-wrap hp-split">
+        <h2 class="hp-light"><h:outputText value="#{msg['hm.faq.title']}" escape="false"/></h2>
+        <div class="hp-faq-list">
+            <details open="open"><summary>#{msg['hm.faq.q1']}</summary><p>#{msg['hm.faq.a1']}</p></details>
+            <details><summary>#{msg['lp.faq.q2']}</summary><p>#{msg['lp.faq.a2']}</p></details>
+            <details><summary>#{msg['lp.faq.q3']}</summary><p>#{msg['lp.faq.a3']}</p></details>
+            <details><summary>#{msg['lp.faq.q4']}</summary><p>#{msg['lp.faq.a4']}</p></details>
+            <details><summary>#{msg['lp.faq.q5']}</summary><p>#{msg['lp.faq.a5']}</p></details>
+            <details><summary>#{msg['lp.faq.q6']}</summary><p>#{msg['lp.faq.a6']}</p></details>
+            <details><summary>#{msg['lp.faq.q7']}</summary><p>#{msg['lp.faq.a7']}</p></details>
+        </div>
+    </div>
+</section>
+
+<!-- ============================ FINAL ============================ -->
+<section class="hp-final" id="empezar" style="background-image:url('#{request.contextPath}/resources/img/home/final.jpg')">
+    <div class="hp-final-in">
+        <h2>#{msg['hm.final.title']}</h2>
+        <p class="hp-final-note">#{msg['hm.final.note']}</p>
+        <a class="hp-btn" href="#{request.contextPath}/register.xhtml">#{msg['lp.cta.register']}</a>
+        <div class="hp-secure"><span>#{msg['hm.final.secure']}</span><span class="hp-pay-logos" role="img" aria-label="#{msg['hm.final.methods']}"><img src="#{request.contextPath}/resources/img/home/pay-1.png" alt="" loading="lazy"/><img src="#{request.contextPath}/resources/img/home/pay-2.png" alt="" loading="lazy"/></span></div>
+    </div>
+</section>
+</main>
+
+<h:outputLink styleClass="hp-chat" value="https://api.whatsapp.com/send" target="_blank" rel="noopener">
+    <f:param name="phone" value="525559396813"/>
+    <f:param name="text" value="#{msg['hm.chat.text']}"/>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1.3-3.9A8 8 0 1 1 8 19z"/><path d="M9 10.5h.01M12 10.5h.01M15 10.5h.01"/></svg>
+    #{msg['hm.chat']}
+</h:outputLink>
+
+<footer class="hp-foot">
+    <div class="hp-foot-in">
+        <a class="hp-logo" href="#top">CLUB <b>VIP</b></a>
+        <span><a href="https://clubvip.club" target="_blank" rel="noopener">clubvip.club</a> · <a href="#{request.contextPath}/register.xhtml#privacidad">#{msg['landing.footer.privacy']}</a> · © 2026 Club VIP</span>
+    </div>
+</footer>
+
+<script src="#{request.contextPath}/resources/js/homepage.js?v=20261010c"></script>
+</h:body>
+</f:view>
+</html>

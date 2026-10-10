@@ -1,0 +1,151 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <div class="card">
+            <div class="page-header">
+                <span class="page-icon"><i class="pi pi-download"></i></span>
+                <h2>#{msg['menu.warehouse.entry']}</h2>
+                <span class="page-subtitle">
+                    <p:button icon="pi pi-arrow-left" value="#{msg['menu.warehouse.inventory']}" outcome="/pages/inventory.xhtml"
+                              styleClass="ui-button-flat ui-button-secondary"/>
+                </span>
+            </div>
+
+            <h:form id="form">
+                <p:panel id="linePanel" styleClass="mb-2">
+                    <div class="cv-line-grid">
+                        <div class="field cv-line-product">
+                            <label for="form:product">#{msg['cat.product.name']}</label>
+                            <p:selectOneMenu id="product" value="#{inventoryEntryMb.productId}" filter="true"
+                                             filterMatchMode="contains" autoWidth="false" style="width:100%">
+                                <f:selectItem itemLabel="#{msg['lbl.select']}" itemValue="#{null}" noSelectionOption="true"/>
+                                <f:selectItems value="#{inventoryEntryMb.products}" var="pr"
+                                               itemLabel="#{pr.name}#{empty pr.brandName ? '' : ' - '.concat(pr.brandName)}" itemValue="#{pr.id}"/>
+                                <p:ajax event="itemSelect" listener="#{inventoryEntryMb.onProductChange}" process="@this" update="unitCost"/>
+                            </p:selectOneMenu>
+                        </div>
+                        <div class="field cv-line-qty">
+                            <label for="form:quantity">#{msg['lbl.quantity']}</label>
+                            <p:inputNumber id="quantity" value="#{inventoryEntryMb.quantity}" decimalPlaces="0" minValue="1"/>
+                        </div>
+                        <div class="field cv-line-cost">
+                            <label for="form:unitCost">#{msg['cat.inventory.unitCost']}</label>
+                            <p:inputNumber id="unitCost" value="#{inventoryEntryMb.unitCost}" decimalPlaces="2" minValue="0" symbol="$ "/>
+                        </div>
+                        <div class="field cv-line-btn">
+                            <label>&#160;</label>
+                            <p:commandButton value="#{msg['cat.entry.addLine']}" icon="pi pi-plus"
+                                             actionListener="#{inventoryEntryMb.addItem}" update="form :messages"
+                                             styleClass="ui-button-primary"/>
+                        </div>
+                    </div>
+                </p:panel>
+
+                <p:dataTable id="table" var="it" value="#{inventoryEntryMb.items}" emptyMessage="#{msg['cat.entry.empty']}"
+                             styleClass="mt-2" reflow="true">
+                    <p:column headerText="#{msg['cat.product.name']}">
+                        <h:outputText value="#{it.productName}"/>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.quantity']}" style="text-align:right;width:7rem">
+                        <h:outputText value="#{it.quantity}"/>
+                    </p:column>
+                    <p:column headerText="#{msg['cat.inventory.unitCost']}" style="text-align:right;width:9rem">
+                        <h:outputText value="#{sessionMb.fmtMoney(it.unitCost)}"/>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.total']}" style="text-align:right;width:9rem">
+                        <h:outputText value="#{sessionMb.fmtMoney(it.lineTotal)}" style="font-weight:600"/>
+                    </p:column>
+                    <p:column style="width:3rem;text-align:center">
+                        <p:commandButton icon="pi pi-trash" title="#{msg['action.delete']}"
+                                         actionListener="#{inventoryEntryMb.removeItem(it)}" update=":form:form"
+                                         process="@this" styleClass="ui-button-rounded ui-button-text ui-button-danger"/>
+                    </p:column>
+                    <f:facet name="footer">
+                        <div class="text-right">
+                            #{msg['lbl.total']}:
+                            <span style="font-weight:700;font-size:1.1rem">#{sessionMb.fmtMoney(inventoryEntryMb.total)}</span>
+                        </div>
+                    </f:facet>
+                </p:dataTable>
+
+                <div class="field mt-2">
+                    <label for="form:notes">#{msg['cat.entry.notes']}</label>
+                    <p:inputTextarea id="notes" value="#{inventoryEntryMb.notes}" rows="2" autoResize="false" maxlength="250"
+                                     placeholder="#{msg['cat.entry.notes.hint']}"/>
+                </div>
+
+                <p:commandButton value="#{msg['cat.entry.save']}" icon="pi pi-save"
+                                 actionListener="#{inventoryEntryMb.save}" update="form :messages"
+                                 disabled="#{empty inventoryEntryMb.items}"
+                                 styleClass="ui-button-primary mt-2" style="font-size:1.05rem;padding:.7rem 1.8rem">
+                    <p:confirm header="#{msg['action.confirm']}" message="#{msg['cat.entry.confirmSave']}"
+                               icon="pi pi-exclamation-triangle"/>
+                </p:commandButton>
+
+                <h3 class="section-title mt-3"><i class="pi pi-history gold"></i>&#160;#{msg['cat.entry.history']}</h3>
+                <p:dataTable id="history" var="en" value="#{inventoryEntryMb.entries}" paginator="true" rows="10"
+                             emptyMessage="#{msg['msg.noData']}" reflow="true" paginatorAlwaysVisible="false"
+                             rowKey="#{en.id}" stripedRows="true">
+                    <p:column style="width:2.5rem">
+                        <p:rowToggler/>
+                    </p:column>
+                    <p:column headerText="#" style="width:4rem">
+                        <h:outputText value="#{en.id}"/>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.date']}" sortBy="#{en.entryDate}" width="150">
+                        <h:outputText value="#{en.entryDate}">
+                            <f:convertDateTime pattern="dd/MM/yyyy HH:mm" timeZone="America/Mexico_City"/>
+                        </h:outputText>
+                    </p:column>
+                    <p:column headerText="#{msg['cat.entry.notes']}">
+                        <h:outputText value="#{en.notes}"/>
+                    </p:column>
+                    <p:column headerText="#{msg['cat.entry.lines']}" width="80" styleClass="text-right">
+                        <h:outputText value="#{en.items != null ? en.items.size() : 0}"/>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.total']}" width="110" styleClass="text-right">
+                        <h:outputText value="#{sessionMb.fmtMoney(en.totalCost)}" style="font-weight:600"/>
+                    </p:column>
+                    <p:rowExpansion>
+                        <p:dataTable var="ei" value="#{en.items}" emptyMessage="#{msg['msg.noData']}" styleClass="cv-inner">
+                            <p:column headerText="#{msg['cat.product.name']}">
+                                <h:outputText value="#{ei.productName}"/>
+                            </p:column>
+                            <p:column headerText="#{msg['lbl.quantity']}" style="text-align:right;width:7rem">
+                                <h:outputText value="#{ei.quantity}"/>
+                            </p:column>
+                            <p:column headerText="#{msg['cat.inventory.unitCost']}" style="text-align:right;width:9rem">
+                                <h:outputText value="#{sessionMb.fmtMoney(ei.unitCost)}"/>
+                            </p:column>
+                            <p:column headerText="#{msg['lbl.total']}" style="text-align:right;width:9rem">
+                                <h:outputText value="#{sessionMb.fmtMoney(ei.lineTotal)}"/>
+                            </p:column>
+                        </p:dataTable>
+                    </p:rowExpansion>
+                </p:dataTable>
+
+                <p:confirmDialog global="true">
+                    <p:commandButton value="#{msg['action.yes']}" type="button"
+                                     styleClass="ui-confirmdialog-yes ui-button-primary"/>
+                    <p:commandButton value="#{msg['action.no']}" type="button"
+                                     styleClass="ui-confirmdialog-no ui-button-secondary"/>
+                </p:confirmDialog>
+            </h:form>
+
+            <style type="text/css">
+                .cv-line-grid { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; }
+                .cv-line-grid .field { margin-bottom: 0; min-width: 0; }
+                .cv-line-product { flex: 3 1 260px; }
+                .cv-line-qty { flex: 1 1 110px; }
+                .cv-line-cost { flex: 1 1 140px; }
+                .cv-line-btn { flex: 0 0 auto; }
+                .cv-line-grid .ui-inputnumber, .cv-line-grid .ui-inputnumber input { width: 100%; }
+                @media (max-width: 640px) { .cv-line-grid .field { flex: 1 1 100%; } }
+            </style>
+        </div>
+    </ui:define>
+</ui:composition>

@@ -1,0 +1,137 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <div class="card">
+            <div class="page-header">
+                <span class="page-icon"><i class="pi pi-id-card"></i></span>
+                <h2>#{msg['menu.admin.user']}</h2>
+                <span class="page-subtitle">#{msg['cat.user.subtitle']}</span>
+            </div>
+
+            <h:form id="form">
+                <p:toolbar>
+                    <p:toolbarGroup>
+                        <p:commandButton value="#{msg['action.new']}" icon="pi pi-user-plus"
+                                         process="@this" actionListener="#{userMb.prepareNew}"
+                                         update=":form:dialog" oncomplete="PF('userDialog').show()"
+                                         styleClass="ui-button-primary"/>
+                        <p:commandButton icon="pi pi-refresh" title="#{msg['action.refresh']}"
+                                         process="@this" actionListener="#{userMb.refresh}" update=":form:table :messages"
+                                         styleClass="ui-button-secondary ml-2"/>
+                    </p:toolbarGroup>
+                </p:toolbar>
+
+                <p:dataTable id="table" var="u" value="#{userMb.users}" paginator="true" rows="10"
+                             emptyMessage="#{msg['msg.noData']}" styleClass="mt-2" widgetVar="userTable"
+                             filteredValue="#{userMb.filtered}" globalFilterOnly="true" reflow="true"
+                             paginatorAlwaysVisible="false" rowKey="#{u.id}" stripedRows="true">
+                    <f:facet name="header">
+                        <div class="flex-between wrap gap-2">
+                            <span class="muted">#{userMb.users.size()} #{msg['cat.user.count']}</span>
+                            <p:inputText id="globalFilter" onkeyup="PF('userTable').filter()"
+                                         placeholder="#{msg['action.search']}"/>
+                        </div>
+                    </f:facet>
+                    <p:column headerText="#{msg['lbl.email']}" sortBy="#{u.email}"
+                              filterBy="#{u.email}" filterMatchMode="contains">
+                        <span style="font-weight:600">#{u.email}</span>
+                        <h:panelGroup rendered="#{userMb.isSelf(u)}" styleClass="badge badge-muted ml-2" style="font-size:.7rem">#{msg['cat.user.you']}</h:panelGroup>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.fullName']}" sortBy="#{u.fullName}"
+                              filterBy="#{u.fullName}" filterMatchMode="contains">
+                        <div class="flex gap-2">
+                            <span class="avatar">#{sessionMb.initialsOf(u.fullName)}</span>
+                            <h:outputText value="#{u.fullName}"/>
+                        </div>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.email']}" sortBy="#{u.email}"
+                              filterBy="#{u.email}" filterMatchMode="contains">
+                        <h:outputText value="#{u.email}"/>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.phone']}" sortBy="#{u.phone}" width="130">
+                        <h:outputText value="#{u.phone}"/>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.profile']}" sortBy="#{u.profileName}" width="150"
+                              filterBy="#{u.profileName}" filterMatchMode="contains">
+                        <span class="#{userMb.profileBadge(u.profileId)}">#{msg['cat.user.profile.'.concat(u.profileId)]}</span>
+                    </p:column>
+                    <p:column headerText="" style="width:7rem;text-align:center">
+                        <p:commandButton icon="pi pi-pencil" title="#{msg['action.edit']}"
+                                         process="@this" actionListener="#{userMb.prepareEdit(u)}"
+                                         update=":form:dialog" oncomplete="PF('userDialog').show()"
+                                         styleClass="ui-button-rounded ui-button-text"/>
+                        <p:commandButton icon="pi pi-trash" title="#{msg['action.delete']}"
+                                         process="@this" actionListener="#{userMb.delete(u)}" update=":form:table :messages"
+                                         disabled="#{userMb.isSelf(u)}"
+                                         styleClass="ui-button-rounded ui-button-text ui-button-danger">
+                            <p:confirm header="#{msg['action.confirm']}" message="#{msg['msg.confirmDelete']}"
+                                       icon="pi pi-exclamation-triangle"/>
+                        </p:commandButton>
+                    </p:column>
+                </p:dataTable>
+
+                <p:dialog header="#{msg['menu.admin.user']}" widgetVar="userDialog" modal="true" id="dialog"
+                          width="560" resizable="false" fitViewport="true" responsive="true" closeOnEscape="true"
+                          contentStyle="max-height:75vh;overflow:auto">
+                    <div class="form-grid" style="margin-top:.5rem">
+                        <div class="field required">
+                            <label for="form:usrFullName">#{msg['lbl.fullName']}</label>
+                            <p:inputText id="usrFullName" value="#{userMb.selected.fullName}" maxlength="120" required="true"
+                                         requiredMessage="#{msg['lbl.fullName']}: #{msg['msg.required']}"/>
+                        </div>
+                        <div class="field required">
+                            <label for="form:usrEmail">#{msg['lbl.email']}</label>
+                            <p:inputText id="usrEmail" value="#{userMb.selected.email}" maxlength="120" type="email"
+                                         required="true" autocomplete="off"
+                                         requiredMessage="#{msg['lbl.email']}: #{msg['msg.required']}"/>
+                        </div>
+                        <div class="field">
+                            <label for="form:usrPhone">#{msg['lbl.phone']}</label>
+                            <p:inputText id="usrPhone" value="#{userMb.selected.phone}" maxlength="20"/>
+                        </div>
+                        <div class="field required">
+                            <label for="form:usrProfile">#{msg['lbl.profile']}</label>
+                            <p:selectOneMenu id="usrProfile" value="#{userMb.selected.profileId}" required="true"
+                                             requiredMessage="#{msg['lbl.profile']}: #{msg['msg.required']}">
+                                <f:selectItems value="#{userMb.profiles}" var="pf" itemLabel="#{msg['cat.user.profile.'.concat(pf.id)]}" itemValue="#{pf.id}"/>
+                            </p:selectOneMenu>
+                            <span class="hint">#{msg['cat.user.profile.hint']}</span>
+                        </div>
+                        <div class="field">
+                            <label for="form:usrLang">#{msg['cat.user.language']}</label>
+                            <p:selectOneMenu id="usrLang" value="#{userMb.selected.preferredLanguage}">
+                                <f:selectItem itemValue="es" itemLabel="#{msg['lang.es']}"/>
+                                <f:selectItem itemValue="en" itemLabel="#{msg['lang.en']}"/>
+                            </p:selectOneMenu>
+                        </div>
+                        <div class="field span-2">
+                            <label for="form:usrPassword">#{msg['lbl.password']}</label>
+                            <p:password id="usrPassword" value="#{userMb.selected.password}" feedback="false" maxlength="60"
+                                        redisplay="false" autocomplete="new-password"/>
+                            <span class="hint">#{empty userMb.selected.id ? msg['cat.user.password.required'] : msg['cat.user.password.hint']}</span>
+                        </div>
+                    </div>
+                    <f:facet name="footer">
+                        <p:commandButton value="#{msg['action.save']}" icon="pi pi-check"
+                                         actionListener="#{userMb.save}" update=":form:table :messages"
+                                         styleClass="ui-button-primary"/>
+                        <p:commandButton value="#{msg['action.cancel']}" icon="pi pi-times"
+                                         onclick="PF('userDialog').hide()" type="button"
+                                         styleClass="ui-button-secondary"/>
+                    </f:facet>
+                </p:dialog>
+
+                <p:confirmDialog global="true">
+                    <p:commandButton value="#{msg['action.yes']}" type="button"
+                                     styleClass="ui-confirmdialog-yes ui-button-primary"/>
+                    <p:commandButton value="#{msg['action.no']}" type="button"
+                                     styleClass="ui-confirmdialog-no ui-button-secondary"/>
+                </p:confirmDialog>
+            </h:form>
+        </div>
+    </ui:define>
+</ui:composition>

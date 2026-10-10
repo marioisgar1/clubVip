@@ -1,0 +1,70 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <div class="page-header">
+            <span class="page-icon"><i class="pi pi-search"></i></span>
+            <h2>#{msg['menu.report.consulted']}</h2>
+            <span class="page-subtitle">#{msg['pos.report.consulted.subtitle']}</span>
+        </div>
+
+        <h:form id="form">
+            <div class="card">
+                <p:toolbar styleClass="mb-2">
+                    <p:toolbarGroup>
+                        <span class="field-inline">
+                            <label>#{msg['pos.report.from']}</label>
+                            <p:datePicker value="#{reportConsultedMb.from}" pattern="dd/MM/yyyy" showIcon="true" style="width:150px"/>
+                        </span>
+                        <span class="field-inline ml-2">
+                            <label>#{msg['pos.report.to']}</label>
+                            <p:datePicker value="#{reportConsultedMb.to}" pattern="dd/MM/yyyy" showIcon="true" style="width:150px"/>
+                        </span>
+                        <span class="field-inline ml-2">
+                            <label>#{msg['pos.lbl.family']}</label>
+                            <p:selectOneMenu value="#{reportConsultedMb.familyId}" style="width:160px">
+                                <f:selectItem itemLabel="#{msg['pos.report.all']}" itemValue="#{null}" noSelectionOption="true"/>
+                                <f:selectItems value="#{reportConsultedMb.families}" var="fa" itemLabel="#{fa.name}" itemValue="#{fa.id}"/>
+                            </p:selectOneMenu>
+                        </span>
+                        <span class="field-inline ml-2">
+                            <label>#{msg['pos.lbl.brand']}</label>
+                            <p:selectOneMenu value="#{reportConsultedMb.brandId}" style="width:160px">
+                                <f:selectItem itemLabel="#{msg['pos.report.all']}" itemValue="#{null}" noSelectionOption="true"/>
+                                <f:selectItems value="#{reportConsultedMb.brands}" var="br" itemLabel="#{br.name}" itemValue="#{br.id}"/>
+                            </p:selectOneMenu>
+                        </span>
+                        <p:commandButton value="#{msg['pos.report.generate']}" icon="pi pi-search"
+                                         actionListener="#{reportConsultedMb.generate}" update="@form :messages"
+                                         styleClass="ui-button-primary ml-2" style="margin-top:1.1rem"/>
+                    </p:toolbarGroup>
+                </p:toolbar>
+
+                <div class="summary-bar">
+                    <span class="summary-item">#{msg['pos.report.products']}: <strong>#{reportConsultedMb.rows.size()}</strong></span>
+                    <span class="summary-item">#{msg['pos.report.consultCount']}: <strong class="gold">#{reportConsultedMb.totalLookups}</strong></span>
+                </div>
+                <p:dataTable id="table" var="r" value="#{reportConsultedMb.rows}" paginator="true" rows="15" rowIndexVar="i"
+                             paginatorAlwaysVisible="false" reflow="true" stripedRows="true" emptyMessage="#{msg['msg.noData']}">
+                    <p:column headerText="#" width="50" styleClass="text-right">#{i + 1}</p:column>
+                    <p:column headerText="#{msg['pos.lbl.barcode']}" sortBy="#{r.barcode}" width="130"><span class="muted">#{r.barcode}</span></p:column>
+                    <p:column headerText="#{msg['lbl.description']}" sortBy="#{r.description}">
+                        <span style="font-weight:600">#{r.description}</span>
+                        <span class="muted" style="display:block">
+                            <h:outputText value="#{r.familyName}" rendered="#{not empty r.familyName}"/>
+                            <h:outputText value=" &#183; #{r.brandName}" rendered="#{not empty r.brandName}"/>
+                            <h:outputText value=" &#183; #{r.size}" rendered="#{not empty r.size}"/>
+                            <h:outputText value=" &#183; #{r.color}" rendered="#{not empty r.color}"/>
+                        </span>
+                    </p:column>
+                    <p:column headerText="#{msg['pos.report.consultCount']}" sortBy="#{r.value}" width="120" styleClass="text-right">
+                        <strong>#{r.value}</strong>
+                    </p:column>
+                </p:dataTable>
+            </div>
+        </h:form>
+    </ui:define>
+</ui:composition>

@@ -1,0 +1,320 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <div class="card">
+            <div class="page-header">
+                <span class="page-icon"><i class="pi pi-users"></i></span>
+                <h2>#{msg['menu.catalog.employee']}</h2>
+                <span class="page-subtitle">#{msg['cat.employee.subtitle']}</span>
+            </div>
+
+            <h:form id="form">
+                <p:toolbar>
+                    <p:toolbarGroup>
+                        <p:commandButton value="#{msg['action.new']}" icon="pi pi-user-plus"
+                                         process="@this" actionListener="#{employeeMb.prepareNew}"
+                                         update=":form:dialog" oncomplete="cvResetEmpPhoto();PF('employeeDialog').show()"
+                                         styleClass="ui-button-primary" rendered="#{sessionMb.admin}"/>
+                        <p:commandButton icon="pi pi-refresh" title="#{msg['action.refresh']}"
+                                         process="@this" actionListener="#{employeeMb.refresh}" update=":form:table :messages"
+                                         styleClass="ui-button-secondary ml-2"/>
+                    </p:toolbarGroup>
+                </p:toolbar>
+
+                <p:dataTable id="table" var="e" value="#{employeeMb.employees}" paginator="true" rows="10"
+                             emptyMessage="#{msg['msg.noData']}" styleClass="mt-2" widgetVar="employeeTable"
+                             filteredValue="#{employeeMb.filtered}" globalFilterOnly="true" reflow="true"
+                             paginatorAlwaysVisible="false" rowKey="#{e.id}" stripedRows="true">
+                    <f:facet name="header">
+                        <div class="flex-between wrap gap-2">
+                            <span class="muted">#{employeeMb.employees.size()} #{msg['cat.employee.count']}</span>
+                            <p:inputText id="globalFilter" onkeyup="PF('employeeTable').filter()"
+                                         placeholder="#{msg['action.search']}"/>
+                        </div>
+                    </f:facet>
+                    <p:column headerText="#{msg['cat.employee.name']}" sortBy="#{e.fullName}"
+                              filterBy="#{e.fullName}" filterMatchMode="contains">
+                        <div class="flex gap-2">
+                            <h:panelGroup rendered="#{not empty e.photoBase64}">
+                                <img alt="" class="cv-avatar-img" src="data:image/jpeg;base64,#{e.photoBase64}"/>
+                            </h:panelGroup>
+                            <h:panelGroup rendered="#{empty e.photoBase64}" styleClass="avatar">#{sessionMb.initialsOf(e.fullName)}</h:panelGroup>
+                            <span>
+                                <span style="font-weight:600">#{e.fullName}</span>
+                                <h:panelGroup rendered="#{not empty e.phone}" styleClass="muted" layout="block">#{e.phone}</h:panelGroup>
+                            </span>
+                        </div>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.specialty']}" sortBy="#{e.specialty}"
+                              filterBy="#{e.specialty}" filterMatchMode="contains">
+                        <h:outputText value="#{e.specialty}"/>
+                    </p:column>
+                    <p:column headerText="#{msg['cat.employee.scheme']}" sortBy="#{e.payScheme}">
+                        <h:outputText value="#{employeeMb.schemeLabel(e)}"/>
+                    </p:column>
+                    <p:column headerText="#{msg['cat.employee.payFrequency']}" sortBy="#{e.payFrequency}" width="110">
+                        <h:outputText value="#{msg['cat.employee.freq.'.concat(e.payFrequency)]}" rendered="#{not empty e.payFrequency}"/>
+                    </p:column>
+                    <p:column headerText="#{msg['cat.employee.section.schedule']}">
+                        <h:outputText value="#{employeeMb.hoursLabel(e)}" styleClass="muted small"/>
+                    </p:column>
+                    <p:column headerText="#{msg['cat.employee.bookable']}" width="90" styleClass="text-center" sortBy="#{e.bookable}">
+                        <i class="pi #{e.bookable ? 'pi-check gold' : 'pi-times muted'}"></i>
+                    </p:column>
+                    <p:column headerText="#{msg['cat.employee.canEditSchedule']}" width="110" styleClass="text-center"
+                              sortBy="#{e.canEditSchedule}">
+                        <i class="pi #{e.canEditSchedule ? 'pi-check gold' : 'pi-times muted'}"></i>
+                    </p:column>
+                    <p:column headerText="#{msg['cat.employee.period']}" styleClass="text-right" sortBy="#{e.periodAmount}">
+                        <span style="font-weight:600">#{e.periodServices != null ? e.periodServices : 0} #{msg['cat.employee.services']}
+                            &#183; #{sessionMb.fmtMoney(e.periodAmount)}</span>
+                        <span class="muted" style="display:block">#{employeeMb.periodLabel(e)}</span>
+                    </p:column>
+                    <p:column headerText="" style="width:7rem;text-align:center" rendered="#{sessionMb.admin}">
+                        <p:commandButton icon="pi pi-pencil" title="#{msg['action.edit']}"
+                                         process="@this" actionListener="#{employeeMb.prepareEdit(e)}"
+                                         update=":form:dialog :messages"
+                                         oncomplete="cvResetEmpPhoto();PF('employeeDialog').show()"
+                                         styleClass="ui-button-rounded ui-button-text"/>
+                        <p:commandButton icon="pi pi-trash" title="#{msg['action.delete']}"
+                                         process="@this" actionListener="#{employeeMb.delete(e)}" update=":form:table :messages"
+                                         styleClass="ui-button-rounded ui-button-text ui-button-danger">
+                            <p:confirm header="#{msg['action.confirm']}" message="#{msg['msg.confirmDelete']}"
+                                       icon="pi pi-exclamation-triangle"/>
+                        </p:commandButton>
+                    </p:column>
+                </p:dataTable>
+
+                <p:dialog header="#{msg['cat.employee.name']}" widgetVar="employeeDialog" modal="true" id="dialog"
+                          width="760" resizable="false" fitViewport="true" responsive="true"
+                          contentStyle="max-height:78vh;overflow:auto" closeOnEscape="true">
+                    <div class="form-grid">
+                        <!-- Public profile -->
+                        <div class="form-section">#{msg['cat.employee.section.profile']}</div>
+                        <div class="field required">
+                            <label for="form:empName">#{msg['lbl.fullName']}</label>
+                            <p:inputText id="empName" value="#{employeeMb.selected.fullName}" maxlength="120" required="true"
+                                         requiredMessage="#{msg['lbl.fullName']}: #{msg['msg.required']}"/>
+                        </div>
+                        <div class="field">
+                            <label for="form:empSpecialty">#{msg['lbl.specialty']}</label>
+                            <p:inputText id="empSpecialty" value="#{employeeMb.selected.specialty}" maxlength="120"/>
+                        </div>
+                        <div class="field">
+                            <label for="form:empPhone">#{msg['lbl.phone']}</label>
+                            <p:inputText id="empPhone" value="#{employeeMb.selected.phone}" maxlength="20"/>
+                        </div>
+                        <p:outputPanel id="photoPanel" styleClass="field">
+                            <label>#{msg['cat.employee.photo']}</label>
+                            <p:inputTextarea id="empPhotoB64" value="#{employeeMb.newPhotoBase64}"
+                                             styleClass="empPhotoB64" style="display:none"/>
+                            <div class="file-picker">
+                                <h:panelGroup rendered="#{not empty employeeMb.selected.photoBase64}">
+                                    <img alt="" class="cv-avatar-img lg" src="data:image/jpeg;base64,#{employeeMb.selected.photoBase64}"/>
+                                </h:panelGroup>
+                                <img id="empPhotoPreview" alt="" class="cv-avatar-img lg" style="display:none"/>
+                                <label class="ui-button ui-button-secondary" style="cursor:pointer">
+                                    <i class="pi pi-camera" style="margin-right:.4rem"></i>#{msg['cat.product.choosePhoto']}
+                                    <input type="file" accept="image/*" style="display:none" onchange="cvCompressEmpPhoto(this)"/>
+                                </label>
+                                <p:commandButton icon="pi pi-trash" title="#{msg['action.delete']}"
+                                                 actionListener="#{employeeMb.removePhoto}" process="@this"
+                                                 update="photoPanel" oncomplete="cvResetEmpPhoto()"
+                                                 rendered="#{not empty employeeMb.selected.photoBase64}"
+                                                 styleClass="ui-button-rounded ui-button-text ui-button-danger"/>
+                            </div>
+                            <span class="hint">#{msg['cat.employee.photo.hint']}</span>
+                        </p:outputPanel>
+
+                        <!-- Pay scheme -->
+                        <div class="form-section">#{msg['cat.employee.section.pay']}</div>
+                        <div class="field required">
+                            <label for="form:empScheme">#{msg['cat.employee.scheme']}</label>
+                            <p:selectOneMenu id="empScheme" value="#{employeeMb.selected.payScheme}">
+                                <f:selectItem itemValue="COMMISSION" itemLabel="#{msg['cat.employee.scheme.COMMISSION']}"/>
+                                <f:selectItem itemValue="SALARY" itemLabel="#{msg['cat.employee.scheme.SALARY']}"/>
+                                <f:selectItem itemValue="MIXED" itemLabel="#{msg['cat.employee.scheme.MIXED']}"/>
+                                <p:ajax event="itemSelect" update="payFields" process="@this"/>
+                            </p:selectOneMenu>
+                        </div>
+                        <div class="field">
+                            <label for="form:empFreq">#{msg['cat.employee.payFrequency']}</label>
+                            <p:selectOneMenu id="empFreq" value="#{employeeMb.selected.payFrequency}">
+                                <f:selectItem itemValue="DAILY" itemLabel="#{msg['cat.employee.freq.DAILY']}"/>
+                                <f:selectItem itemValue="WEEKLY" itemLabel="#{msg['cat.employee.freq.WEEKLY']}"/>
+                                <f:selectItem itemValue="BIWEEKLY" itemLabel="#{msg['cat.employee.freq.BIWEEKLY']}"/>
+                                <f:selectItem itemValue="MONTHLY" itemLabel="#{msg['cat.employee.freq.MONTHLY']}"/>
+                            </p:selectOneMenu>
+                        </div>
+                        <p:outputPanel id="payFields" styleClass="span-2" layout="block">
+                            <div class="form-grid">
+                                <div class="field">
+                                    <label for="form:empCommission">#{msg['cat.service.commission']}</label>
+                                    <p:inputNumber id="empCommission" value="#{employeeMb.selected.commissionPercent}" symbol=" %"
+                                                   symbolPosition="s" decimalPlaces="2" minValue="0" maxValue="100"
+                                                   disabled="#{not employeeMb.commissionVisible}"/>
+                                    <span class="hint">#{msg['cat.employee.commission.hint']}</span>
+                                </div>
+                                <div class="field">
+                                    <label for="form:empSalary">#{msg['cat.employee.salary']}</label>
+                                    <p:inputNumber id="empSalary" value="#{employeeMb.selected.salaryAmount}" symbol="$ "
+                                                   decimalPlaces="2" minValue="0" disabled="#{not employeeMb.salaryVisible}"/>
+                                    <span class="hint">#{msg['cat.employee.salary.hint']}</span>
+                                </div>
+                            </div>
+                        </p:outputPanel>
+
+                        <!-- Schedule -->
+                        <div class="form-section">#{msg['cat.employee.section.schedule']}</div>
+                        <p:outputPanel id="empHoursPanel" styleClass="field span-2" layout="block">
+                            <p:selectOneButton value="#{employeeMb.selected.ownHours}" styleClass="wh-mode">
+                                <f:selectItem itemValue="#{false}" itemLabel="#{msg['hours.employee.useBusiness']}"/>
+                                <f:selectItem itemValue="#{true}" itemLabel="#{msg['hours.employee.own']}"/>
+                                <p:ajax listener="#{employeeMb.ownHoursChanged}" process="@this" update="empHoursPanel"/>
+                            </p:selectOneButton>
+                            <h:panelGroup rendered="#{not employeeMb.selected.ownHours}" layout="block" styleClass="hint" style="margin-top:.5rem">
+                                #{msg['hours.employee.useBusiness.hint']}
+                            </h:panelGroup>
+                            <h:panelGroup rendered="#{employeeMb.selected.ownHours}" layout="block" style="margin-top:.6rem">
+                                <ui:include src="/WEB-INF/includes/weekly-hours.xhtml">
+                                    <ui:param name="week" value="#{employeeMb.week}"/>
+                                    <ui:param name="withBreak" value="#{false}"/>
+                                </ui:include>
+                                <span class="hint">#{msg['hours.employee.own.hint']}</span>
+                            </h:panelGroup>
+                        </p:outputPanel>
+                        <p:outputPanel id="dateOffsPanel" styleClass="field span-2" layout="block">
+                            <label>#{msg['cat.employee.dateOffs']}</label>
+                            <div class="flex wrap gap-2">
+                                <p:datePicker id="empNewDateOff" value="#{employeeMb.newDateOff}" pattern="dd/MM/yyyy"
+                                              showIcon="true" style="width:160px"/>
+                                <p:commandButton icon="pi pi-plus" value="#{msg['cat.employee.addDateOff']}"
+                                                 actionListener="#{employeeMb.addDateOff}" process="@this empNewDateOff"
+                                                 update="dateOffsPanel" styleClass="ui-button-secondary"/>
+                            </div>
+                            <div class="flex wrap gap-2 mt-2">
+                                <ui:repeat var="d" value="#{employeeMb.selected.dateOffs}">
+                                    <span class="badge badge-muted" style="display:inline-flex;align-items:center;gap:.3rem">
+                                        #{sessionMb.fmtDay(d)}
+                                        <p:commandLink actionListener="#{employeeMb.removeDateOff(d)}" process="@this"
+                                                       update=":form:dateOffsPanel" title="#{msg['action.delete']}"
+                                                       style="text-decoration:none"><i class="pi pi-times" style="font-size:.7rem"></i></p:commandLink>
+                                    </span>
+                                </ui:repeat>
+                                <h:outputText value="#{msg['cat.employee.dateOffs.none']}" styleClass="muted"
+                                              rendered="#{empty employeeMb.selected.dateOffs}"/>
+                            </div>
+                        </p:outputPanel>
+
+                        <!-- Services -->
+                        <div class="form-section">#{msg['cat.employee.section.services']}</div>
+                        <div class="field span-2">
+                            <p:selectManyCheckbox id="empServices" value="#{employeeMb.selected.serviceIds}" layout="responsive" columns="2">
+                                <f:converter converterId="jakarta.faces.Integer"/>
+                                <f:selectItems value="#{employeeMb.services}" var="s" itemLabel="#{s.name}" itemValue="#{s.id}"/>
+                            </p:selectManyCheckbox>
+                            <span class="hint">#{msg['cat.employee.services.hint']}</span>
+                        </div>
+
+                        <!-- Flags -->
+                        <div class="form-section">#{msg['cat.employee.section.flags']}</div>
+                        <div class="field">
+                            <div class="check-inline">
+                                <p:toggleSwitch id="empBookable" value="#{employeeMb.selected.bookable}"/>
+                                <label for="form:empBookable" style="margin:0">#{msg['cat.employee.bookable']}</label>
+                            </div>
+                            <span class="hint">#{msg['cat.employee.bookable.hint']}</span>
+                        </div>
+                        <div class="field">
+                            <div class="check-inline">
+                                <p:toggleSwitch id="empEditSchedule" value="#{employeeMb.selected.canEditSchedule}"/>
+                                <label for="form:empEditSchedule" style="margin:0">#{msg['cat.employee.canEditSchedule']}</label>
+                            </div>
+                            <span class="hint">#{msg['cat.employee.canEditSchedule.hint']}</span>
+                        </div>
+
+                        <!-- App access -->
+                        <div class="form-section">#{msg['cat.employee.section.access']}
+                            <h:panelGroup styleClass="badge badge-success ml-2" style="font-size:.7rem"
+                                          rendered="#{employeeMb.hasLogin(employeeMb.selected)}">#{msg['cat.employee.hasAccess']}</h:panelGroup>
+                        </div>
+                        <div class="field span-2" style="margin-bottom:.2rem">
+                            <span class="hint">#{employeeMb.hasLogin(employeeMb.selected) ? msg['cat.employee.access.hint.existing'] : msg['cat.employee.access.hint.new']}</span>
+                        </div>
+                        <div class="field">
+                            <label for="form:empEmail">#{msg['lbl.email']}</label>
+                            <p:inputText id="empEmail" value="#{employeeMb.selected.email}" maxlength="120" type="email"
+                                         autocomplete="off"/>
+                        </div>
+                        <div class="field">
+                            <label for="form:empPassword">#{msg['lbl.password']}</label>
+                            <p:password id="empPassword" value="#{employeeMb.selected.password}" feedback="false" maxlength="60"
+                                        redisplay="false" autocomplete="new-password"/>
+                            <span class="hint">#{msg['cat.user.password.hint']}</span>
+                        </div>
+                    </div>
+
+                    <f:facet name="footer">
+                        <p:commandButton value="#{msg['action.save']}" icon="pi pi-check"
+                                         actionListener="#{employeeMb.save}" update=":form:table :messages"
+                                         styleClass="ui-button-primary"/>
+                        <p:commandButton value="#{msg['action.cancel']}" icon="pi pi-times"
+                                         onclick="PF('employeeDialog').hide()" type="button"
+                                         styleClass="ui-button-secondary"/>
+                    </f:facet>
+                </p:dialog>
+
+                <p:confirmDialog global="true">
+                    <p:commandButton value="#{msg['action.yes']}" type="button"
+                                     styleClass="ui-confirmdialog-yes ui-button-primary"/>
+                    <p:commandButton value="#{msg['action.no']}" type="button"
+                                     styleClass="ui-confirmdialog-no ui-button-secondary"/>
+                </p:confirmDialog>
+            </h:form>
+
+            <style type="text/css">
+                .cv-avatar-img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 1px solid var(--vip-border); }
+                .cv-avatar-img.lg { width: 64px; height: 64px; }
+            </style>
+            <script type="text/javascript">
+            //<![CDATA[
+            // Photo: downscale (max 512px) to JPEG, keep the data URL in the hidden textarea and show a preview.
+            function cvCompressEmpPhoto(input) {
+                if (!input.files || !input.files[0]) { return; }
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    var img = new Image();
+                    img.onload = function () {
+                        var max = 512;
+                        var scale = Math.min(1, max / Math.max(img.width, img.height));
+                        var w = Math.round(img.width * scale);
+                        var h = Math.round(img.height * scale);
+                        var canvas = document.createElement('canvas');
+                        canvas.width = w;
+                        canvas.height = h;
+                        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                        var dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+                        var ta = document.querySelector('textarea.empPhotoB64');
+                        if (ta) { ta.value = dataUrl; }
+                        var preview = document.getElementById('empPhotoPreview');
+                        if (preview) { preview.src = dataUrl; preview.style.display = 'inline-block'; }
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+            function cvResetEmpPhoto() {
+                var ta = document.querySelector('textarea.empPhotoB64');
+                if (ta) { ta.value = ''; }
+                var preview = document.getElementById('empPhotoPreview');
+                if (preview) { preview.removeAttribute('src'); preview.style.display = 'none'; }
+            }
+            //]]>
+            </script>
+        </div>
+    </ui:define>
+</ui:composition>

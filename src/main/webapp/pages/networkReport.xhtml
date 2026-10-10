@@ -1,0 +1,87 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <div class="page-header">
+            <span class="page-icon"><i class="pi pi-globe"></i></span>
+            <h2>#{msg['rel.network.title']}</h2>
+            <span class="page-subtitle">#{sessionMb.todayLabel}</span>
+        </div>
+
+        <h:form id="form">
+            <div class="kpi-grid">
+                <div class="kpi-card kpi-ink">
+                    <span class="kpi-label">#{msg['rel.network.affiliates']}</span>
+                    <span class="kpi-value">#{networkReportMb.affiliatesCount}</span>
+                    <span class="kpi-hint">+#{networkReportMb.newThisMonth} #{msg['rel.network.newThisMonth']}</span>
+                </div>
+                <div class="kpi-card">
+                    <span class="kpi-label">#{msg['rel.network.verified']}</span>
+                    <span class="kpi-value">#{networkReportMb.verifiedCount}</span>
+                    <span class="kpi-hint">#{networkReportMb.verifiedPercent}% #{msg['rel.network.ofRegistry']}</span>
+                </div>
+                <div class="kpi-card">
+                    <span class="kpi-label">#{msg['rel.network.pending']}</span>
+                    <span class="kpi-value">#{networkReportMb.pendingCount}</span>
+                    <span class="kpi-hint">#{msg['rel.network.pending.hint']}</span>
+                </div>
+                <div class="kpi-card">
+                    <span class="kpi-label">#{msg['rel.network.appointments30']}</span>
+                    <span class="kpi-value">#{networkReportMb.appointmentsLast30Days}</span>
+                    <span class="kpi-hint">#{msg['rel.network.appointments30.hint']}</span>
+                </div>
+            </div>
+
+            <div class="dashboard-grid" style="grid-template-columns:1fr 2fr">
+                <div class="card">
+                    <h3 class="section-title"><i class="pi pi-th-large gold"></i>&#160;#{msg['rel.network.byCategory']}</h3>
+                    <p:dataTable var="c" value="#{networkReportMb.byCategory}" reflow="true" stripedRows="true" emptyMessage="#{msg['msg.noData']}">
+                        <p:column headerText="#{msg['lbl.category']}" sortBy="#{c.categoryName}">#{c.categoryName}</p:column>
+                        <p:column headerText="#{msg['rel.network.businesses']}" styleClass="text-right" width="90" sortBy="#{c.count}">#{c.count}</p:column>
+                        <p:column headerText="%" width="140">
+                            <p:progressBar value="#{networkReportMb.categoryPercent(c)}" labelTemplate="{value}%" style="height:14px"/>
+                        </p:column>
+                    </p:dataTable>
+                </div>
+
+                <div class="card">
+                    <h3 class="section-title"><i class="pi pi-building gold"></i>&#160;#{msg['rel.network.affiliatesRating']}</h3>
+                    <p:dataTable id="tblAffiliates" var="b" value="#{networkReportMb.affiliates}" rows="10" paginator="true"
+                                 paginatorPosition="bottom" paginatorAlwaysVisible="false" reflow="true" stripedRows="true"
+                                 emptyMessage="#{msg['msg.noData']}" rowKey="#{b.id}" widgetVar="netTable"
+                                 filteredValue="#{networkReportMb.filtered}" globalFilterOnly="true" sortBy="#{b.ratingAverage}" sortOrder="descending">
+                        <f:facet name="header">
+                            <div class="flex-between">
+                                <span class="muted">#{msg['rel.affiliate.list']}</span>
+                                <p:inputText onkeyup="PF('netTable').filter()" placeholder="#{msg['action.search']}"/>
+                            </div>
+                        </f:facet>
+                        <p:column headerText="#{msg['rel.affiliate.business']}" sortBy="#{b.name}" filterBy="#{b.name}">
+                            <span style="font-weight:600">#{b.name}</span>
+                            <h:panelGroup rendered="#{b.verificationStatus eq 'VERIFIED'}" styleClass="verified-badge" title="#{msg['lbl.verified']}">&#10004;</h:panelGroup>
+                            <div class="muted">#{b.city}</div>
+                        </p:column>
+                        <p:column headerText="#{msg['lbl.category']}" sortBy="#{b.categoryName}" filterBy="#{b.categoryName}">#{b.categoryName}</p:column>
+                        <p:column headerText="#{msg['rel.network.rating']}" sortBy="#{b.ratingAverage}" width="170">
+                            <span class="stars">#{networkReportMb.stars(b.ratingAverage)}</span>
+                            <span class="muted small">
+                                <h:outputText value="#{b.ratingAverage}"><f:convertNumber maxFractionDigits="1" minFractionDigits="1"/></h:outputText>
+                                (#{b.ratingCount != null ? b.ratingCount : 0})
+                            </span>
+                        </p:column>
+                        <p:column headerText="#{msg['lbl.verified']}" width="110" sortBy="#{b.verificationStatus}">
+                            <span class="#{networkReportMb.verificationBadge(b.verificationStatus)}">#{msg['status.'.concat(b.verificationStatus)]}</span>
+                        </p:column>
+                        <p:column headerText="#{msg['rel.affiliate.subscription']}" width="110" sortBy="#{b.subscriptionStatus}">
+                            <h:outputText rendered="#{not empty b.subscriptionStatus}" styleClass="#{networkReportMb.subscriptionBadge(b.subscriptionStatus)}"
+                                          value="#{msg['status.'.concat(b.subscriptionStatus)]}"/>
+                        </p:column>
+                    </p:dataTable>
+                </div>
+            </div>
+        </h:form>
+    </ui:define>
+</ui:composition>

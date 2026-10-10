@@ -1,0 +1,186 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <style>
+            .license-frame { width:100%; height:70vh; border:1px solid var(--vip-border); border-radius:8px; background:#fff; }
+            .license-img { max-width:100%; max-height:70vh; display:block; margin:0 auto; border:1px solid var(--vip-border); border-radius:8px; }
+            .category-list { list-style:none; margin:0; padding:0; }
+            .category-list li { display:flex; align-items:center; gap:.75rem; padding:.45rem 0; border-bottom:1px solid var(--vip-border); }
+            .category-list li:last-child { border-bottom:none; }
+            .category-list .name { flex:1; }
+            .category-list .track { width:120px; height:8px; border-radius:999px; background:var(--vip-surface-2); overflow:hidden; }
+            .category-list .fill { height:100%; background:var(--vip-gold); }
+            .category-list .count { font-family:var(--vip-font-heading); font-size:1.1rem; min-width:2rem; text-align:right; }
+        </style>
+        <div class="page-header">
+            <span class="page-icon"><i class="pi pi-verified"></i></span>
+            <h2>#{msg['rel.affiliate.title']}</h2>
+            <span class="page-subtitle">#{msg['rel.affiliate.subtitle']}</span>
+        </div>
+
+        <h:form id="form">
+            <div class="kpi-grid">
+                <div class="kpi-card kpi-ink">
+                    <span class="kpi-label">#{msg['rel.network.affiliates']}</span>
+                    <span class="kpi-value">#{affiliateMb.affiliatesCount}</span>
+                    <span class="kpi-hint">+#{affiliateMb.newThisMonth} #{msg['rel.network.newThisMonth']}</span>
+                </div>
+                <div class="kpi-card">
+                    <span class="kpi-label">#{msg['rel.network.verified']}</span>
+                    <span class="kpi-value">#{affiliateMb.verifiedCount}</span>
+                    <span class="kpi-hint">#{affiliateMb.verifiedPercent}% #{msg['rel.network.ofRegistry']}</span>
+                </div>
+                <div class="kpi-card">
+                    <span class="kpi-label">#{msg['rel.network.pending']}</span>
+                    <span class="kpi-value">#{affiliateMb.pendingCount}</span>
+                    <span class="kpi-hint">#{msg['rel.network.pending.hint']}</span>
+                </div>
+                <div class="kpi-card">
+                    <span class="kpi-label">#{msg['rel.network.appointments30']}</span>
+                    <span class="kpi-value">#{affiliateMb.appointmentsLast30Days}</span>
+                    <span class="kpi-hint">#{msg['rel.network.appointments30.hint']}</span>
+                </div>
+            </div>
+
+            <div class="dashboard-grid" style="grid-template-columns:2.4fr 1fr">
+                <div class="card">
+                    <p:selectOneButton value="#{affiliateMb.statusFilter}" styleClass="mb-2">
+                        <f:selectItem itemValue="PENDING" itemLabel="#{msg['rel.affiliate.tab.pending']}"/>
+                        <f:selectItem itemValue="VERIFIED" itemLabel="#{msg['rel.affiliate.tab.verified']}"/>
+                        <f:selectItem itemValue="REJECTED" itemLabel="#{msg['rel.affiliate.tab.rejected']}"/>
+                        <f:selectItem itemValue="ALL" itemLabel="#{msg['rel.affiliate.tab.all']}"/>
+                        <p:ajax listener="#{affiliateMb.loadAffiliates}" update="tblAffiliates :messages"/>
+                    </p:selectOneButton>
+
+                    <p:dataTable id="tblAffiliates" var="b" value="#{affiliateMb.affiliates}" rows="10" paginator="true"
+                                 paginatorPosition="bottom" paginatorAlwaysVisible="false" reflow="true" stripedRows="true"
+                                 emptyMessage="#{msg['msg.noData']}" rowKey="#{b.id}" widgetVar="affTable"
+                                 filteredValue="#{affiliateMb.filtered}" globalFilterOnly="true">
+                        <f:facet name="header">
+                            <div class="flex-between">
+                                <span class="muted">#{msg['rel.affiliate.list']}</span>
+                                <p:inputText onkeyup="PF('affTable').filter()" placeholder="#{msg['action.search']}"/>
+                            </div>
+                        </f:facet>
+                        <p:column headerText="#{msg['rel.affiliate.business']}" sortBy="#{b.name}" filterBy="#{b.name}">
+                            <span style="font-weight:600">#{b.name}</span>
+                            <h:panelGroup rendered="#{b.verificationStatus eq 'VERIFIED'}" styleClass="verified-badge" title="#{msg['lbl.verified']}">&#10004;</h:panelGroup>
+                            <div class="muted">#{b.city}
+                                <h:outputText rendered="#{not empty b.createdAt}" value=" &#183; #{msg['rel.affiliate.since']} ">
+                                </h:outputText>
+                                <h:outputText rendered="#{not empty b.createdAt}" value="#{b.createdAt}">
+                                    <f:convertDateTime pattern="dd/MM/yyyy" timeZone="America/Mexico_City"/>
+                                </h:outputText>
+                            </div>
+                            <span class="#{affiliateMb.verificationBadge(b.verificationStatus)}">#{msg['status.'.concat(b.verificationStatus)]}</span>
+                            <h:panelGroup rendered="#{b.verificationStatus eq 'REJECTED' and not empty b.rejectionReason}" layout="block" styleClass="muted small">
+                                #{b.rejectionReason}
+                            </h:panelGroup>
+                        </p:column>
+                        <p:column headerText="#{msg['lbl.owner']}" sortBy="#{b.ownerName}" filterBy="#{b.ownerName}">
+                            #{b.ownerName}
+                            <div class="muted">#{b.contactPhone}</div>
+                        </p:column>
+                        <p:column headerText="#{msg['lbl.category']}" sortBy="#{b.categoryName}" filterBy="#{b.categoryName}">
+                            #{b.categoryName}
+                            <h:panelGroup rendered="#{not empty b.specialty}" layout="block" styleClass="muted">#{b.specialty}</h:panelGroup>
+                        </p:column>
+                        <p:column headerText="#{msg['rel.affiliate.document']}">
+                            <h:panelGroup rendered="#{not b.requiresLicense}" styleClass="muted">#{msg['rel.affiliate.notApplicable']}</h:panelGroup>
+                            <h:panelGroup rendered="#{b.requiresLicense and not b.hasLicense}" styleClass="badge badge-danger">#{msg['rel.affiliate.missing']}</h:panelGroup>
+                            <h:panelGroup rendered="#{b.requiresLicense and b.hasLicense}">
+                                <span class="small">#{b.licenseFileName}</span><br/>
+                                <p:commandButton value="#{msg['rel.affiliate.viewDocument']}" icon="pi pi-file"
+                                                 actionListener="#{affiliateMb.viewLicense(b)}" update=":form:licenseDialog :messages"
+                                                 styleClass="ui-button-sm ui-button-outlined ui-button-secondary"/>
+                            </h:panelGroup>
+                        </p:column>
+                        <p:column headerText="#{msg['rel.affiliate.groupPhone']}" width="120">#{b.groupPhone}</p:column>
+                        <p:column headerText="#{msg['rel.affiliate.bankAccount']}">
+                            #{b.bankName}
+                            <h:panelGroup rendered="#{not empty b.bankAccountMasked}" layout="block" styleClass="muted">#{b.bankAccountMasked}</h:panelGroup>
+                        </p:column>
+                        <p:column headerText="#{msg['rel.affiliate.subscription']}" width="110">
+                            <h:outputText rendered="#{not empty b.subscriptionStatus}" styleClass="#{affiliateMb.subscriptionBadge(b.subscriptionStatus)}"
+                                          value="#{msg['status.'.concat(b.subscriptionStatus)]}"/>
+                            <h:panelGroup rendered="#{not empty b.subscriptionUntil}" layout="block" styleClass="muted small">
+                                #{sessionMb.fmtDay(b.subscriptionUntil)}
+                            </h:panelGroup>
+                        </p:column>
+                        <p:column headerText="#{msg['lbl.actions']}" width="110" styleClass="text-right">
+                            <p:commandButton icon="pi pi-check" title="#{msg['rel.affiliate.approve']}"
+                                             actionListener="#{affiliateMb.approve(b)}" update="@form :messages"
+                                             rendered="#{b.verificationStatus ne 'VERIFIED'}"
+                                             styleClass="ui-button-rounded ui-button-success">
+                                <p:confirm header="#{msg['action.confirm']}" message="#{msg['rel.affiliate.confirmApprove']}" icon="pi pi-check-circle"/>
+                            </p:commandButton>
+                            <p:commandButton icon="pi pi-times" title="#{msg['rel.affiliate.reject']}"
+                                             actionListener="#{affiliateMb.prepareReject(b)}" update=":form:rejectDialog"
+                                             oncomplete="PF('rejectDialog').show()"
+                                             rendered="#{b.verificationStatus ne 'REJECTED'}"
+                                             styleClass="ui-button-rounded ui-button-danger ml-2"/>
+                        </p:column>
+                    </p:dataTable>
+                </div>
+
+                <div class="card">
+                    <h3 class="section-title"><i class="pi pi-th-large gold"></i>&#160;#{msg['rel.network.byCategory']}</h3>
+                    <h:panelGroup rendered="#{empty affiliateMb.stats.byCategory}" layout="block" styleClass="empty-state">
+                        <i class="pi pi-th-large"></i>#{msg['msg.noData']}
+                    </h:panelGroup>
+                    <ul class="category-list">
+                        <ui:repeat var="c" value="#{affiliateMb.stats.byCategory}">
+                            <li>
+                                <span class="name">#{c.categoryName}</span>
+                                <span class="track"><span class="fill" style="width:#{affiliateMb.affiliatesCount gt 0 ? (c.count * 100 / affiliateMb.affiliatesCount) : 0}%"></span></span>
+                                <span class="count">#{c.count}</span>
+                            </li>
+                        </ui:repeat>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Reject dialog -->
+            <p:dialog id="rejectDialog" header="#{msg['rel.affiliate.reject']}" widgetVar="rejectDialog" modal="true"
+                      width="480" resizable="false" responsive="true">
+                <p><strong>#{affiliateMb.selected.name}</strong> &#183; <span class="muted">#{affiliateMb.selected.ownerName}</span></p>
+                <div class="field required">
+                    <label>#{msg['rel.affiliate.reason']}</label>
+                    <p:inputTextarea value="#{affiliateMb.rejectReason}" rows="4" maxlength="500" autoResize="false"/>
+                    <span class="hint">#{msg['rel.affiliate.reason.hint']}</span>
+                </div>
+                <f:facet name="footer">
+                    <p:commandButton value="#{msg['rel.affiliate.reject']}" icon="pi pi-times" action="#{affiliateMb.reject}"
+                                     update="rejectDialog @form :messages" styleClass="ui-button-danger"/>
+                    <p:commandButton value="#{msg['action.cancel']}" type="button" onclick="PF('rejectDialog').hide()" styleClass="ui-button-secondary"/>
+                </f:facet>
+            </p:dialog>
+
+            <!-- License dialog -->
+            <p:dialog id="licenseDialog" header="#{msg['rel.affiliate.document']} - #{affiliateMb.selected.name}" widgetVar="licenseDialog"
+                      modal="true" width="900" resizable="false" responsive="true">
+                <h:panelGroup rendered="#{affiliateMb.licenseLoaded}">
+                    <p class="muted">#{affiliateMb.license.fileName} &#183; #{affiliateMb.license.contentType}</p>
+                    <h:panelGroup rendered="#{affiliateMb.licensePdf}">
+                        <iframe class="license-frame" src="#{affiliateMb.licenseDataUrl}" title="#{affiliateMb.license.fileName}">&#160;</iframe>
+                    </h:panelGroup>
+                    <h:panelGroup rendered="#{not affiliateMb.licensePdf}">
+                        <img class="license-img" src="#{affiliateMb.licenseDataUrl}" alt="#{affiliateMb.license.fileName}"/>
+                    </h:panelGroup>
+                </h:panelGroup>
+                <f:facet name="footer">
+                    <p:commandButton value="#{msg['action.close']}" type="button" onclick="PF('licenseDialog').hide()" styleClass="ui-button-secondary"/>
+                </f:facet>
+            </p:dialog>
+
+            <p:confirmDialog global="true">
+                <p:commandButton value="#{msg['action.yes']}" type="button" styleClass="ui-confirmdialog-yes"/>
+                <p:commandButton value="#{msg['action.no']}" type="button" styleClass="ui-confirmdialog-no ui-button-secondary"/>
+            </p:confirmDialog>
+        </h:form>
+    </ui:define>
+</ui:composition>

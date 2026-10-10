@@ -1,0 +1,107 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui">
+    <!-- File of one consignment relation (inside h:form id="form" of consignment.xhtml). -->
+    <ui:param name="d" value="#{consignmentFileMb.detail}"/>
+    <ui:param name="ag" value="#{consignmentFileMb.detail.agreement}"/>
+
+    <div class="flex-between wrap gap-2">
+        <p:commandLink process="@this" actionListener="#{consignmentFileMb.close}" update=":form" styleClass="cons-back">
+            <i class="pi pi-arrow-left"></i> #{msg['menu.sale.consignment']}
+        </p:commandLink>
+        <p:commandButton icon="pi pi-refresh" title="#{msg['action.refresh']}" process="@this"
+                         actionListener="#{consignmentFileMb.reload}" update=":form :messages" styleClass="ui-button-secondary"/>
+    </div>
+
+    <div class="cons-file-head">
+        <h:panelGroup rendered="#{not empty ag.partner.logoBase64}">
+            <img class="cons-logo" src="#{consignmentMb.logoSrc(ag.partner)}" alt="#{ag.partner.name}"/>
+        </h:panelGroup>
+        <h:panelGroup rendered="#{empty ag.partner.logoBase64}" styleClass="cons-monogram">#{consignmentMb.initials(ag.partner)}</h:panelGroup>
+        <div style="flex:1;min-width:0">
+            <div class="cons-kicker">#{consignmentFileMb.supplier ? msg['cons.file.storeOfYours'] : msg['cons.file.yourSupplier']}</div>
+            <div class="cons-name">#{ag.partner.name}</div>
+            <div class="muted">
+                <h:outputText value="#{msg['cons.lbl.youReceive']} #{consignmentMb.pct(ag.supplierPercent)} · #{msg['cons.lbl.paysYou']} #{consignmentMb.frequencyLabel(ag.paymentFrequency)}"
+                              rendered="#{consignmentFileMb.supplier}"/>
+                <h:outputText value="#{msg['cons.lbl.yourCommission']} #{consignmentMb.pct(ag.commissionPercent)} · #{msg['cons.lbl.youPay']} #{consignmentMb.frequencyLabel(ag.paymentFrequency)}"
+                              rendered="#{not consignmentFileMb.supplier}"/>
+            </div>
+        </div>
+        <span class="#{consignmentMb.statusClass(ag.agreementStatus)}">#{consignmentMb.statusLabel(ag.agreementStatus)}</span>
+    </div>
+
+    <div class="kpi-grid">
+        <div class="kpi-card kpi-ink">
+            <div class="kpi-label">#{msg['cons.kpi.atStore']}</div>
+            <div class="kpi-value">#{d.piecesAtStore}</div>
+            <div class="kpi-hint">#{msg['cons.kpi.atStoreHint']} #{sessionMb.fmtMoney(d.valueAtStore)}</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">#{msg['cons.kpi.inTransit']}</div>
+            <div class="kpi-value">#{d.piecesInTransit}</div>
+            <div class="kpi-hint">#{msg['cons.kpi.inTransitHint']}</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">#{msg['cons.kpi.sold']}</div>
+            <div class="kpi-value cons-kpi-text muted">—</div>
+            <div class="kpi-hint">#{msg['cons.kpi.soldHint']}</div>
+        </div>
+    </div>
+
+    <h:panelGroup rendered="#{consignmentFileMb.canSend}" layout="block" styleClass="cons-actions" style="justify-content:flex-start;margin:0 0 1rem">
+        <p:commandButton value="#{msg['cons.action.send']}" icon="pi pi-send" process="@this"
+                         actionListener="#{consignmentFileMb.prepareSend}" update=":sendForm :messages"
+                         oncomplete="PF('consSendDlg').show()" styleClass="ui-button-primary cons-big-button"/>
+    </h:panelGroup>
+
+    <p:tabView id="fileTabs" dynamic="false">
+        <p:tab title="#{msg['cons.tab.shipments']}">
+            <p:dataTable id="shipments" var="s" value="#{d.shipments}" rowKey="#{s.id}" reflow="true" stripedRows="true"
+                         emptyMessage="#{consignmentFileMb.supplier ? msg['cons.shipments.emptySupplier'] : msg['cons.shipments.emptyStore']}"
+                         paginator="true" rows="10" paginatorAlwaysVisible="false">
+                <p:column headerText="#{msg['cons.lbl.folio']}" width="110"><b>#{s.folio}</b></p:column>
+                <p:column headerText="#{msg['cons.lbl.type']}" width="130">#{consignmentFileMb.directionLabel(s.direction)}</p:column>
+                <p:column headerText="#{msg['cons.lbl.sentAt']}" width="150">#{consignmentFileMb.stamp(s.sentAt)}</p:column>
+                <p:column headerText="#{msg['cons.lbl.pieces']}" width="120" styleClass="text-center">
+                    <h:outputText value="#{s.receivedPieces} / " rendered="#{s.receivedPieces ne null and s.receivedPieces ne s.totalPieces}"/>
+                    <b>#{s.totalPieces}</b>
+                </p:column>
+                <p:column headerText="#{msg['cons.lbl.value']}" width="120" styleClass="text-right">#{sessionMb.fmtMoney(s.totalValue)}</p:column>
+                <p:column headerText="#{msg['lbl.status']}">
+                    <span class="#{consignmentFileMb.shipmentStatusClass(s.shipmentStatus)}">#{consignmentFileMb.shipmentStatusLabel(s.shipmentStatus)}</span>
+                    <h:panelGroup rendered="#{not empty s.receiveComment}" layout="block" styleClass="muted">#{s.receiveComment}</h:panelGroup>
+                </p:column>
+                <p:column headerText="" width="210" styleClass="text-center">
+                    <p:commandButton value="#{msg['cons.action.receive']}" icon="pi pi-download" rendered="#{s.canReceive}" process="@this"
+                                     actionListener="#{consignmentFileMb.openShipment(s)}" update=":shipmentForm :messages"
+                                     oncomplete="PF('consShipmentDlg').show()" styleClass="ui-button-primary ui-button-sm"/>
+                    <p:commandButton icon="pi pi-eye" title="#{msg['cons.action.view']}" rendered="#{not s.canReceive}" process="@this"
+                                     actionListener="#{consignmentFileMb.openShipment(s)}" update=":shipmentForm :messages"
+                                     oncomplete="PF('consShipmentDlg').show()" styleClass="ui-button-rounded ui-button-text"/>
+                    <p:commandButton icon="pi pi-times" title="#{msg['cons.action.cancelShipment']}" rendered="#{s.canCancel}" process="@this"
+                                     actionListener="#{consignmentFileMb.cancelShipment(s)}" update=":form :messages"
+                                     styleClass="ui-button-rounded ui-button-text ui-button-danger">
+                        <p:confirm header="#{msg['action.confirm']}" message="#{msg['cons.cancelShipment.confirm']}" icon="pi pi-exclamation-triangle"/>
+                    </p:commandButton>
+                </p:column>
+            </p:dataTable>
+        </p:tab>
+        <p:tab title="#{msg['cons.tab.inventory']} (#{d.piecesAtStore})">
+            <p:dataTable id="inventory" var="i" value="#{d.inventory}" rowKey="#{i.productId}" reflow="true" stripedRows="true"
+                         emptyMessage="#{msg['cons.inventory.empty']}" paginator="true" rows="15" paginatorAlwaysVisible="false">
+                <p:column headerText="#{msg['cons.lbl.product']}" sortBy="#{i.name}">
+                    <b>#{i.name}</b>
+                    <span class="muted" style="display:block">#{consignmentFileMb.variant(i.size, i.color)}</span>
+                </p:column>
+                <p:column headerText="#{msg['cons.lbl.barcode']}" width="150">#{i.barcode}</p:column>
+                <p:column headerText="#{msg['cons.lbl.price']}" width="110" styleClass="text-right">#{sessionMb.fmtMoney(i.price)}</p:column>
+                <p:column headerText="#{msg['cons.lbl.atStore']}" width="110" styleClass="text-center" sortBy="#{i.onHand}"><b>#{i.onHand}</b></p:column>
+            </p:dataTable>
+        </p:tab>
+    </p:tabView>
+
+    <div class="hint mt-2"><i class="pi pi-info-circle"></i> #{msg['cons.nextPhase2']}</div>
+</ui:composition>

@@ -1,0 +1,134 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <h:form id="form">
+            <div class="page-header">
+                <span class="page-icon"><i class="pi pi-box"></i></span>
+                <h2>#{msg['menu.warehouse.inventory']}</h2>
+                <span class="page-subtitle">
+                    <p:commandButton icon="pi pi-refresh" title="#{msg['action.refresh']}" actionListener="#{inventoryMb.refresh}"
+                                     update="@form :messages" styleClass="ui-button-flat ui-button-secondary"/>
+                </span>
+            </div>
+
+            <!-- KPI cards (admin only: hidden when the summary call is rejected) -->
+            <h:panelGroup rendered="#{inventoryMb.summaryAvailable}" layout="block" styleClass="kpi-grid">
+                <div class="kpi-card kpi-ink">
+                    <span class="kpi-label">#{msg['cat.inventory.kpi.value']}</span>
+                    <span class="kpi-value">#{sessionMb.fmtMoney(inventoryMb.summary.stockValue)}</span>
+                    <span class="kpi-hint">#{msg['cat.inventory.kpi.value.hint']}</span>
+                </div>
+                <div class="kpi-card">
+                    <span class="kpi-label">#{msg['cat.inventory.kpi.units']}</span>
+                    <span class="kpi-value">#{inventoryMb.summary.unitsOnHand != null ? inventoryMb.summary.unitsOnHand : 0}</span>
+                    <span class="kpi-hint">#{inventoryMb.summary.productsWithStock != null ? inventoryMb.summary.productsWithStock : 0} #{msg['cat.inventory.kpi.units.hint']}</span>
+                </div>
+                <div class="kpi-card">
+                    <span class="kpi-label">#{msg['cat.inventory.kpi.belowMin']}</span>
+                    <span class="kpi-value" style="#{inventoryMb.summary.belowMinimumCount gt 0 ? 'color:var(--vip-danger)' : ''}">#{inventoryMb.summary.belowMinimumCount != null ? inventoryMb.summary.belowMinimumCount : 0}</span>
+                    <span class="kpi-hint">#{empty inventoryMb.belowMinimumNames() ? msg['cat.inventory.kpi.belowMin.none'] : inventoryMb.belowMinimumNames()}</span>
+                </div>
+                <div class="kpi-card">
+                    <span class="kpi-label">#{msg['cat.inventory.kpi.sold']}</span>
+                    <span class="kpi-value">#{sessionMb.fmtMoney(inventoryMb.summary.soldAmountMonth)}</span>
+                    <span class="kpi-hint">#{inventoryMb.summary.soldUnitsMonth != null ? inventoryMb.summary.soldUnitsMonth : 0} #{msg['cat.inventory.kpi.sold.hint']}</span>
+                </div>
+            </h:panelGroup>
+
+            <div class="card">
+                <p:toolbar rendered="#{sessionMb.admin}">
+                    <p:toolbarGroup>
+                        <p:button value="#{msg['cat.inventory.newEntry']}" icon="pi pi-plus" outcome="/pages/inventoryEntry.xhtml"
+                                  styleClass="ui-button-primary"/>
+                        <p:button value="#{msg['cat.inventory.stockCount']}" icon="pi pi-check-square" outcome="/pages/stockCount.xhtml"
+                                  styleClass="ui-button-secondary ml-2"/>
+                    </p:toolbarGroup>
+                </p:toolbar>
+                <h:panelGroup rendered="#{not sessionMb.admin}" layout="block" styleClass="muted mb-2">
+                    <i class="pi pi-lock"></i>&#160;#{msg['cat.inventory.readOnly']}
+                </h:panelGroup>
+
+                <p:dataTable id="table" var="s" value="#{inventoryMb.items}" paginator="true" rows="10"
+                             emptyMessage="#{msg['msg.noData']}" styleClass="mt-2" widgetVar="stockTable"
+                             filteredValue="#{inventoryMb.filtered}" globalFilterOnly="true" reflow="true"
+                             paginatorAlwaysVisible="false" rowKey="#{s.productId}" stripedRows="true"
+                             selectionMode="single" selection="#{inventoryMb.selected}"
+                             rowStyleClass="#{s.belowMinimum ? 'row-alert' : ''}">
+                    <p:ajax event="rowSelect" listener="#{inventoryMb.onRowSelect}" update=":form:movementsPanel :messages"/>
+                    <p:ajax event="rowUnselect" listener="#{inventoryMb.onRowUnselect}" update=":form:movementsPanel"/>
+                    <f:facet name="header">
+                        <div class="flex-between wrap gap-2">
+                            <span class="muted">#{msg['cat.inventory.selectHint']}</span>
+                            <p:inputText id="globalFilter" onkeyup="PF('stockTable').filter()"
+                                         placeholder="#{msg['action.search']}"/>
+                        </div>
+                    </f:facet>
+                    <p:column headerText="#{msg['cat.product.name']}" sortBy="#{s.name}" filterBy="#{s.name}"
+                              filterMatchMode="contains">
+                        <span style="font-weight:600">#{s.name}</span>
+                        <h:panelGroup rendered="#{not empty s.brand}" styleClass="muted" layout="block">#{s.brand}</h:panelGroup>
+                    </p:column>
+                    <p:column headerText="#{msg['cat.product.onHand']}" sortBy="#{s.quantityOnHand}" width="100" styleClass="text-right">
+                        <span style="font-weight:600;#{s.belowMinimum ? 'color:var(--vip-danger)' : ''}">#{s.quantityOnHand != null ? s.quantityOnHand : 0}</span>
+                        <span class="muted"> / #{s.minStock != null ? s.minStock : 0}</span>
+                    </p:column>
+                    <p:column headerText="#{msg['cat.inventory.averageCost']}" sortBy="#{s.averageCost}" width="120" styleClass="text-right">
+                        <h:outputText value="#{sessionMb.fmtMoney(s.averageCost)}"/>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.price']}" sortBy="#{s.price}" width="110" styleClass="text-right">
+                        <h:outputText value="#{sessionMb.fmtMoney(s.price)}"/>
+                    </p:column>
+                    <p:column headerText="#{msg['cat.inventory.stockValue']}" sortBy="#{s.stockValue}" width="120" styleClass="text-right">
+                        <h:outputText value="#{sessionMb.fmtMoney(s.stockValue)}" style="font-weight:600"/>
+                    </p:column>
+                    <p:column headerText="#{msg['cat.inventory.margin']}" sortBy="#{s.marginPercent}" width="100" styleClass="text-right">
+                        <h:outputText value="#{s.marginPercent}" rendered="#{not empty s.marginPercent}">
+                            <f:convertNumber maxFractionDigits="1" minFractionDigits="1"/>
+                        </h:outputText>
+                        <h:outputText value=" %" rendered="#{not empty s.marginPercent}"/>
+                    </p:column>
+                </p:dataTable>
+            </div>
+
+            <p:outputPanel id="movementsPanel">
+                <h:panelGroup rendered="#{inventoryMb.selected != null}" layout="block" styleClass="card">
+                    <h3 class="section-title"><i class="pi pi-history gold"></i>&#160;#{msg['cat.inventory.movements']}:
+                        #{inventoryMb.selected.name}</h3>
+                    <h:panelGroup rendered="#{not inventoryMb.movementsAvailable}" layout="block" styleClass="empty-state">
+                        <i class="pi pi-lock"></i>#{msg['cat.inventory.movements.restricted']}
+                    </h:panelGroup>
+                    <p:dataTable id="movements" var="m" value="#{inventoryMb.movements}" paginator="true" rows="15"
+                                 emptyMessage="#{msg['msg.noData']}" reflow="true" paginatorAlwaysVisible="false"
+                                 rendered="#{inventoryMb.movementsAvailable}" stripedRows="true">
+                        <p:column headerText="#{msg['lbl.date']}" width="150" sortBy="#{m.movementDate}">
+                            <h:outputText value="#{m.movementDate}">
+                                <f:convertDateTime pattern="dd/MM/yyyy HH:mm" timeZone="America/Mexico_City"/>
+                            </h:outputText>
+                        </p:column>
+                        <p:column headerText="#{msg['cat.inventory.movementType']}" width="110">
+                            <span class="#{inventoryMb.movementBadge(m.movementType)}">#{msg['cat.inventory.type.'.concat(m.movementType)]}</span>
+                        </p:column>
+                        <p:column headerText="#{msg['lbl.quantity']}" width="90" styleClass="text-right">
+                            <span style="font-weight:600">#{m.quantity}</span>
+                        </p:column>
+                        <p:column headerText="#{msg['cat.inventory.unitCost']}" width="110" styleClass="text-right">
+                            <h:outputText value="#{sessionMb.fmtMoney(m.unitCost)}" rendered="#{not empty m.unitCost}"/>
+                        </p:column>
+                        <p:column headerText="#{msg['cat.inventory.balance']}" width="90" styleClass="text-right">
+                            <h:outputText value="#{m.balanceAfter}"/>
+                        </p:column>
+                        <p:column headerText="#{msg['cat.inventory.reference']}">
+                            <h:outputText value="#{m.referenceType}" rendered="#{not empty m.referenceType}"/>
+                            <h:outputText value=" ##{m.referenceId}" rendered="#{not empty m.referenceId}"/>
+                            <h:panelGroup rendered="#{not empty m.notes}" styleClass="muted" layout="block">#{m.notes}</h:panelGroup>
+                        </p:column>
+                    </p:dataTable>
+                </h:panelGroup>
+            </p:outputPanel>
+        </h:form>
+    </ui:define>
+</ui:composition>

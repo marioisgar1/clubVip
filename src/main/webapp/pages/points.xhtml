@@ -1,0 +1,82 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <!-- Rewards Club VIP at the business: read the member card, give points, see the movements. -->
+    <ui:define name="content">
+        <h:form id="form">
+            <div class="page-header">
+                <span class="page-icon"><i class="pi pi-gift"></i></span>
+                <h2>#{msg['menu.relation.points']}</h2>
+                <span class="page-subtitle">#{msg['rw.page.subtitle']}</span>
+            </div>
+
+            <div class="grid-2" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:1rem;align-items:start">
+                <p:outputPanel id="award" styleClass="card">
+                    <h3 class="section-title"><i class="pi pi-id-card gold"></i>&#160;#{msg['rw.award.title']}</h3>
+                    <h:panelGroup rendered="#{empty pointsMb.member}" layout="block">
+                        <p class="muted small" style="margin-top:0">#{msg['rw.award.hint']}</p>
+                        <div class="pos-member-row">
+                            <p:inputText id="memberNumber" value="#{pointsMb.memberNumber}" maxlength="14" styleClass="w-100"
+                                         placeholder="#{msg['rw.sale.card.hint']}"
+                                         onkeydown="if(event.key==='Enter'){document.getElementById('form:find').click();return false;}"/>
+                            <p:commandButton id="find" icon="pi pi-search" value="#{msg['rw.sale.find']}" actionListener="#{pointsMb.lookup}"
+                                             process="@this memberNumber" update="award :messages" styleClass="ui-button-primary"/>
+                        </div>
+                    </h:panelGroup>
+                    <h:panelGroup rendered="#{not empty pointsMb.member}" layout="block">
+                        <div class="pos-member-card">
+                            <span class="pos-member-badge"><i class="pi pi-star-fill"></i></span>
+                            <div class="pos-member-text">
+                                <strong>#{pointsMb.member.fullName}</strong>
+                                <span class="muted">#{pointsMb.member.memberNumber} &#183; #{pointsMb.member.points} #{msg['rw.points']}</span>
+                            </div>
+                            <p:commandButton icon="pi pi-times" actionListener="#{pointsMb.clear}" process="@this" update="award"
+                                             styleClass="ui-button-secondary rounded-button" title="#{msg['rw.sale.removeCard']}"/>
+                        </div>
+                        <h:panelGroup rendered="#{not pointsMb.member.pointsEnabled}" layout="block" styleClass="pos-warn" style="margin-top:.8rem">
+                            #{msg['rw.sale.disabled']}
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{pointsMb.member.pointsEnabled}" layout="block" style="margin-top:.9rem">
+                            <div class="field">
+                                <label for="form:amount">#{msg['rw.award.amount']}</label>
+                                <p:inputNumber id="amount" value="#{pointsMb.amount}" minValue="0" decimalPlaces="2" symbol="$ " symbolPosition="p">
+                                    <p:ajax event="keyup" update="preview" delay="250"/>
+                                </p:inputNumber>
+                                <h:outputText id="preview" styleClass="pos-member-earn" style="color:var(--vip-gold-deep)"
+                                              value="= #{pointsMb.preview} #{msg['rw.points']} (#{msg['rw.award.rule']} $#{pointsMb.member.pesosPerPoint})"/>
+                            </div>
+                            <div class="field">
+                                <label for="form:note">#{msg['rw.award.note']}</label>
+                                <p:inputText id="note" value="#{pointsMb.note}" maxlength="255" styleClass="w-100"/>
+                            </div>
+                            <p:commandButton value="#{msg['rw.award.give']}" icon="pi pi-star" actionListener="#{pointsMb.award}"
+                                             process="award" update="award movements :messages" styleClass="ui-button-primary w-100"/>
+                        </h:panelGroup>
+                    </h:panelGroup>
+                </p:outputPanel>
+
+                <div class="card">
+                    <h3 class="section-title"><i class="pi pi-history gold"></i>&#160;#{msg['rw.movements']}</h3>
+                    <p:dataTable id="movements" var="m" value="#{pointsMb.movements}" rows="15" paginator="true" reflow="true"
+                                 emptyMessage="#{msg['rw.movements.empty']}" paginatorAlwaysVisible="false">
+                        <p:column headerText="#{msg['rw.col.date']}" style="width:9rem">#{m.createdAt}</p:column>
+                        <p:column headerText="#{msg['rw.col.member']}" filterBy="#{m.customerName}" filterMatchMode="contains">
+                            #{m.customerName}<div class="muted small">#{m.memberNumber}</div>
+                        </p:column>
+                        <p:column headerText="#{msg['rw.col.type']}">#{pointsMb.typeLabel(m.movementType)}
+                            <h:outputText styleClass="muted small" rendered="#{not empty m.saleFolio}" value=" · #{m.saleFolio}"/>
+                            <h:outputText styleClass="muted small" rendered="#{not empty m.note}" value=" · #{m.note}"/>
+                        </p:column>
+                        <p:column headerText="#{msg['rw.col.amount']}" style="text-align:right">#{sessionMb.fmtMoney(m.purchaseAmount)}</p:column>
+                        <p:column headerText="#{msg['rw.col.points']}" style="text-align:right;font-weight:700">
+                            <h:outputText value="#{m.points gt 0 ? '+' : ''}#{m.points}" style="color:#{m.points lt 0 ? 'var(--vip-danger)' : 'var(--vip-success)'}"/>
+                        </p:column>
+                    </p:dataTable>
+                </div>
+            </div>
+        </h:form>
+    </ui:define>
+</ui:composition>

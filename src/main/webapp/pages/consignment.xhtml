@@ -1,0 +1,416 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <div class="card">
+            <div class="page-header">
+                <span class="page-icon"><i class="pi pi-arrow-right-arrow-left"></i></span>
+                <h2>#{msg['menu.sale.consignment']}</h2>
+                <span class="page-subtitle">#{msg['cons.subtitle']}</span>
+            </div>
+
+            <h:form id="form">
+                <!-- ============================== HUB ============================== -->
+                <h:panelGroup rendered="#{empty consignmentFileMb.detail}" layout="block">
+                <p:toolbar>
+                    <p:toolbarGroup>
+                        <p:commandButton value="#{msg['cons.invite.button']}" icon="pi pi-send"
+                                         process="@this" actionListener="#{consignmentMb.openInvite}"
+                                         update=":inviteForm :messages" oncomplete="PF('consInviteDlg').show()"
+                                         rendered="#{consignmentMb.moduleOn}" styleClass="ui-button-primary"/>
+                        <p:commandButton icon="pi pi-refresh" title="#{msg['action.refresh']}"
+                                         process="@this" actionListener="#{consignmentMb.refresh}" update="@form :messages"
+                                         styleClass="ui-button-secondary ml-2"/>
+                    </p:toolbarGroup>
+                </p:toolbar>
+
+                <!-- Shipments in transit that I have to receive -->
+                <ui:repeat value="#{consignmentMb.summary.pendingShipments}" var="s">
+                    <div class="cons-alert">
+                        <i class="pi pi-box cons-alert-icon"></i>
+                        <div class="cons-alert-text">
+                            <b>#{s.partnerName}</b> #{msg['cons.alert.sentYou']} <b>#{s.totalPieces} #{msg['cons.lbl.pieces']}</b>
+                            <span class="muted" style="display:block">#{s.folio} · #{consignmentFileMb.stamp(s.sentAt)}</span>
+                        </div>
+                        <p:commandButton value="#{msg['cons.action.receive']}" icon="pi pi-download" process="@this"
+                                         actionListener="#{consignmentFileMb.receiveFrom(s)}"
+                                         update=":form :shipmentForm :messages"
+                                         oncomplete="PF('consShipmentDlg').show()" styleClass="ui-button-primary"/>
+                    </div>
+                </ui:repeat>
+
+                <!-- Invitations waiting for my answer (I am the supplier) -->
+                <ui:repeat value="#{consignmentMb.summary.pendingInvitations}" var="a">
+                    <div class="cons-invite">
+                        <div class="cons-invite-head">
+                            <h:panelGroup rendered="#{not empty a.partner.logoBase64}">
+                                <img class="cons-logo" src="#{consignmentMb.logoSrc(a.partner)}" alt="#{a.partner.name}"/>
+                            </h:panelGroup>
+                            <h:panelGroup rendered="#{empty a.partner.logoBase64}" styleClass="cons-monogram">#{consignmentMb.initials(a.partner)}</h:panelGroup>
+                            <div>
+                                <div class="cons-kicker">#{msg['cons.invite.kicker']}</div>
+                                <div class="cons-name">#{a.partner.name}</div>
+                                <div class="muted">#{a.partner.categoryName}<h:outputText value=" · #{a.partner.city}" rendered="#{not empty a.partner.city}"/></div>
+                            </div>
+                        </div>
+                        <p class="cons-invite-text">#{msg['cons.invite.wants']}</p>
+                        <div class="kpi-grid cons-terms">
+                            <div class="kpi-card">
+                                <div class="kpi-label">#{msg['cons.lbl.storeCommission']}</div>
+                                <div class="kpi-value">#{consignmentMb.pct(a.commissionPercent)}</div>
+                            </div>
+                            <div class="kpi-card kpi-ink">
+                                <div class="kpi-label">#{msg['cons.lbl.youReceive']}</div>
+                                <div class="kpi-value">#{consignmentMb.pct(a.supplierPercent)}</div>
+                                <div class="kpi-hint">#{msg['cons.lbl.perSale']}</div>
+                            </div>
+                            <div class="kpi-card">
+                                <div class="kpi-label">#{msg['cons.lbl.paysYou']}</div>
+                                <div class="kpi-value cons-kpi-text">#{consignmentMb.frequencyLabel(a.paymentFrequency)}</div>
+                            </div>
+                        </div>
+                        <h:panelGroup rendered="#{not empty a.invitationMessage}" layout="block" styleClass="cons-quote">“#{a.invitationMessage}”</h:panelGroup>
+                        <div class="cons-actions">
+                            <p:commandButton value="#{msg['cons.action.reject']}" icon="pi pi-times" process="@this"
+                                             actionListener="#{consignmentMb.prepareReject(a)}" update=":rejectForm"
+                                             oncomplete="PF('consRejectDlg').show()" styleClass="ui-button-secondary"/>
+                            <p:commandButton value="#{msg['cons.action.accept']}" icon="pi pi-check" process="@this"
+                                             actionListener="#{consignmentMb.accept(a)}" update="@form :messages"
+                                             styleClass="ui-button-primary ml-2">
+                                <p:confirm header="#{msg['action.confirm']}" message="#{msg['cons.accept.confirm']}" icon="pi pi-check-circle"/>
+                            </p:commandButton>
+                        </div>
+                    </div>
+                </ui:repeat>
+
+                <h:panelGroup rendered="#{not consignmentMb.moduleOn and empty consignmentMb.summary.pendingInvitations}"
+                              layout="block" styleClass="empty-state">
+                    <i class="pi pi-info-circle"></i>
+                    #{msg['cons.moduleOff']}
+                </h:panelGroup>
+
+
+                <!-- Stores that sell my products (I am the supplier) -->
+                <h:panelGroup rendered="#{not empty consignmentMb.summary.stores}" layout="block">
+                    <div class="form-section">#{msg['cons.section.stores']}</div>
+                    <p:dataTable id="stores" var="a" value="#{consignmentMb.summary.stores}" rowKey="#{a.id}" reflow="true" stripedRows="true">
+                        <p:column headerText="#{msg['cons.lbl.store']}">
+                            <ui:include src="/WEB-INF/includes/consignmentPartner.xhtml"/>
+                        </p:column>
+                        <p:column headerText="#{msg['cons.lbl.storeCommission']}" width="150">#{consignmentMb.pct(a.commissionPercent)}</p:column>
+                        <p:column headerText="#{msg['cons.lbl.youReceive']}" width="130"><b>#{consignmentMb.pct(a.supplierPercent)}</b></p:column>
+                        <p:column headerText="#{msg['cons.lbl.paysYou']}" width="130">#{consignmentMb.frequencyLabel(a.paymentFrequency)}</p:column>
+                        <p:column headerText="#{msg['cons.lbl.since']}" width="120">#{consignmentMb.fmtDayIso(a.respondedAt)}</p:column>
+                        <p:column headerText="#{msg['cons.lbl.atStore']}" width="120" styleClass="text-center"><b>#{a.piecesAtStore}</b></p:column>
+                        <p:column headerText="#{msg['lbl.status']}" width="120">
+                            <span class="#{consignmentMb.statusClass(a.agreementStatus)}">#{consignmentMb.statusLabel(a.agreementStatus)}</span>
+                        </p:column>
+                        <p:column headerText="" width="120" styleClass="text-center">
+                            <p:commandButton value="#{msg['cons.action.open']}" icon="pi pi-chevron-right" iconPos="right" process="@this"
+                                             actionListener="#{consignmentFileMb.open(a.id)}" update=":form :messages"
+                                             styleClass="ui-button-secondary ui-button-sm"/>
+                        </p:column>
+                    </p:dataTable>
+                </h:panelGroup>
+
+                <!-- Suppliers whose products I sell (I am the store) -->
+                <h:panelGroup rendered="#{consignmentMb.moduleOn}" layout="block">
+                    <div class="form-section">#{msg['cons.section.suppliers']}</div>
+                    <p:dataTable id="suppliers" var="a" value="#{consignmentMb.summary.suppliers}" rowKey="#{a.id}" reflow="true"
+                                 stripedRows="true" emptyMessage="#{msg['cons.suppliers.empty']}">
+                        <p:column headerText="#{msg['cons.lbl.supplier']}">
+                            <ui:include src="/WEB-INF/includes/consignmentPartner.xhtml"/>
+                        </p:column>
+                        <p:column headerText="#{msg['cons.lbl.yourCommission']}" width="150">#{consignmentMb.pct(a.commissionPercent)}</p:column>
+                        <p:column headerText="#{msg['cons.lbl.youPay']}" width="130">#{consignmentMb.frequencyLabel(a.paymentFrequency)}</p:column>
+                        <p:column headerText="#{msg['cons.lbl.invited']}" width="120">#{consignmentMb.fmtDayIso(a.invitedAt)}</p:column>
+                        <p:column headerText="#{msg['lbl.status']}" width="200">
+                            <span class="#{consignmentMb.statusClass(a.agreementStatus)}">#{consignmentMb.statusLabel(a.agreementStatus)}</span>
+                            <h:panelGroup rendered="#{not empty a.rejectionReason}" layout="block" styleClass="muted">#{a.rejectionReason}</h:panelGroup>
+                        </p:column>
+                        <p:column headerText="#{msg['cons.lbl.atStore']}" width="110" styleClass="text-center">
+                            <h:outputText value="#{a.piecesAtStore}" rendered="#{a.agreementStatus eq 'ACTIVE' or a.agreementStatus eq 'PAUSED'}" style="font-weight:700"/>
+                        </p:column>
+                        <p:column headerText="" width="130" styleClass="text-center">
+                            <p:commandButton value="#{msg['cons.action.open']}" icon="pi pi-chevron-right" iconPos="right" process="@this"
+                                             actionListener="#{consignmentFileMb.open(a.id)}" update=":form :messages"
+                                             rendered="#{a.agreementStatus eq 'ACTIVE' or a.agreementStatus eq 'PAUSED'}"
+                                             styleClass="ui-button-secondary ui-button-sm"/>
+                            <p:commandButton icon="pi pi-times" title="#{msg['cons.action.cancelInvite']}" rendered="#{a.canCancel}"
+                                             process="@this" actionListener="#{consignmentMb.cancelInvitation(a)}" update=":form :messages"
+                                             styleClass="ui-button-rounded ui-button-text ui-button-danger">
+                                <p:confirm header="#{msg['action.confirm']}" message="#{msg['cons.cancel.confirm']}" icon="pi pi-exclamation-triangle"/>
+                            </p:commandButton>
+                        </p:column>
+                    </p:dataTable>
+                </h:panelGroup>
+
+                </h:panelGroup>
+
+                <!-- ============================== FILE OF ONE RELATION ============================== -->
+                <h:panelGroup rendered="#{not empty consignmentFileMb.detail}" layout="block">
+                    <ui:include src="/WEB-INF/includes/consignmentFile.xhtml"/>
+                </h:panelGroup>
+
+                <p:confirmDialog global="true">
+                    <p:commandButton value="#{msg['action.yes']}" type="button"
+                                     styleClass="ui-confirmdialog-yes ui-button-primary"/>
+                    <p:commandButton value="#{msg['action.no']}" type="button"
+                                     styleClass="ui-confirmdialog-no ui-button-secondary"/>
+                </p:confirmDialog>
+            </h:form>
+        </div>
+
+        <!-- Invite a supplier -->
+        <p:dialog header="#{msg['cons.invite.title']}" widgetVar="consInviteDlg" modal="true" width="620" resizable="false"
+                  fitViewport="true" responsive="true" closeOnEscape="true">
+            <h:form id="inviteForm">
+                <h:panelGroup rendered="#{empty consignmentMb.chosen}" layout="block">
+                    <div class="cons-step">1 · #{msg['cons.invite.step1']}</div>
+                    <div class="flex-between gap-2">
+                        <p:inputText id="q" value="#{consignmentMb.searchText}" placeholder="#{msg['cons.invite.searchPh']}" style="flex:1">
+                            <p:ajax event="keyup" delay="350" listener="#{consignmentMb.search}" update=":inviteForm:results"/>
+                        </p:inputText>
+                    </div>
+                    <h:panelGroup id="results" layout="block" styleClass="cons-results">
+                        <ui:repeat value="#{consignmentMb.candidates}" var="b">
+                            <p:commandLink process="@this" actionListener="#{consignmentMb.choose(b)}" update=":inviteForm" styleClass="cons-result">
+                                <h:panelGroup rendered="#{not empty b.logoBase64}">
+                                    <img class="cons-logo-sm" src="#{consignmentMb.logoSrc(b)}" alt=""/>
+                                </h:panelGroup>
+                                <h:panelGroup rendered="#{empty b.logoBase64}" styleClass="cons-monogram cons-monogram-sm">#{consignmentMb.initials(b)}</h:panelGroup>
+                                <span>
+                                    <b>#{b.name}</b>
+                                    <span class="muted" style="display:block">#{b.categoryName}<h:outputText value=" · #{b.city}" rendered="#{not empty b.city}"/></span>
+                                </span>
+                                <i class="pi pi-chevron-right cons-chevron"></i>
+                            </p:commandLink>
+                        </ui:repeat>
+                        <h:panelGroup rendered="#{empty consignmentMb.candidates}" layout="block" styleClass="empty-state">
+                            <i class="pi pi-search"></i>#{msg['cons.invite.noResults']}
+                        </h:panelGroup>
+                    </h:panelGroup>
+                </h:panelGroup>
+
+                <h:panelGroup rendered="#{not empty consignmentMb.chosen}" layout="block">
+                    <div class="cons-result cons-chosen">
+                        <h:panelGroup rendered="#{not empty consignmentMb.chosen.logoBase64}">
+                            <img class="cons-logo-sm" src="#{consignmentMb.logoSrc(consignmentMb.chosen)}" alt=""/>
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{empty consignmentMb.chosen.logoBase64}" styleClass="cons-monogram cons-monogram-sm">#{consignmentMb.initials(consignmentMb.chosen)}</h:panelGroup>
+                        <span style="flex:1"><b>#{consignmentMb.chosen.name}</b>
+                            <span class="muted" style="display:block">#{consignmentMb.chosen.city}</span></span>
+                        <p:commandLink value="#{msg['cons.invite.change']}" process="@this" actionListener="#{consignmentMb.clearChoice}" update=":inviteForm"/>
+                    </div>
+
+                    <div class="cons-step">2 · #{msg['cons.invite.step2']}</div>
+                    <div class="form-grid">
+                        <div class="field required">
+                            <label for="inviteForm:commission">#{msg['cons.lbl.yourCommission']} (%)</label>
+                            <p:inputNumber id="commission" value="#{consignmentMb.commission}" minValue="0" maxValue="90"
+                                           decimalPlaces="1" symbol=" %" symbolPosition="s" required="true"
+                                           requiredMessage="#{msg['cons.lbl.yourCommission']}: #{msg['msg.required']}">
+                                <p:ajax event="keyup" delay="250" update=":inviteForm:preview"/>
+                                <p:ajax event="change" update=":inviteForm:preview"/>
+                            </p:inputNumber>
+                        </div>
+                        <div class="field">
+                            <label>#{msg['cons.lbl.youPay']}</label>
+                            <p:selectOneButton value="#{consignmentMb.frequency}">
+                                <f:selectItem itemValue="WEEKLY" itemLabel="#{msg['cons.freq.WEEKLY']}"/>
+                                <f:selectItem itemValue="BIWEEKLY" itemLabel="#{msg['cons.freq.BIWEEKLY']}"/>
+                                <f:selectItem itemValue="MONTHLY" itemLabel="#{msg['cons.freq.MONTHLY']}"/>
+                                <p:ajax update=":inviteForm:preview"/>
+                            </p:selectOneButton>
+                        </div>
+                        <div class="field span-2">
+                            <label for="inviteForm:message">#{msg['cons.lbl.message']}</label>
+                            <p:inputTextarea id="message" value="#{consignmentMb.message}" rows="2" maxlength="500" autoResize="false"
+                                             placeholder="#{msg['cons.invite.messagePh']}"/>
+                        </div>
+                    </div>
+
+                    <div class="cons-step">3 · #{msg['cons.invite.step3']}</div>
+                    <h:panelGroup id="preview" layout="block" styleClass="cons-preview">
+                        <h:outputFormat value="#{msg['cons.invite.preview']}" escape="false"
+                                        rendered="#{not empty consignmentMb.commission}">
+                            <f:param value="#{consignmentMb.pct(consignmentMb.commission)}"/>
+                            <f:param value="#{consignmentMb.pct(consignmentMb.supplierShare)}"/>
+                            <f:param value="#{consignmentMb.frequencyLabel(consignmentMb.frequency)}"/>
+                        </h:outputFormat>
+                        <h:outputText value="#{msg['cons.invite.previewEmpty']}" rendered="#{empty consignmentMb.commission}" styleClass="muted"/>
+                    </h:panelGroup>
+
+                    <div class="cons-actions">
+                        <p:commandButton value="#{msg['action.cancel']}" type="button" onclick="PF('consInviteDlg').hide()" styleClass="ui-button-secondary"/>
+                        <p:commandButton value="#{msg['cons.invite.send']}" icon="pi pi-send" actionListener="#{consignmentMb.sendInvite}"
+                                         process="@form" update=":form :inviteForm :messages" styleClass="ui-button-primary ml-2"/>
+                    </div>
+                </h:panelGroup>
+            </h:form>
+        </p:dialog>
+
+        <!-- Reject an invitation -->
+        <p:dialog header="#{msg['cons.action.reject']}" widgetVar="consRejectDlg" modal="true" width="460" resizable="false"
+                  fitViewport="true" responsive="true" closeOnEscape="true">
+            <h:form id="rejectForm">
+                <p class="muted">#{msg['cons.reject.text']} <b>#{consignmentMb.answering.partner.name}</b></p>
+                <div class="field">
+                    <label for="rejectForm:reason">#{msg['cons.lbl.reason']}</label>
+                    <p:inputTextarea id="reason" value="#{consignmentMb.rejectReason}" rows="3" maxlength="255" autoResize="false"
+                                     placeholder="#{msg['cons.reject.reasonPh']}" style="width:100%"/>
+                </div>
+                <div class="cons-actions">
+                    <p:commandButton value="#{msg['action.cancel']}" type="button" onclick="PF('consRejectDlg').hide()" styleClass="ui-button-secondary"/>
+                    <p:commandButton value="#{msg['cons.action.reject']}" icon="pi pi-times" actionListener="#{consignmentMb.reject}"
+                                     process="@form" update=":form :messages" styleClass="ui-button-danger ml-2"/>
+                </div>
+            </h:form>
+        </p:dialog>
+
+        <!-- Send pieces to the store (supplier) -->
+        <p:dialog header="#{msg['cons.send.title']}" widgetVar="consSendDlg" modal="true" width="1100" resizable="false"
+                  fitViewport="true" responsive="true" closeOnEscape="true" styleClass="cons-send-dlg">
+            <h:form id="sendForm">
+                <p class="muted" style="margin-top:0">#{msg['cons.send.to']} <b>#{consignmentFileMb.detail.agreement.partner.name}</b></p>
+                <div class="cons-send-grid">
+                    <div>
+                        <div class="cons-step">1 · #{msg['cons.send.step1']}</div>
+                        <p:inputText id="search" value="#{consignmentFileMb.productSearch}" placeholder="#{msg['cons.send.searchPh']}"
+                                     style="width:100%" autocomplete="off">
+                            <p:ajax event="keyup" delay="350" listener="#{consignmentFileMb.searchProducts}" update=":sendForm:results"
+                                    onstart="return event.keyCode !== 13"/>
+                        </p:inputText>
+                        <p:defaultCommand target="enterAdd"/>
+                        <p:commandButton id="enterAdd" style="display:none" process="@this :sendForm:search"
+                                         actionListener="#{consignmentFileMb.searchAndAdd}" update=":sendForm:search :sendForm:results :sendForm:cart :messages"/>
+                        <h:panelGroup id="results" layout="block" styleClass="cons-results">
+                            <ui:repeat value="#{consignmentFileMb.productResults}" var="p">
+                                <p:commandLink process="@this" actionListener="#{consignmentFileMb.add(p)}" update=":sendForm:cart :messages" styleClass="cons-result">
+                                    <span style="flex:1;min-width:0">
+                                        <b class="cons-ellipsis">#{p.name}</b>
+                                        <span class="muted" style="display:block">#{p.barcode} · #{consignmentFileMb.variant(p.size, p.color)}</span>
+                                    </span>
+                                    <span class="muted" style="text-align:right;white-space:nowrap">#{sessionMb.fmtMoney(p.price)}<br/>#{msg['cons.send.available']} #{p.available}</span>
+                                    <i class="pi pi-plus-circle cons-chevron" style="color:var(--vip-gold-deep)"></i>
+                                </p:commandLink>
+                            </ui:repeat>
+                            <h:panelGroup rendered="#{empty consignmentFileMb.productResults}" layout="block" styleClass="empty-state">
+                                <i class="pi pi-search"></i>#{msg['cons.send.noProducts']}
+                            </h:panelGroup>
+                        </h:panelGroup>
+                    </div>
+                    <div>
+                        <div class="cons-step">2 · #{msg['cons.send.step2']}</div>
+                        <h:panelGroup id="cart" layout="block">
+                            <div class="cons-cart-box">
+                            <p:dataTable var="l" value="#{consignmentFileMb.cart}" emptyMessage="#{msg['cons.send.cartEmpty']}" styleClass="cons-cart"
+                                         tableStyle="table-layout:fixed;width:100%">
+                                <p:column headerText="#{msg['cons.lbl.product']}">
+                                    <b class="cons-ellipsis">#{l.product.name}</b>
+                                    <span class="muted" style="display:block">#{consignmentFileMb.variant(l.product.size, l.product.color)}</span>
+                                </p:column>
+                                <p:column headerText="#{msg['cons.lbl.pieces']}" width="120">
+                                    <p:spinner value="#{l.quantity}" min="1" max="#{l.product.available}" size="2" styleClass="cons-qty">
+                                        <p:ajax update=":sendForm:totals"/>
+                                    </p:spinner>
+                                </p:column>
+                                <p:column width="44" styleClass="text-center">
+                                    <p:commandButton icon="pi pi-trash" process="@this" actionListener="#{consignmentFileMb.remove(l)}"
+                                                     update=":sendForm:cart" styleClass="ui-button-rounded ui-button-text ui-button-danger"/>
+                                </p:column>
+                            </p:dataTable>
+                            </div>
+                            <h:panelGroup id="totals" layout="block" styleClass="cons-preview mt-2">
+                                <b>#{consignmentFileMb.cartPieces} #{msg['cons.lbl.pieces']}</b> · #{msg['cons.send.valueAt']} #{sessionMb.fmtMoney(consignmentFileMb.cartValue)}
+                                <span style="display:block" class="muted">#{msg['cons.send.youWouldGet']} <b>#{sessionMb.fmtMoney(consignmentFileMb.cartSupplierValue)}</b> (#{consignmentMb.pct(consignmentFileMb.detail.agreement.supplierPercent)})</span>
+                            </h:panelGroup>
+                        </h:panelGroup>
+                        <div class="field mt-2">
+                            <label for="sendForm:notes">#{msg['cons.lbl.notes']}</label>
+                            <p:inputText id="notes" value="#{consignmentFileMb.notes}" maxlength="255" style="width:100%"
+                                         placeholder="#{msg['cons.send.notesPh']}"/>
+                        </div>
+                    </div>
+                </div>
+                <div class="cons-actions">
+                    <p:commandButton value="#{msg['action.cancel']}" type="button" onclick="PF('consSendDlg').hide()" styleClass="ui-button-secondary"/>
+                    <p:commandButton value="#{msg['cons.send.button']}" icon="pi pi-send" process="@form"
+                                     actionListener="#{consignmentFileMb.send}" update=":form :messages" styleClass="ui-button-primary ml-2">
+                        <p:confirm header="#{msg['action.confirm']}" message="#{msg['cons.send.confirm']}" icon="pi pi-send"/>
+                    </p:commandButton>
+                </div>
+            </h:form>
+        </p:dialog>
+
+        <!-- One shipment: receive it (receiver) or just look at it -->
+        <p:dialog header="#{consignmentFileMb.shipment.folio}" widgetVar="consShipmentDlg" modal="true" width="720" resizable="false"
+                  fitViewport="true" responsive="true" closeOnEscape="true" id="shipmentDlg">
+            <h:form id="shipmentForm">
+                <h:panelGroup rendered="#{not empty consignmentFileMb.shipment}" layout="block">
+                    <div class="flex-between wrap gap-2" style="margin-bottom:.6rem">
+                        <span>
+                            <b>#{consignmentFileMb.shipment.folio}</b> · #{consignmentFileMb.directionLabel(consignmentFileMb.shipment.direction)} · #{consignmentFileMb.shipment.partnerName}
+                            <span class="muted" style="display:block">#{msg['cons.lbl.sentAt']} #{consignmentFileMb.stamp(consignmentFileMb.shipment.sentAt)}<h:outputText value=" · #{msg['cons.lbl.receivedAt']} #{consignmentFileMb.stamp(consignmentFileMb.shipment.receivedAt)}" rendered="#{not empty consignmentFileMb.shipment.receivedAt}"/></span>
+                        </span>
+                        <span class="#{consignmentFileMb.shipmentStatusClass(consignmentFileMb.shipment.shipmentStatus)}">#{consignmentFileMb.shipmentStatusLabel(consignmentFileMb.shipment.shipmentStatus)}</span>
+                    </div>
+                    <h:panelGroup rendered="#{not empty consignmentFileMb.shipment.notes}" layout="block" styleClass="cons-quote">“#{consignmentFileMb.shipment.notes}”</h:panelGroup>
+                    <h:panelGroup rendered="#{consignmentFileMb.shipment.canReceive}" layout="block" styleClass="cons-preview" style="margin-bottom:.6rem">#{msg['cons.receive.help']}</h:panelGroup>
+
+                    <p:dataTable id="items" var="i" value="#{consignmentFileMb.shipment.items}" rowKey="#{i.id}" reflow="true" stripedRows="true">
+                        <p:column headerText="#{msg['cons.lbl.product']}">
+                            <b class="cons-ellipsis">#{i.name}</b>
+                            <span class="muted" style="display:block">#{i.barcode} · #{consignmentFileMb.variant(i.size, i.color)}</span>
+                        </p:column>
+                        <p:column headerText="#{msg['cons.lbl.sent']}" width="90" styleClass="text-center"><b>#{i.quantitySent}</b></p:column>
+                        <p:column headerText="#{msg['cons.lbl.received']}" width="120" styleClass="text-center">
+                            <p:spinner value="#{i.quantityReceived}" min="0" max="#{i.quantitySent}" size="2" rendered="#{consignmentFileMb.shipment.canReceive}">
+                                <p:ajax update=":shipmentForm:receiveButton :shipmentForm:items"/>
+                            </p:spinner>
+                            <h:outputText value="#{i.quantityReceived}" rendered="#{not consignmentFileMb.shipment.canReceive}"/>
+                            <h:panelGroup rendered="#{i.quantityReceived ne null and i.quantityReceived lt i.quantitySent}" layout="block"
+                                          styleClass="cons-missing">#{msg['cons.receive.missing']} #{i.quantitySent - i.quantityReceived}</h:panelGroup>
+                        </p:column>
+                        <p:column headerText="#{msg['cons.lbl.price']}" width="100" styleClass="text-right">#{sessionMb.fmtMoney(i.unitPrice)}</p:column>
+                    </p:dataTable>
+
+                    <h:panelGroup rendered="#{not empty consignmentFileMb.shipment.receiveComment}" layout="block" styleClass="muted mt-2">#{msg['cons.lbl.comment']}: #{consignmentFileMb.shipment.receiveComment}</h:panelGroup>
+
+                    <h:panelGroup rendered="#{consignmentFileMb.shipment.canReceive}" layout="block">
+                        <div class="field mt-2">
+                            <label for="shipmentForm:comment">#{msg['cons.lbl.comment']}</label>
+                            <p:inputText id="comment" value="#{consignmentFileMb.receiveComment}" maxlength="255" style="width:100%"
+                                         placeholder="#{msg['cons.receive.commentPh']}"/>
+                        </div>
+                        <div class="cons-actions">
+                            <p:commandButton value="#{msg['cons.action.rejectShipment']}" icon="pi pi-times" type="button"
+                                             onclick="PF('consShipmentRejectDlg').show()" styleClass="ui-button-secondary"/>
+                            <p:commandButton id="receiveButton" value="#{msg['cons.action.receive']} #{consignmentFileMb.receivingPieces} #{msg['cons.lbl.pieces']}"
+                                             icon="pi pi-check" process="@form" actionListener="#{consignmentFileMb.receive}"
+                                             update=":form :messages" styleClass="ui-button-primary ml-2"/>
+                        </div>
+                    </h:panelGroup>
+                </h:panelGroup>
+            </h:form>
+        </p:dialog>
+
+        <!-- Reject a shipment (receiver) -->
+        <p:dialog header="#{msg['cons.action.rejectShipment']}" widgetVar="consShipmentRejectDlg" modal="true" width="460" resizable="false"
+                  fitViewport="true" responsive="true" closeOnEscape="true">
+            <h:form id="shipRejectForm">
+                <p class="muted">#{msg['cons.rejectShipment.text']}</p>
+                <p:inputTextarea value="#{consignmentFileMb.rejectReason}" rows="3" maxlength="255" autoResize="false"
+                                 placeholder="#{msg['cons.reject.reasonPh2']}" style="width:100%"/>
+                <div class="cons-actions">
+                    <p:commandButton value="#{msg['action.cancel']}" type="button" onclick="PF('consShipmentRejectDlg').hide()" styleClass="ui-button-secondary"/>
+                    <p:commandButton value="#{msg['cons.action.rejectShipment']}" icon="pi pi-times" process="@form"
+                                     actionListener="#{consignmentFileMb.rejectShipment}" update=":form :messages" styleClass="ui-button-danger ml-2"/>
+                </div>
+            </h:form>
+        </p:dialog>
+    </ui:define>
+</ui:composition>

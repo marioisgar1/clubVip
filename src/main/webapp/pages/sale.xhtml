@@ -1,0 +1,418 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <div class="page-header">
+            <span class="page-icon"><i class="pi pi-shopping-cart"></i></span>
+            <h2>#{msg['menu.sale.new']}</h2>
+            <span class="page-subtitle">#{msg['pos.sale.subtitle']}</span>
+        </div>
+
+        <h:form id="form">
+            <div class="pos-layout">
+
+                <!-- LEFT: scan, search, cart -->
+                <div class="pos-left">
+                    <div class="card">
+                        <div class="pos-scan-row">
+                            <div class="field pos-scan-field">
+                                <label for="form:barcode"><i class="pi pi-qrcode gold"></i>&#160;#{msg['pos.sale.scan']}</label>
+                                <div class="ui-inputgroup">
+                                    <p:inputText id="barcode" value="#{saleMb.barcode}" styleClass="pos-scan-input"
+                                                 placeholder="#{msg['pos.lbl.barcode']}" autocomplete="off"
+                                                 onkeydown="if(event.key==='Enter'){PF('scanBtn').jq.click();return false;}"/>
+                                    <p:commandButton widgetVar="scanBtn" icon="pi pi-plus" title="#{msg['pos.sale.add']}"
+                                                     actionListener="#{saleMb.scan}" process="@this barcode"
+                                                     update=":form:cartTable :form:checkout :form:barcode :messages"
+                                                     oncomplete="posFocusBarcode()" styleClass="ui-button-primary"/>
+                                </div>
+                                <span class="hint">#{msg['pos.sale.scan.hint']}</span>
+                            </div>
+                            <div class="field pos-search-field">
+                                <label for="form:search"><i class="pi pi-search"></i>&#160;#{msg['pos.sale.search']}</label>
+                                <div class="ui-inputgroup">
+                                    <p:inputText id="search" value="#{saleMb.search}" placeholder="#{msg['pos.sale.search.hint']}"
+                                                 autocomplete="off"
+                                                 onkeydown="if(event.key==='Enter'){PF('searchBtn').jq.click();return false;}"/>
+                                    <p:commandButton widgetVar="searchBtn" icon="pi pi-search" title="#{msg['action.search']}"
+                                                     actionListener="#{saleMb.searchProducts}" process="@this search"
+                                                     update=":form:searchPanel :messages" styleClass="ui-button-secondary"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <p:outputPanel id="searchPanel">
+                            <h:panelGroup rendered="#{not empty saleMb.searchResults}" layout="block" styleClass="mt-2">
+                                <div class="flex-between">
+                                    <span class="muted">#{saleMb.searchResults.size()} #{msg['pos.sale.search.results']}</span>
+                                    <p:commandButton icon="pi pi-times" value="#{msg['action.close']}" actionListener="#{saleMb.clearSearch}"
+                                                     process="@this" update=":form:searchPanel :form:search"
+                                                     styleClass="ui-button-flat ui-button-secondary"/>
+                                </div>
+                                <p:dataTable id="searchTable" var="pr" value="#{saleMb.searchResults}" rows="8" paginator="true"
+                                             paginatorAlwaysVisible="false" reflow="true" stripedRows="true" styleClass="mt-2"
+                                             emptyMessage="#{msg['msg.noData']}">
+                                    <p:column headerText="#{msg['cat.product.name']}">
+                                        <span style="font-weight:600">#{pr.name}</span>
+                                        <span class="muted" style="display:block">#{pr.barcode}
+                                            <h:outputText value=" &#183; #{pr.brandName}" rendered="#{not empty pr.brandName}"/>
+                                            <h:outputText value=" &#183; #{pr.size}" rendered="#{not empty pr.size}"/>
+                                            <h:outputText value=" &#183; #{pr.color}" rendered="#{not empty pr.color}"/>
+                                        </span>
+                                    </p:column>
+                                    <p:column headerText="#{msg['cat.product.onHand']}" width="90" styleClass="text-right">
+                                        <h:outputText value="#{pr.quantityOnHand != null ? pr.quantityOnHand : 0}"
+                                                      style="#{(pr.quantityOnHand != null ? pr.quantityOnHand : 0) le 0 ? 'color:var(--vip-danger);font-weight:600' : ''}"/>
+                                    </p:column>
+                                    <p:column headerText="#{msg['lbl.price']}" width="110" styleClass="text-right">
+                                        <strong>#{sessionMb.fmtMoney(pr.price)}</strong>
+                                    </p:column>
+                                    <p:column headerText="" style="width:5rem;text-align:center">
+                                        <p:commandButton icon="pi pi-cart-plus" title="#{msg['pos.sale.add']}"
+                                                         actionListener="#{saleMb.addProduct(pr)}" process="@this"
+                                                         update=":form:cartTable :form:checkout :messages"
+                                                         oncomplete="posFocusBarcode()" styleClass="ui-button-rounded ui-button-primary"/>
+                                    </p:column>
+                                </p:dataTable>
+                            </h:panelGroup>
+                        </p:outputPanel>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="section-title"><i class="pi pi-shopping-bag gold"></i>&#160;#{msg['pos.sale.cart']}</h3>
+                        <p:dataTable id="cartTable" var="it" value="#{saleMb.cart}" emptyMessage="#{msg['pos.sale.cartEmpty']}"
+                                     reflow="true" stripedRows="true">
+                            <p:column headerText="#{msg['lbl.description']}">
+                                <span style="font-weight:600">#{it.description}</span>
+                                <span class="muted" style="display:block">#{it.barcode}</span>
+                            </p:column>
+                            <p:column headerText="#{msg['lbl.quantity']}" style="width:6.5rem">
+                                <p:inputNumber value="#{it.quantity}" decimalPlaces="0" minValue="1" styleClass="pos-cart-num">
+                                    <p:ajax event="change" update=":form:cartTable :form:checkout"/>
+                                </p:inputNumber>
+                            </p:column>
+                            <p:column headerText="#{msg['pos.lbl.listPrice']}" style="width:7rem" styleClass="text-right">
+                                <span class="muted">#{sessionMb.fmtMoney(it.listPrice)}</span>
+                            </p:column>
+                            <p:column headerText="#{msg['pos.lbl.unitPrice']}" style="width:9rem">
+                                <p:inputNumber value="#{it.unitPrice}" decimalPlaces="2" minValue="0" symbol="$ " styleClass="pos-cart-num">
+                                    <p:ajax event="change" update=":form:cartTable :form:checkout"/>
+                                </p:inputNumber>
+                            </p:column>
+                            <p:column headerText="#{msg['pos.lbl.discount']}" style="width:7rem" styleClass="text-right">
+                                <h:outputText value="#{sessionMb.fmtMoney(it.computedDiscount)}" styleClass="discount"
+                                              rendered="#{it.computedDiscount gt 0}"/>
+                                <h:outputText value="—" styleClass="muted" rendered="#{it.computedDiscount le 0}"/>
+                            </p:column>
+                            <p:column headerText="#{msg['lbl.total']}" style="width:8rem" styleClass="text-right">
+                                <strong>#{sessionMb.fmtMoney(it.computedLineTotal)}</strong>
+                            </p:column>
+                            <p:column style="width:3.5rem;text-align:center">
+                                <p:commandButton icon="pi pi-trash" title="#{msg['action.delete']}"
+                                                 actionListener="#{saleMb.removeFromCart(it)}" process="@this"
+                                                 update=":form:cartTable :form:checkout"
+                                                 styleClass="ui-button-rounded ui-button-text ui-button-danger"/>
+                            </p:column>
+                        </p:dataTable>
+                    </div>
+                </div>
+
+                <!-- RIGHT: checkout -->
+                <div class="pos-right">
+                    <p:outputPanel id="checkout">
+                        <div class="card">
+                            <h3 class="section-title"><i class="pi pi-wallet gold"></i>&#160;#{msg['pos.sale.checkout']}</h3>
+                            <div class="field">
+                                <label for="form:payment">#{msg['pos.lbl.paymentMethod']}</label>
+                                <p:selectOneMenu id="payment" value="#{saleMb.paymentMethodId}" styleClass="w-100">
+                                    <f:selectItem itemLabel="#{msg['lbl.select']}" itemValue="#{null}" noSelectionOption="true"/>
+                                    <f:selectItems value="#{saleMb.paymentMethods}" var="pm"
+                                                   itemLabel="#{pm.name}#{pm.credit ? ' ('.concat(msg['pos.payment.credit.yes']).concat(')') : ''}"
+                                                   itemValue="#{pm.id}"/>
+                                    <p:ajax listener="#{saleMb.onPaymentMethodChange}" update=":form:checkout"/>
+                                </p:selectOneMenu>
+                            </div>
+                            <div class="field">
+                                <label for="form:location">#{msg['pos.lbl.saleLocation']}</label>
+                                <p:selectOneMenu id="location" value="#{saleMb.saleLocationId}" styleClass="w-100">
+                                    <f:selectItem itemLabel="#{msg['lbl.select']}" itemValue="#{null}" noSelectionOption="true"/>
+                                    <f:selectItems value="#{saleMb.saleLocations}" var="sl" itemLabel="#{sl.name}" itemValue="#{sl.id}"/>
+                                </p:selectOneMenu>
+                            </div>
+
+                            <!-- Rewards Club VIP: the member card gives points for this sale -->
+                            <div class="pos-member">
+                                <h:panelGroup rendered="#{empty saleMb.member}" layout="block">
+                                    <label for="form:memberNumber"><i class="pi pi-id-card gold"></i>&#160;#{msg['rw.sale.card']}</label>
+                                    <div class="pos-member-row">
+                                        <p:inputText id="memberNumber" value="#{saleMb.memberNumber}" maxlength="14"
+                                                     placeholder="#{msg['rw.sale.card.hint']}" styleClass="w-100"
+                                                     onkeydown="if(event.key==='Enter'){document.getElementById('form:memberFind').click();return false;}"/>
+                                        <p:commandButton id="memberFind" icon="pi pi-search" title="#{msg['rw.sale.find']}"
+                                                         actionListener="#{saleMb.lookupMember}" process="@this memberNumber"
+                                                         update=":form:checkout :messages" styleClass="ui-button-secondary"/>
+                                    </div>
+                                </h:panelGroup>
+                                <h:panelGroup rendered="#{not empty saleMb.member}" layout="block" styleClass="pos-member-card">
+                                    <span class="pos-member-badge"><i class="pi pi-star-fill"></i></span>
+                                    <div class="pos-member-text">
+                                        <strong>#{saleMb.member.fullName}</strong>
+                                        <span class="muted">#{saleMb.member.memberNumber} &#183; #{saleMb.member.points} #{msg['rw.points']}</span>
+                                        <h:outputText styleClass="pos-member-earn" rendered="#{saleMb.member.pointsEnabled}"
+                                                      value="+#{saleMb.pointsPreview} #{msg['rw.sale.willEarn']}"/>
+                                        <h:outputText styleClass="muted" rendered="#{not saleMb.member.pointsEnabled}" value="#{msg['rw.sale.disabled']}"/>
+                                    </div>
+                                    <p:commandButton icon="pi pi-times" title="#{msg['rw.sale.removeCard']}" actionListener="#{saleMb.clearMember}"
+                                                     process="@this" update=":form:checkout" styleClass="ui-button-secondary rounded-button"/>
+                                </h:panelGroup>
+                            </div>
+
+                            <div class="totals-box">
+                                <div class="totals-row">
+                                    <span>#{msg['pos.sale.items']}</span>
+                                    <span>#{saleMb.itemCount}</span>
+                                </div>
+                                <div class="totals-row">
+                                    <span>#{msg['pos.sale.discount']}</span>
+                                    <span class="discount">#{sessionMb.fmtMoney(saleMb.totalDiscount)}</span>
+                                </div>
+                                <div class="totals-row">
+                                    <span>#{msg['pos.sale.subtotal']}</span>
+                                    <span>#{sessionMb.fmtMoney(saleMb.subtotal)}</span>
+                                </div>
+                                <div class="totals-row grand-total">
+                                    <span>#{msg['pos.sale.total']}</span>
+                                    <span>#{sessionMb.fmtMoney(saleMb.total)}</span>
+                                </div>
+                            </div>
+
+                            <!-- CREDIT SETUP: only when the chosen method is the credit one -->
+                            <h:panelGroup rendered="#{saleMb.creditSelected}" layout="block" styleClass="pos-credit">
+                                <h3 class="section-title"><i class="pi pi-calendar gold"></i>&#160;#{msg['pos.sale.credit.title']}</h3>
+                                <span class="hint" style="display:block;margin-bottom:.6rem">#{msg['pos.sale.credit.hint']}</span>
+
+                                <h:panelGroup rendered="#{empty saleMb.customer}" layout="block">
+                                    <div class="field">
+                                        <label for="form:custPhone">#{msg['pos.sale.credit.customerPhone']}</label>
+                                        <div class="ui-inputgroup">
+                                            <p:inputText id="custPhone" value="#{saleMb.customerPhone}" maxlength="20"
+                                                         placeholder="5512345678" autocomplete="off"
+                                                         onkeydown="if(event.key==='Enter'){PF('findCustBtn').jq.click();return false;}"/>
+                                            <p:commandButton widgetVar="findCustBtn" icon="pi pi-search" value="#{msg['action.search']}"
+                                                             actionListener="#{saleMb.findCustomer}" process="@this custPhone"
+                                                             update=":form:checkout :messages" styleClass="ui-button-secondary"/>
+                                        </div>
+                                    </div>
+                                    <h:panelGroup rendered="#{saleMb.customerNotFound}" layout="block" styleClass="pos-new-customer">
+                                        <span class="muted" style="display:block;margin-bottom:.4rem">
+                                            <i class="pi pi-user-plus gold"></i>&#160;#{msg['pos.sale.credit.newCustomer']}</span>
+                                        <div class="form-grid">
+                                            <div class="field required">
+                                                <label for="form:ncFirst">#{msg['pos.customer.firstName']}</label>
+                                                <p:inputText id="ncFirst" value="#{saleMb.newCustomer.firstName}" maxlength="80"/>
+                                            </div>
+                                            <div class="field">
+                                                <label for="form:ncLast">#{msg['pos.customer.lastName']}</label>
+                                                <p:inputText id="ncLast" value="#{saleMb.newCustomer.lastName}" maxlength="80"/>
+                                            </div>
+                                            <div class="field span-2">
+                                                <label for="form:ncAddress">#{msg['lbl.address']}</label>
+                                                <p:inputText id="ncAddress" value="#{saleMb.newCustomer.address}" maxlength="250"
+                                                             placeholder="#{msg['pos.customer.address.hint']}"/>
+                                            </div>
+                                        </div>
+                                        <p:commandButton value="#{msg['pos.sale.credit.createCustomer']}" icon="pi pi-user-plus"
+                                                         actionListener="#{saleMb.createCustomer}"
+                                                         process="@this ncFirst ncLast ncAddress"
+                                                         update=":form:checkout :messages" styleClass="ui-button-secondary w-100"/>
+                                    </h:panelGroup>
+                                </h:panelGroup>
+
+                                <h:panelGroup rendered="#{not empty saleMb.customer}" layout="block" styleClass="pos-customer-card">
+                                    <span class="avatar">#{sessionMb.initialsOf(saleMb.customer.fullName)}</span>
+                                    <span class="who">
+                                        <span class="name">#{saleMb.customer.fullName}</span>
+                                        <span class="muted">#{saleMb.customer.phone}
+                                            <h:outputText value=" &#183; #{msg['pos.credit.balance']}: #{sessionMb.fmtMoney(saleMb.customer.balance)}"
+                                                          rendered="#{saleMb.customer.balance gt 0}"/>
+                                            <h:outputText value=" &#183; #{msg['pos.credit.overdue']}: #{sessionMb.fmtMoney(saleMb.customer.overdueAmount)}"
+                                                          rendered="#{saleMb.customer.overdueAmount gt 0}" style="color:var(--vip-danger);font-weight:600"/>
+                                        </span>
+                                    </span>
+                                    <p:commandButton icon="pi pi-times" title="#{msg['pos.sale.credit.changeCustomer']}"
+                                                     actionListener="#{saleMb.changeCustomer}" process="@this"
+                                                     update=":form:checkout" styleClass="ui-button-rounded ui-button-text"/>
+                                </h:panelGroup>
+
+                                <h:panelGroup rendered="#{not empty saleMb.customer}" layout="block">
+                                    <div class="form-grid">
+                                        <div class="field">
+                                            <label for="form:downPayment">#{msg['pos.credit.downPayment']}</label>
+                                            <p:inputNumber id="downPayment" value="#{saleMb.downPayment}" symbol="$ " decimalPlaces="2" minValue="0">
+                                                <p:ajax event="change" update=":form:checkout"/>
+                                            </p:inputNumber>
+                                        </div>
+                                        <div class="field">
+                                            <label for="form:installments">#{msg['pos.credit.installments']}</label>
+                                            <p:spinner id="installments" value="#{saleMb.installmentCount}" min="1" max="52"/>
+                                        </div>
+                                        <div class="field">
+                                            <label for="form:frequency">#{msg['pos.credit.frequency']}</label>
+                                            <p:selectOneMenu id="frequency" value="#{saleMb.frequency}">
+                                                <f:selectItems value="#{saleMb.frequencies}" var="fq"
+                                                               itemLabel="#{saleMb.frequencyLabel(fq)}" itemValue="#{fq}"/>
+                                                <p:ajax listener="#{saleMb.onFrequencyChange}" update=":form:checkout"/>
+                                            </p:selectOneMenu>
+                                        </div>
+                                        <div class="field">
+                                            <label for="form:firstDue">#{msg['pos.credit.firstDueDate']}</label>
+                                            <p:datePicker id="firstDue" value="#{saleMb.firstDueDate}" pattern="dd/MM/yyyy" showIcon="true"/>
+                                        </div>
+                                    </div>
+                                    <div class="totals-box" style="margin-bottom:.6rem">
+                                        <div class="totals-row">
+                                            <span>#{msg['pos.credit.financed']}</span>
+                                            <strong>#{sessionMb.fmtMoney(saleMb.financedAmount)}</strong>
+                                        </div>
+                                    </div>
+                                    <p:commandButton value="#{msg['pos.credit.calculate']}" icon="pi pi-calculator"
+                                                     actionListener="#{saleMb.previewSchedule}"
+                                                     process="@this downPayment installments frequency firstDue"
+                                                     update=":form:checkout :messages" styleClass="ui-button-secondary w-100"/>
+
+                                    <h:panelGroup rendered="#{not empty saleMb.schedule}" layout="block" styleClass="mt-2">
+                                        <span class="hint" style="display:block;margin-bottom:.3rem">#{msg['pos.credit.schedule.hint']}</span>
+                                        <p:dataTable id="scheduleTable" var="ins" value="#{saleMb.schedule}" reflow="true"
+                                                     emptyMessage="#{msg['msg.noData']}" rowIndexVar="idx">
+                                            <p:column headerText="#" style="width:2.5rem;text-align:center">#{idx + 1}</p:column>
+                                            <p:column headerText="#{msg['pos.credit.dueDate']}">
+                                                <p:datePicker value="#{ins.dueDate}" pattern="dd/MM/yyyy" showIcon="true" styleClass="pos-cart-num"/>
+                                            </p:column>
+                                            <p:column headerText="#{msg['pos.credit.amount']}" style="width:9rem">
+                                                <p:inputNumber value="#{ins.amount}" symbol="$ " decimalPlaces="2" minValue="0" styleClass="pos-cart-num">
+                                                    <p:ajax event="change" update=":form:scheduleTotal"/>
+                                                </p:inputNumber>
+                                            </p:column>
+                                        </p:dataTable>
+                                        <h:panelGroup id="scheduleTotal" layout="block" styleClass="totals-box mt-2">
+                                            <div class="totals-row">
+                                                <span>#{msg['pos.credit.schedule.total']}</span>
+                                                <strong style="#{saleMb.scheduleBalanced ? '' : 'color:var(--vip-danger)'}">
+                                                    #{sessionMb.fmtMoney(saleMb.scheduleTotal)}
+                                                </strong>
+                                            </div>
+                                            <h:panelGroup rendered="#{not saleMb.scheduleBalanced}" styleClass="hint" layout="block"
+                                                          style="color:var(--vip-danger)">#{msg['pos.sale.credit.scheduleUnbalanced']}</h:panelGroup>
+                                        </h:panelGroup>
+                                    </h:panelGroup>
+                                </h:panelGroup>
+                            </h:panelGroup>
+
+                            <div class="pos-actions">
+                                <p:commandButton value="#{msg['pos.sale.sell']}" icon="pi pi-check"
+                                                 actionListener="#{saleMb.registerSale}" update="@form :messages"
+                                                 oncomplete="if(!args.validationFailed){posAfterSale();}"
+                                                 styleClass="ui-button-success pos-sell-btn"/>
+                                <p:commandButton value="#{msg['action.cancel']}" icon="pi pi-times"
+                                                 actionListener="#{saleMb.clearCart}" process="@this" update="@form"
+                                                 oncomplete="posFocusBarcode()" styleClass="ui-button-secondary w-100"/>
+                            </div>
+                        </div>
+                    </p:outputPanel>
+                </div>
+            </div>
+
+            <!-- RESULT: folio, total, stock warnings and the WhatsApp ticket on credit sales -->
+            <p:dialog header="#{msg['pos.sale.result.title']}" widgetVar="saleResultDialog" id="resultDialog" modal="true"
+                      width="520" resizable="false" fitViewport="true" responsive="true" closeOnEscape="true">
+                <p:ajax event="close" listener="#{saleMb.closeResult}" update=":form:resultDialog"/>
+                <h:panelGroup rendered="#{not empty saleMb.lastSale}" layout="block">
+                    <div class="pos-result-head">
+                        <i class="pi pi-check-circle"></i>
+                        <div>
+                            <span class="muted">#{msg['pos.lbl.folio']}</span>
+                            <div class="pos-result-folio">#{saleMb.lastSale.folio}</div>
+                        </div>
+                        <div class="text-right" style="margin-left:auto">
+                            <span class="muted">#{msg['pos.sale.total']}</span>
+                            <div class="pos-result-total">#{sessionMb.fmtMoney(saleMb.lastSale.total)}</div>
+                        </div>
+                    </div>
+                    <div class="muted" style="margin:.4rem 0 .8rem">
+                        #{saleMb.lastSale.paymentMethodName}
+                        <h:outputText value=" &#183; #{saleMb.lastSale.saleLocationName}" rendered="#{not empty saleMb.lastSale.saleLocationName}"/>
+                        <h:outputText value=" &#183; #{saleMb.fmtStamp(saleMb.lastSale.saleDate)}" rendered="#{not empty saleMb.lastSale.saleDate}"/>
+                    </div>
+
+                    <h:panelGroup rendered="#{not empty saleMb.lastPoints}" layout="block" styleClass="pos-points-earned">
+                        <i class="pi pi-star-fill"></i>
+                        <span><strong>+#{saleMb.lastPoints.points} #{msg['rw.points']}</strong> #{msg['rw.sale.for']} #{saleMb.lastPoints.customerName}
+                            &#183; #{msg['rw.balance']}: #{saleMb.lastPoints.balance}</span>
+                    </h:panelGroup>
+                    <h:panelGroup rendered="#{not empty saleMb.lastPointsError}" layout="block" styleClass="pos-warn mb-2">
+                        <i class="pi pi-info-circle"></i>&#160;#{msg['rw.sale.noPoints']} #{saleMb.lastPointsError}
+                    </h:panelGroup>
+
+                    <h:panelGroup rendered="#{saleMb.hasStockWarnings}" layout="block" styleClass="pos-warn mb-2">
+                        <strong><i class="pi pi-exclamation-triangle"></i>&#160;#{msg['pos.sale.stockWarnings']}</strong>
+                        <ul style="margin:.4rem 0 0 1rem;padding:0">
+                            <ui:repeat var="w" value="#{saleMb.lastSale.stockWarnings}">
+                                <li>#{w.description} <span class="muted">(#{w.barcode})</span>: #{w.resultingQuantity}</li>
+                            </ui:repeat>
+                        </ul>
+                    </h:panelGroup>
+
+                    <h:panelGroup rendered="#{not empty saleMb.lastSale.credit}" layout="block">
+                        <h3 class="section-title"><i class="pi pi-calendar gold"></i>&#160;#{msg['pos.sale.credit.title']}</h3>
+                        <div class="muted">#{saleMb.lastSale.credit.customerName} &#183; #{saleMb.lastSale.credit.customerPhone}</div>
+                        <div class="totals-box mt-2">
+                            <div class="totals-row"><span>#{msg['pos.credit.downPayment']}</span><span>#{sessionMb.fmtMoney(saleMb.lastSale.credit.downPayment)}</span></div>
+                            <div class="totals-row"><span>#{msg['pos.credit.financed']}</span><strong>#{sessionMb.fmtMoney(saleMb.lastSale.credit.financedAmount)}</strong></div>
+                            <div class="totals-row"><span>#{msg['pos.credit.frequency']}</span><span>#{saleMb.frequencyLabel(saleMb.lastSale.credit.frequency)}</span></div>
+                        </div>
+                        <p:dataTable var="ins" value="#{saleMb.lastSale.credit.installments}" styleClass="mt-2" reflow="true"
+                                     emptyMessage="#{msg['msg.noData']}">
+                            <p:column headerText="#" style="width:2.5rem;text-align:center">#{ins.installmentNumber}</p:column>
+                            <p:column headerText="#{msg['pos.credit.dueDate']}">#{saleMb.fmtDay(ins.dueDate)}</p:column>
+                            <p:column headerText="#{msg['pos.credit.amount']}" styleClass="text-right">#{sessionMb.fmtMoney(ins.amount)}</p:column>
+                        </p:dataTable>
+                        <h:outputLink value="#{saleMb.whatsappLink}" target="_blank" rendered="#{not empty saleMb.whatsappLink}"
+                                      styleClass="ui-button ui-button-whatsapp w-100 mt-2" style="text-align:center;display:block">
+                            <i class="pi pi-whatsapp"></i>&#160;#{msg['pos.sale.credit.whatsapp']}
+                        </h:outputLink>
+                    </h:panelGroup>
+                </h:panelGroup>
+                <f:facet name="footer">
+                    <p:commandButton value="#{msg['pos.sale.newSale']}" icon="pi pi-plus" type="button"
+                                     onclick="PF('saleResultDialog').hide()" styleClass="ui-button-primary"/>
+                </f:facet>
+            </p:dialog>
+        </h:form>
+
+        <script type="text/javascript">
+        //<![CDATA[
+        // The barcode box owns the keyboard: USB readers type the code and press Enter.
+        function posFocusBarcode() {
+            var el = document.getElementById('form:barcode');
+            if (el) { el.focus(); el.select(); }
+        }
+        function posAfterSale() {
+            if (document.getElementById('form:resultDialog') && PF('saleResultDialog') && document.querySelector('.pos-result-folio')) {
+                PF('saleResultDialog').show();
+            } else {
+                posFocusBarcode();
+            }
+        }
+        window.addEventListener('load', posFocusBarcode);
+        // Nothing focused (after a click on the page background): the next keystroke goes to the scanner box.
+        document.addEventListener('keydown', function (e) {
+            var a = document.activeElement;
+            if (!a || a === document.body) { posFocusBarcode(); }
+        });
+        //]]>
+        </script>
+    </ui:define>
+</ui:composition>
