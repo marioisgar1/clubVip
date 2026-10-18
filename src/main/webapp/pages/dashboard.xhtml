@@ -6,110 +6,55 @@
                 template="/WEB-INF/template.xhtml">
     <ui:define name="content">
         <h:form id="form">
-            <div class="page-header">
-                <span class="page-icon"><i class="pi pi-home"></i></span>
-                <h2>#{msg['dashboard.title']}</h2>
-                <span class="page-subtitle">
-                    #{sessionMb.todayLabel}
+            <!-- Hero: greeting by the browser's hour, today's date and the main actions -->
+            <div class="page-header cv-hero">
+                <span class="page-icon"><i class="pi pi-sun"></i></span>
+                <div class="cv-hero-text">
+                    <span class="cv-hero-kicker">#{sessionMb.todayLabel}</span>
+                    <h2 class="cv-greeting"><span class="cv-greet" data-m="#{msg['dash.greet.morning']}" data-a="#{msg['dash.greet.afternoon']}"
+                          data-n="#{msg['dash.greet.evening']}">#{msg['dash.greet.morning']}</span>, #{empty sessionMb.user.fullName ? '' : sessionMb.user.fullName.trim().split(' ')[0]} <span class="wave">👋</span></h2>
+                    <span class="page-subtitle">#{msg['dashboard.title']}</span>
+                </div>
+                <div class="cv-hero-actions">
+                    <ui:fragment rendered="#{dashboardMb.showAgenda}">
+                        <h:outputLink value="#{request.contextPath}/pages/appointmentDay.xhtml" styleClass="cv-pill"><i class="pi pi-calendar"></i>#{msg['menu.operation.appointment']}</h:outputLink>
+                    </ui:fragment>
+                    <ui:fragment rendered="#{dashboardMb.showSales}">
+                        <h:outputLink value="#{request.contextPath}/pages/sale.xhtml" styleClass="cv-pill #{dashboardMb.showBoth ? 'cv-pill-ghost' : ''}"><i class="pi pi-shopping-cart"></i>#{msg['menu.sale.new']}</h:outputLink>
+                    </ui:fragment>
+                    <!-- With both modules the hero keeps two shortcuts; the rest stay inside each block -->
+                    <ui:fragment rendered="#{dashboardMb.showAgenda and not dashboardMb.showBoth}">
+                        <h:outputLink value="#{request.contextPath}/pages/customer.xhtml" styleClass="cv-pill cv-pill-ghost"><i class="pi pi-users"></i>#{msg['menu.operation.customer']}</h:outputLink>
+                    </ui:fragment>
+                    <ui:fragment rendered="#{dashboardMb.showSales and not dashboardMb.showBoth}">
+                        <h:outputLink value="#{request.contextPath}/pages/collection.xhtml" styleClass="cv-pill cv-pill-ghost"><i class="pi pi-wallet"></i>#{msg['menu.sale.collection']}</h:outputLink>
+                    </ui:fragment>
                     <p:commandButton icon="pi pi-refresh" title="#{msg['action.refresh']}" actionListener="#{dashboardMb.refresh}"
-                                     update="@form :messages" styleClass="ui-button-flat ui-button-secondary ml-2"/>
-                </span>
+                                     update="@form :messages" styleClass="ui-button-secondary"/>
+                </div>
             </div>
+            <script type="text/javascript">
+                (function () {
+                    var g = document.querySelector('.cv-greet'), h = new Date().getHours();
+                    if (g) { g.textContent = h &lt; 12 ? g.dataset.m : (h &lt; 19 ? g.dataset.a : g.dataset.n); }
+                })();
+            </script>
 
-            <!-- SALES variant: sellers and businesses without the appointments module -->
-            <h:panelGroup rendered="#{dashboardMb.salesVariant}" layout="block">
-                <div class="kpi-grid">
-                    <div class="kpi-card kpi-ink">
-                        <span class="kpi-label">#{msg['pos.dashboard.kpi.sales']}</span>
-                        <span class="kpi-value">#{dashboardMb.todaySalesCount}</span>
-                        <span class="kpi-hint">#{dashboardMb.todayUnits} #{msg['pos.dashboard.kpi.units']}
-                            <h:outputText value=" &#183; #{dashboardMb.todayCancelledCount} #{msg['pos.dashboard.kpi.cancelled']}" rendered="#{dashboardMb.todayCancelledCount gt 0}"/></span>
-                    </div>
-                    <div class="kpi-card">
-                        <span class="kpi-label">#{msg['pos.dashboard.kpi.total']}</span>
-                        <span class="kpi-value">#{sessionMb.fmtMoney(dashboardMb.todaySalesTotal)}</span>
-                        <span class="kpi-hint">#{msg['pos.dashboard.kpi.total.hint']}</span>
-                    </div>
-                    <div class="kpi-card">
-                        <span class="kpi-label">#{msg['pos.credit.totalOwed']}</span>
-                        <span class="kpi-value">#{sessionMb.fmtMoney(dashboardMb.portfolio.totalOutstanding)}</span>
-                        <span class="kpi-hint">#{dashboardMb.portfolio.customersCount != null ? dashboardMb.portfolio.customersCount : 0} #{msg['pos.portfolio.customers']}</span>
-                    </div>
-                    <div class="kpi-card">
-                        <span class="kpi-label">#{msg['pos.credit.overdue']}</span>
-                        <span class="kpi-value" style="color:var(--vip-danger)">#{sessionMb.fmtMoney(dashboardMb.portfolio.overdueAmount)}</span>
-                        <span class="kpi-hint">#{msg['pos.credit.dueToday']}: #{sessionMb.fmtMoney(dashboardMb.portfolio.dueTodayAmount)}</span>
-                    </div>
-                </div>
-
-                <div class="dashboard-grid">
-                    <div class="card">
-                        <h3 class="section-title"><i class="pi pi-receipt gold"></i>&#160;#{msg['pos.dashboard.todaySales']}</h3>
-                        <p:dataTable id="tblSales" var="s" value="#{dashboardMb.todaySales}" rows="15" paginator="true"
-                                     paginatorPosition="bottom" paginatorAlwaysVisible="false" reflow="true"
-                                     emptyMessage="#{msg['pos.dashboard.noSales']}" rowKey="#{s.id}" stripedRows="true">
-                            <p:column headerText="#{msg['lbl.time']}" width="70" sortBy="#{s.saleDate}">
-                                <span style="font-weight:600">#{dashboardMb.fmtStamp(s.saleDate)}</span>
-                            </p:column>
-                            <p:column headerText="#{msg['pos.lbl.folio']}" width="100">#{s.folio}</p:column>
-                            <p:column headerText="#{msg['lbl.customer']}">
-                                <h:outputText value="#{s.customerName}" rendered="#{not empty s.customerName}"/>
-                                <h:outputText value="—" styleClass="muted" rendered="#{empty s.customerName}"/>
-                            </p:column>
-                            <p:column headerText="#{msg['pos.lbl.paymentMethod']}">#{s.paymentMethodName}</p:column>
-                            <p:column headerText="#{msg['lbl.status']}" width="110">
-                                <span class="#{dashboardMb.saleBadge(s.saleStatus)}">#{dashboardMb.saleStatusLabel(s.saleStatus)}</span>
-                            </p:column>
-                            <p:column headerText="#{msg['lbl.total']}" width="100" styleClass="text-right">
-                                <strong>#{sessionMb.fmtMoney(s.total)}</strong>
-                            </p:column>
-                        </p:dataTable>
-                    </div>
-                    <div>
-                        <div class="card">
-                            <h3 class="section-title"><i class="pi pi-bolt gold"></i>&#160;#{msg['pos.dashboard.quick']}</h3>
-                            <ul class="pos-quick-links">
-                                <li><h:outputLink value="#{request.contextPath}/pages/sale.xhtml"><i class="pi pi-shopping-cart"></i>#{msg['menu.sale.new']}</h:outputLink></li>
-                                <li><h:outputLink value="#{request.contextPath}/pages/collection.xhtml"><i class="pi pi-wallet"></i>#{msg['menu.sale.collection']}</h:outputLink></li>
-                                <li><h:outputLink value="#{request.contextPath}/pages/salesHistory.xhtml"><i class="pi pi-receipt"></i>#{msg['menu.sale.history']}</h:outputLink></li>
-                                <li><h:outputLink value="#{request.contextPath}/pages/reportPortfolio.xhtml"><i class="pi pi-exclamation-circle"></i>#{msg['menu.report.portfolio']}</h:outputLink></li>
-                                <ui:fragment rendered="#{sessionMb.admin}"><li><h:outputLink value="#{request.contextPath}/pages/reportProfit.xhtml"><i class="pi pi-chart-line"></i>#{msg['menu.report.profit']}</h:outputLink></li></ui:fragment>
-                                <li><h:outputLink value="#{request.contextPath}/pages/inventory.xhtml"><i class="pi pi-box"></i>#{msg['menu.warehouse.inventory']}</h:outputLink></li>
-                            </ul>
-                        </div>
-                        <div class="card">
-                            <h3 class="section-title"><i class="pi pi-exclamation-circle gold"></i>&#160;#{msg['pos.dashboard.collection']}</h3>
-                            <ul class="attention-list">
-                                <li>
-                                    <span><i class="pi pi-clock muted"></i>&#160;<h:outputLink value="#{request.contextPath}/pages/reportPortfolio.xhtml">#{msg['pos.credit.overdue']}</h:outputLink></span>
-                                    <span class="count">#{dashboardMb.portfolio.overdueCount != null ? dashboardMb.portfolio.overdueCount : 0}</span>
-                                </li>
-                                <li>
-                                    <span><i class="pi pi-calendar muted"></i>&#160;<h:outputLink value="#{request.contextPath}/pages/collection.xhtml">#{msg['pos.credit.dueToday']}</h:outputLink></span>
-                                    <span class="count">#{dashboardMb.portfolio.dueTodayCount != null ? dashboardMb.portfolio.dueTodayCount : 0}</span>
-                                </li>
-                                <li>
-                                    <span><i class="pi pi-calendar-plus muted"></i>&#160;<h:outputLink value="#{request.contextPath}/pages/collection.xhtml">#{msg['pos.portfolio.upcoming']}</h:outputLink></span>
-                                    <span class="count">#{dashboardMb.portfolio.upcomingCount != null ? dashboardMb.portfolio.upcomingCount : 0}</span>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </h:panelGroup>
-
-            <!-- APPOINTMENTS variant (original dashboard) -->
-            <h:panelGroup rendered="#{not dashboardMb.salesVariant}" layout="block">
+            <!-- AGENDA block: appointments module (original dashboard) -->
+            <h:panelGroup rendered="#{dashboardMb.showAgenda}" layout="block">
+            <h:panelGroup rendered="#{dashboardMb.showBoth}" layout="block" styleClass="cv-dash-title"><i class="pi pi-calendar"></i>#{msg['dashboard.block.agenda']}</h:panelGroup>
             <!-- KPI cards -->
             <div class="kpi-grid">
                 <div class="kpi-card kpi-ink">
-                    <span class="kpi-label">#{msg['dashboard.kpi.appointments']}</span>
+                    <span class="kpi-icon"><i class="pi pi-calendar"></i></span>
+                        <span class="kpi-label">#{msg['dashboard.kpi.appointments']}</span>
                     <span class="kpi-value">#{dashboardMb.appointmentsCount}</span>
                     <span class="kpi-hint">#{msg['dashboard.kpi.attended']}: #{dashboardMb.attendedCount} &#183;
                         #{msg['dashboard.kpi.pending']}: #{dashboardMb.pendingCount}</span>
                 </div>
                 <div class="kpi-card">
-                    <span class="kpi-label">#{msg['dashboard.kpi.revenue']}</span>
+                    <span class="kpi-icon"><i class="pi pi-dollar"></i></span>
+                        <span class="kpi-label">#{msg['dashboard.kpi.revenue']}</span>
                     <span class="kpi-value">
                         <h:outputText value="#{dashboardMb.revenue}">
                             <f:convertNumber type="currency" currencySymbol="$"/>
@@ -118,12 +63,14 @@
                     <span class="kpi-hint">#{msg['dashboard.kpi.revenue.hint']}</span>
                 </div>
                 <div class="kpi-card">
-                    <span class="kpi-label">#{msg['dashboard.kpi.customers']}</span>
+                    <span class="kpi-icon"><i class="pi pi-users"></i></span>
+                        <span class="kpi-label">#{msg['dashboard.kpi.customers']}</span>
                     <span class="kpi-value">#{dashboardMb.totalCustomers}</span>
                     <span class="kpi-hint">+#{dashboardMb.newCustomersWeek} #{msg['dashboard.kpi.newWeek']}</span>
                 </div>
                 <div class="kpi-card">
-                    <span class="kpi-label">#{msg['dashboard.kpi.rating']}</span>
+                    <span class="kpi-icon"><i class="pi pi-star"></i></span>
+                        <span class="kpi-label">#{msg['dashboard.kpi.rating']}</span>
                     <span class="kpi-value">
                         <h:outputText value="#{dashboardMb.ratingAverage}">
                             <f:convertNumber maxFractionDigits="1" minFractionDigits="1"/>
@@ -137,7 +84,7 @@
             <div class="dashboard-grid">
                 <!-- Today's appointments -->
                 <div class="card">
-                    <h3 class="section-title"><i class="pi pi-clock gold"></i>&#160;#{msg['dashboard.appointments']}</h3>
+                    <h3 class="section-title"><i class="pi pi-clock"></i>#{msg['dashboard.appointments']}</h3>
                     <p:dataTable id="tblAppointments" var="a" value="#{dashboardMb.appointments}" rows="15" paginator="true"
                                  paginatorPosition="bottom" paginatorAlwaysVisible="false" reflow="true"
                                  emptyMessage="#{msg['msg.noData']}" rowKey="#{a.id}" stripedRows="true">
@@ -165,7 +112,7 @@
                 <div>
                     <!-- Birthdays -->
                     <div class="card">
-                        <h3 class="section-title"><i class="pi pi-gift gold"></i>&#160;#{msg['dashboard.birthdays']}</h3>
+                        <h3 class="section-title"><i class="pi pi-gift"></i>#{msg['dashboard.birthdays']}</h3>
                         <h:panelGroup rendered="#{empty dashboardMb.birthdays}" layout="block" styleClass="empty-state">
                             <i class="pi pi-gift"></i>#{msg['dashboard.birthdays.none']}
                         </h:panelGroup>
@@ -189,40 +136,133 @@
 
                     <!-- Attention needed -->
                     <div class="card">
-                        <h3 class="section-title"><i class="pi pi-exclamation-circle gold"></i>&#160;#{msg['dashboard.attention']}</h3>
+                        <h3 class="section-title"><i class="pi pi-exclamation-circle"></i>#{msg['dashboard.attention']}</h3>
                         <h:panelGroup rendered="#{not dashboardMb.attentionNeeded}" layout="block" styleClass="empty-state">
                             <i class="pi pi-check-circle"></i>#{msg['dashboard.attention.none']}
                         </h:panelGroup>
                         <ul class="attention-list">
                             <li>
-                                <span><i class="pi pi-user-minus muted"></i>&#160;
+                                <span><i class="pi pi-user-minus"></i>
                                     <h:outputLink value="#{request.contextPath}/pages/customer.xhtml">#{msg['dashboard.attention.inactive']}</h:outputLink>
                                 </span>
-                                <span class="count">#{dashboardMb.summary.inactiveCount != null ? dashboardMb.summary.inactiveCount : 0}</span>
+                                <span class="count #{dashboardMb.summary.inactiveCount gt 0 ? 'hot' : ''}">#{dashboardMb.summary.inactiveCount != null ? dashboardMb.summary.inactiveCount : 0}</span>
                             </li>
                             <li>
-                                <span><i class="pi pi-comments muted"></i>&#160;
+                                <span><i class="pi pi-comments"></i>
                                     <h:outputLink value="#{request.contextPath}/pages/review.xhtml">#{msg['dashboard.attention.reviews']}</h:outputLink>
                                 </span>
-                                <span class="count">#{dashboardMb.summary.pendingReviews != null ? dashboardMb.summary.pendingReviews : 0}</span>
+                                <span class="count #{dashboardMb.summary.pendingReviews gt 0 ? 'hot' : ''}">#{dashboardMb.summary.pendingReviews != null ? dashboardMb.summary.pendingReviews : 0}</span>
                             </li>
                             <li>
-                                <span><i class="pi pi-box muted"></i>&#160;
+                                <span><i class="pi pi-box"></i>
                                     <h:outputLink value="#{request.contextPath}/pages/inventory.xhtml">#{msg['dashboard.attention.stock']}</h:outputLink>
                                 </span>
-                                <span class="count">#{dashboardMb.summary.belowMinimumProducts != null ? dashboardMb.summary.belowMinimumProducts : 0}</span>
+                                <span class="count #{dashboardMb.summary.belowMinimumProducts gt 0 ? 'hot' : ''}">#{dashboardMb.summary.belowMinimumProducts != null ? dashboardMb.summary.belowMinimumProducts : 0}</span>
                             </li>
                             <li>
-                                <span><i class="pi pi-money-bill muted"></i>&#160;
+                                <span><i class="pi pi-money-bill"></i>
                                     <h:outputLink value="#{request.contextPath}/pages/payroll.xhtml">#{msg['dashboard.attention.payroll']}</h:outputLink>
                                 </span>
-                                <span class="count">#{dashboardMb.summary.pendingPayrolls != null ? dashboardMb.summary.pendingPayrolls : 0}</span>
+                                <span class="count #{dashboardMb.summary.pendingPayrolls gt 0 ? 'hot' : ''}">#{dashboardMb.summary.pendingPayrolls != null ? dashboardMb.summary.pendingPayrolls : 0}</span>
                             </li>
                         </ul>
                     </div>
                 </div>
             </div>
             </h:panelGroup>
+
+            <!-- SALES block: sales module, or a seller -->
+            <h:panelGroup rendered="#{dashboardMb.showSales}" layout="block" styleClass="#{dashboardMb.showBoth ? 'cv-dash-block' : ''}">
+                <h:panelGroup rendered="#{dashboardMb.showBoth}" layout="block" styleClass="cv-dash-title"><i class="pi pi-shopping-cart"></i>#{msg['dashboard.block.sales']}</h:panelGroup>
+                <div class="kpi-grid">
+                    <div class="kpi-card kpi-ink">
+                        <span class="kpi-icon"><i class="pi pi-shopping-bag"></i></span>
+                        <span class="kpi-label">#{msg['pos.dashboard.kpi.sales']}</span>
+                        <span class="kpi-value">#{dashboardMb.todaySalesCount}</span>
+                        <span class="kpi-hint">#{dashboardMb.todayUnits} #{msg['pos.dashboard.kpi.units']}
+                            <h:outputText value=" &#183; #{dashboardMb.todayCancelledCount} #{msg['pos.dashboard.kpi.cancelled']}" rendered="#{dashboardMb.todayCancelledCount gt 0}"/></span>
+                    </div>
+                    <div class="kpi-card">
+                        <span class="kpi-icon"><i class="pi pi-dollar"></i></span>
+                        <span class="kpi-label">#{msg['pos.dashboard.kpi.total']}</span>
+                        <span class="kpi-value">#{sessionMb.fmtMoney(dashboardMb.todaySalesTotal)}</span>
+                        <span class="kpi-hint">#{msg['pos.dashboard.kpi.total.hint']}</span>
+                    </div>
+                    <div class="kpi-card">
+                        <span class="kpi-icon"><i class="pi pi-wallet"></i></span>
+                        <span class="kpi-label">#{msg['pos.credit.totalOwed']}</span>
+                        <span class="kpi-value">#{sessionMb.fmtMoney(dashboardMb.portfolio.totalOutstanding)}</span>
+                        <span class="kpi-hint">#{dashboardMb.portfolio.customersCount != null ? dashboardMb.portfolio.customersCount : 0} #{msg['pos.portfolio.customers']}</span>
+                    </div>
+                    <div class="kpi-card">
+                        <span class="kpi-icon"><i class="pi pi-exclamation-triangle"></i></span>
+                        <span class="kpi-icon"><i class="pi pi-exclamation-triangle"></i></span><span class="kpi-label">#{msg['pos.credit.overdue']}</span>
+                        <span class="kpi-value" style="color:var(--vip-danger)">#{sessionMb.fmtMoney(dashboardMb.portfolio.overdueAmount)}</span>
+                        <span class="kpi-hint">#{msg['pos.credit.dueToday']}: #{sessionMb.fmtMoney(dashboardMb.portfolio.dueTodayAmount)}</span>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="card">
+                        <h3 class="section-title"><i class="pi pi-receipt"></i>#{msg['pos.dashboard.todaySales']}</h3>
+                        <p:dataTable id="tblSales" var="s" value="#{dashboardMb.todaySales}" rows="15" paginator="true"
+                                     paginatorPosition="bottom" paginatorAlwaysVisible="false" reflow="true"
+                                     emptyMessage="#{msg['pos.dashboard.noSales']}" rowKey="#{s.id}" stripedRows="true">
+                            <p:column headerText="#{msg['lbl.time']}" width="70" sortBy="#{s.saleDate}">
+                                <span style="font-weight:600">#{dashboardMb.fmtStamp(s.saleDate)}</span>
+                            </p:column>
+                            <p:column headerText="#{msg['pos.lbl.folio']}" width="100">#{s.folio}</p:column>
+                            <p:column headerText="#{msg['lbl.customer']}">
+                                <h:outputText value="#{s.customerName}" rendered="#{not empty s.customerName}"/>
+                                <h:outputText value="—" styleClass="muted" rendered="#{empty s.customerName}"/>
+                            </p:column>
+                            <p:column headerText="#{msg['pos.lbl.paymentMethod']}">#{s.paymentMethodName}</p:column>
+                            <p:column headerText="#{msg['lbl.status']}" width="110">
+                                <span class="#{dashboardMb.saleBadge(s.saleStatus)}">#{dashboardMb.saleStatusLabel(s.saleStatus)}</span>
+                            </p:column>
+                            <p:column headerText="#{msg['lbl.total']}" width="100" styleClass="text-right">
+                                <strong>#{sessionMb.fmtMoney(s.total)}</strong>
+                            </p:column>
+                        </p:dataTable>
+                    </div>
+                    <div>
+                        <div class="card">
+                            <h3 class="section-title"><i class="pi pi-bolt"></i>#{msg['pos.dashboard.quick']}</h3>
+                            <ul class="pos-quick-links">
+                                <li><h:outputLink value="#{request.contextPath}/pages/sale.xhtml"><i class="pi pi-shopping-cart"></i>#{msg['menu.sale.new']}</h:outputLink></li>
+                                <li><h:outputLink value="#{request.contextPath}/pages/collection.xhtml"><i class="pi pi-wallet"></i>#{msg['menu.sale.collection']}</h:outputLink></li>
+                                <li><h:outputLink value="#{request.contextPath}/pages/salesHistory.xhtml"><i class="pi pi-receipt"></i>#{msg['menu.sale.history']}</h:outputLink></li>
+                                <li><h:outputLink value="#{request.contextPath}/pages/reportPortfolio.xhtml"><i class="pi pi-exclamation-circle"></i>#{msg['menu.report.portfolio']}</h:outputLink></li>
+                                <ui:fragment rendered="#{sessionMb.admin}"><li><h:outputLink value="#{request.contextPath}/pages/reportProfit.xhtml"><i class="pi pi-chart-line"></i>#{msg['menu.report.profit']}</h:outputLink></li></ui:fragment>
+                                <li><h:outputLink value="#{request.contextPath}/pages/inventory.xhtml"><i class="pi pi-box"></i>#{msg['menu.warehouse.inventory']}</h:outputLink></li>
+                            </ul>
+                        </div>
+                        <div class="card">
+                            <h3 class="section-title"><i class="pi pi-exclamation-circle"></i>#{msg['pos.dashboard.collection']}</h3>
+                            <ul class="attention-list">
+                                <li>
+                                    <span><i class="pi pi-clock"></i><h:outputLink value="#{request.contextPath}/pages/reportPortfolio.xhtml">#{msg['pos.credit.overdue']}</h:outputLink></span>
+                                    <span class="count #{dashboardMb.portfolio.overdueCount gt 0 ? 'hot' : ''}">#{dashboardMb.portfolio.overdueCount != null ? dashboardMb.portfolio.overdueCount : 0}</span>
+                                </li>
+                                <li>
+                                    <span><i class="pi pi-calendar"></i><h:outputLink value="#{request.contextPath}/pages/collection.xhtml">#{msg['pos.credit.dueToday']}</h:outputLink></span>
+                                    <span class="count #{dashboardMb.portfolio.dueTodayCount gt 0 ? 'hot' : ''}">#{dashboardMb.portfolio.dueTodayCount != null ? dashboardMb.portfolio.dueTodayCount : 0}</span>
+                                </li>
+                                <li>
+                                    <span><i class="pi pi-calendar-plus"></i><h:outputLink value="#{request.contextPath}/pages/collection.xhtml">#{msg['pos.portfolio.upcoming']}</h:outputLink></span>
+                                    <span class="count #{dashboardMb.portfolio.upcomingCount gt 0 ? 'hot' : ''}">#{dashboardMb.portfolio.upcomingCount != null ? dashboardMb.portfolio.upcomingCount : 0}</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </h:panelGroup>
+
         </h:form>
+        <style type="text/css">
+            .cv-dash-title { display: flex; align-items: center; gap: .5rem; margin: .4rem 0 .8rem; font-family: var(--vip-font-heading); font-size: 1.15rem; font-weight: 600; color: var(--vip-text); }
+            .cv-dash-title .pi { color: var(--vip-gold-deep); }
+            .cv-dash-block { margin-top: 1.6rem; padding-top: 1.2rem; border-top: 1px solid var(--vip-border); }
+        </style>
     </ui:define>
 </ui:composition>

@@ -1,8 +1,14 @@
 package com.prolog.clubvip.view;
 
+import java.io.Serializable;
+import java.math.BigDecimal;
+import java.text.Normalizer;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 import com.prolog.clubvip.rest.RestClient;
 import com.prolog.clubvip.rest.RestException;
@@ -27,7 +33,10 @@ public class PublicBookingMb extends PublicBusinessMb {
 
     private static final long serialVersionUID = 1L;
 
-    private Integer serviceId;
+    /** Chosen services in the order the customer picked them (done back to back, same professional). */
+    private List<Integer> serviceIds = new ArrayList<>();
+    /** The customer pressed "Seguir": professional, day and time are shown for the chosen services. */
+    private boolean proceeded;
     private Integer employeeId;
     private LocalDate date;
     private AvailabilityVo availability;
@@ -45,8 +54,14 @@ public class PublicBookingMb extends PublicBusinessMb {
         loadBusiness();
         date = null; // times only show once the customer taps a day (same as the app)
         // One service only: preselect it so the customer goes straight to "who" and "when".
+        preselectSingleService();
+    }
+
+    /** One service only: preselect it and go straight to "who" and "when". */
+    private void preselectSingleService() {
         if (getServices().size() == 1) {
-            selectService(getServices().get(0).getId());
+            serviceIds.add(getServices().get(0).getId());
+            proceed();
         }
     }
 
@@ -67,34 +82,235 @@ public class PublicBookingMb extends PublicBusinessMb {
         return result;
     }
 
-    public ServiceVo getSelectedService() {
+    /**
+     * Bookable services grouped by specialty (alphabetical; services without one go last, in a group
+     * with a null name that the page labels "Otros servicios"). Order inside a group is the catalog order.
+     */
+    public List<ServiceGroup> getServiceGroups() {
+        Map<String, ServiceGroup> byKey = new LinkedHashMap<>();
+        ServiceGroup other = null;
         for (ServiceVo s : getServices()) {
-            if (s.getId().equals(serviceId)) {
-                return s;
+            String name = s.getSpecialty() != null && !s.getSpecialty().isBlank() ? s.getSpecialty().trim() : null;
+            ServiceGroup g;
+            if (name == null) {
+                if (other == null) {
+                    other = new ServiceGroup("other", null);
+                }
+                g = other;
+            } else {
+                String key = groupKey(name);
+                g = byKey.computeIfAbsent(key, k -> new ServiceGroup(k, name));
             }
+            g.add(s, serviceIds.contains(s.getId()));
         }
-        return null;
+        List<ServiceGroup> result = new ArrayList<>(byKey.values());
+        result.sort((a, b) -> a.getName().compareToIgnoreCase(b.getName()));
+        if (other != null) {
+            result.add(other);
+        }
+        return result;
     }
 
-    /** Staff who perform the chosen service. */
+    /** More than one specialty: the page shows collapsible groups and specialty chips. */
+    public boolean isGrouped() {
+        return getServiceGroups().size() > 1;
+    }
+
+    /** Filter bar (search + sort, plus chips when grouped) only when there is something to filter. */
+    public boolean isShowServiceFilters() {
+        return isGrouped() || getServices().size() >= 6;
+    }
+
+    /** "Pestañas y cejas" -> "pestanas-y-cejas": stable id for the group, its chip and the JS state. */
+    private static String groupKey(String name) {
+        String plain = Normalizer.normalize(name, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
+        String key = plain.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "-").replaceAll("(^-|-$)", "");
+        return key.isEmpty() ? "g" + Math.abs(name.hashCode()) : key;
+    }
+
+    /** One specialty of the service list. */
+    public static class ServiceGroup implements Serializable {
+        private static final long serialVersionUID = 1L;
+        private final String key;
+        private final String name;
+        private final List<ServiceVo> services = new ArrayList<>();
+        private BigDecimal minPrice;
+        private boolean selected;
+
+        ServiceGroup(String key, String name) {
+            this.key = key;
+            this.name = name;
+        }
+
+        void add(ServiceVo s, boolean isSelected) {
+            services.add(s);
+            if (s.getPrice() != null && (minPrice == null || s.getPrice().compareTo(minPrice) < 0)) {
+                minPrice = s.getPrice();
+            }
+            selected |= isSelected;
+        }
+
+        public String getKey() { return key; }
+        public String getName() { return name; }
+        public List<ServiceVo> getServices() { return services; }
+        public int getCount() { return services.size(); }
+        public BigDecimal getMinPrice() { return minPrice; }
+        /** The chosen service is in this group (it stays open after a choice; the others fold). */
+        public boolean isSelected() { return selected; }
+    }
+
+    /** First chosen service (null when none). */
+    public ServiceVo getSelectedService() {
+        List<ServiceVo> chosen = getSelectedServices();
+        return chosen.isEmpty() ? null : chosen.get(0);
+    }
+
+    /** Chosen services in the order they were picked. */
+    public List<ServiceVo> getSelectedServices() {
+        List<ServiceVo> result = new ArrayList<>();
+        List<ServiceVo> all = getServices();
+        for (Integer id : serviceIds) {
+            for (ServiceVo s : all) {
+                if (s.getId().equals(id)) {
+                    result.add(s);
+                }
+            }
+        }
+        return result;
+    }
+
+    public boolean isSelected(Integer id) {
+        return serviceIds.contains(id);
+    }
+
+    public int getSelectedCount() {
+        return serviceIds.size();
+    }
+
+    /** Sum of the durations of the chosen services (the length of the visit). */
+    public int getTotalMinutes() {
+        int total = 0;
+        for (ServiceVo s : getSelectedServices()) {
+            total += s.getDurationMinutes() != null && s.getDurationMinutes() > 0 ? s.getDurationMinutes() : 30;
+        }
+        return total;
+    }
+
+    /** "1 h 30 min" / "45 min". */
+    public String getTotalDurationLabel() {
+        int m = getTotalMinutes();
+        if (m < 60) {
+            return m + " min";
+        }
+        return (m / 60) + " h" + (m % 60 > 0 ? " " + (m % 60) + " min" : "");
+    }
+
+    public java.math.BigDecimal getTotalPrice() {
+        java.math.BigDecimal total = java.math.BigDecimal.ZERO;
+        for (ServiceVo s : getSelectedServices()) {
+            if (s.getPrice() != null) {
+                total = total.add(s.getPrice());
+            }
+        }
+        return total;
+    }
+
+    /** "Gel Semipermanente + Pestañas clásicas". */
+    public String getSelectedNames() {
+        StringBuilder sb = new StringBuilder();
+        for (ServiceVo s : getSelectedServices()) {
+            if (sb.length() > 0) {
+                sb.append(" + ");
+            }
+            sb.append(s.getName());
+        }
+        return sb.toString();
+    }
+
+    /** End of the visit for the chosen time ("11:30"), or null. */
+    public String getSelectedEndTime() {
+        String t = getSelectedTime();
+        if (t == null) {
+            return null;
+        }
+        java.time.LocalTime end = java.time.LocalTime.parse(t.length() == 5 ? t : t.substring(0, 5)).plusMinutes(getTotalMinutes());
+        return end.toString();
+    }
+
+    public boolean isProceeded() {
+        return proceeded;
+    }
+
+    /** "serviceIds=3,7" for the availability calls. */
+    private String serviceParam() {
+        StringBuilder sb = new StringBuilder("&serviceIds=");
+        for (int i = 0; i < serviceIds.size(); i++) {
+            sb.append(i > 0 ? "," : "").append(serviceIds.get(i));
+        }
+        return sb.toString();
+    }
+
+    /** Staff who perform every chosen service (one person does the whole visit). */
     public List<EmployeeVo> getEmployees() {
         List<EmployeeVo> result = new ArrayList<>();
-        ServiceVo s = getSelectedService();
-        if (s == null || detail.getEmployees() == null) {
+        List<ServiceVo> chosen = getSelectedServices();
+        if (chosen.isEmpty() || detail.getEmployees() == null) {
             return result;
         }
         for (EmployeeVo e : detail.getEmployees()) {
-            if (s.getEmployeeIds() == null || s.getEmployeeIds().isEmpty() || s.getEmployeeIds().contains(e.getId())) {
+            boolean doesAll = true;
+            for (ServiceVo s : chosen) {
+                if (s.getEmployeeIds() != null && !s.getEmployeeIds().isEmpty() && !s.getEmployeeIds().contains(e.getId())) {
+                    doesAll = false;
+                    break;
+                }
+            }
+            if (doesAll) {
                 result.add(e);
             }
         }
         return result;
     }
 
+    /**
+     * Adds or removes a service. Changing the list hides the next steps until "Seguir" again, since
+     * the professionals and free times depend on all the services together.
+     */
     public void selectService(Integer id) {
-        serviceId = id;
+        if (id == null) {
+            return;
+        }
+        if (serviceIds.contains(id)) {
+            serviceIds.remove(id);
+        } else {
+            serviceIds.add(id);
+        }
+        proceeded = false;
         employeeId = null;
+        date = null;
+        availability = null;
+        slotKey = null;
+    }
+
+    /** "Seguir": show who attends, the days and the times for the whole visit. */
+    public void proceed() {
+        if (serviceIds.isEmpty()) {
+            errorKey("op.msg.selectService");
+            return;
+        }
+        proceeded = true;
+        if (employeeId != null && getEmployees().stream().noneMatch(e -> employeeId.equals(e.getId()))) {
+            employeeId = null;
+        }
         refreshDays();
+    }
+
+    /** "Editar" on the summary: back to the service list keeping the choice (who / day / time start over). */
+    public void editServices() {
+        proceeded = false;
+        date = null;
+        availability = null;
+        slotKey = null;
     }
 
     /** null = anyone available. */
@@ -128,13 +344,13 @@ public class PublicBookingMb extends PublicBusinessMb {
     }
 
     private void loadMonth(java.time.YearMonth month) {
-        if (serviceId == null || !isFound() || loadedMonths.contains(month)) {
+        if (serviceIds.isEmpty() || !proceeded || !isFound() || loadedMonths.contains(month)) {
             return;
         }
         java.lang.reflect.Type list = new com.google.gson.reflect.TypeToken<List<String>>() { }.getType();
         try {
             StringBuilder path = new StringBuilder("appointment/getAvailableDays?businessId=").append(getBusiness().getId())
-                    .append("&serviceId=").append(serviceId).append("&month=").append(month);
+                    .append(serviceParam()).append("&month=").append(month);
             if (employeeId != null) {
                 path.append("&employeeId=").append(employeeId);
             }
@@ -286,12 +502,12 @@ public class PublicBookingMb extends PublicBusinessMb {
     public void loadAvailability() {
         availability = null;
         slotKey = null;
-        if (serviceId == null || date == null || !isFound()) {
+        if (serviceIds.isEmpty() || !proceeded || date == null || !isFound()) {
             return;
         }
         try {
             StringBuilder path = new StringBuilder("appointment/getAvailability?businessId=").append(getBusiness().getId())
-                    .append("&serviceId=").append(serviceId).append("&date=").append(date);
+                    .append(serviceParam()).append("&date=").append(date);
             if (employeeId != null) {
                 path.append("&employeeId=").append(employeeId);
             }
@@ -331,7 +547,7 @@ public class PublicBookingMb extends PublicBusinessMb {
 
     /** POST appointment/bookGuest. */
     public void book() {
-        if (serviceId == null) {
+        if (serviceIds.isEmpty()) {
             errorKey("op.msg.selectService");
             return;
         }
@@ -346,7 +562,8 @@ public class PublicBookingMb extends PublicBusinessMb {
         String[] parts = slotKey.split("\\|", -1);
         AppointmentRequestVo req = new AppointmentRequestVo();
         req.setBusinessId(getBusiness().getId());
-        req.setServiceId(serviceId);
+        req.setServiceId(serviceIds.get(0));
+        req.setServiceIds(new ArrayList<>(serviceIds));
         req.setEmployeeId(parts.length > 1 && !parts[1].isEmpty() ? Integer.valueOf(parts[1]) : employeeId);
         req.setDate(date.toString());
         req.setStartTime(parts[0]);
@@ -355,6 +572,11 @@ public class PublicBookingMb extends PublicBusinessMb {
         req.setPreNotes(isBlank(notes) ? null : notes.trim());
         try {
             booked = RestClient.post("appointment/bookGuest", req, AppointmentVo.class, null, locale());
+            bookedServices = getSelectedServices();
+            bookedTotalLabel = getTotalDurationLabel();
+            bookedTotalPrice = getTotalPrice();
+            bookedEndTime = getSelectedEndTime();
+            track("BOOKING", null, booked != null && booked.getId() != null ? String.valueOf(booked.getId()) : null);
         } catch (RestException e) {
             errors(e);
             loadAvailability(); // the slot may have just been taken: refresh the hours
@@ -364,27 +586,89 @@ public class PublicBookingMb extends PublicBusinessMb {
     /** Book another appointment after a successful one. */
     public void again() {
         booked = null;
-        serviceId = null;
+        serviceIds = new ArrayList<>();
+        proceeded = false;
         employeeId = null;
+        date = null;
         availability = null;
         slotKey = null;
         notes = null;
-        if (getServices().size() == 1) {
-            selectService(getServices().get(0).getId());
-        }
+        bookedServices = new ArrayList<>();
+        preselectSingleService();
     }
 
-    /** WhatsApp to the business with the appointment summary. */
+    /**
+     * WhatsApp to the business with the appointment summary, formatted the way the store message is
+     * (bold, bullets, emojis). Text only: a click-to-chat link cannot carry an image.
+     */
     public String getWhatsAppConfirm() {
         if (booked == null || getBusiness().getWaLink() == null) {
             return null;
         }
-        String text = sessionMb.text("pub.book.wa").replace("{business}", getBusiness().getName())
-                .replace("{service}", String.valueOf(booked.getServiceName()))
-                .replace("{date}", sessionMb.fmtDay(booked.getDate()))
-                .replace("{time}", String.valueOf(booked.getStartTime()))
-                .replace("{name}", customerName != null ? customerName.trim() : "");
-        return WhatsAppLink.withText(getBusiness().getWaLink(), text);
+        String name = customerName != null ? customerName.trim() : "";
+        StringBuilder t = new StringBuilder(sessionMb.text("pub.book.wa.intro")
+                .replace("{business}", "*" + getBusiness().getName() + "*")
+                .replace("{name}", "*" + name + "*"));
+        t.append("\n\n");
+        if (bookedServices.size() > 1) {
+            for (ServiceVo s : bookedServices) {
+                t.append("• *").append(s.getName()).append("*\n");
+            }
+        } else {
+            t.append("✂️ *").append(booked.getServiceName()).append("*\n");
+        }
+        // Who attends: the business checks that person's availability before confirming.
+        String employee = booked.getEmployeeName();
+        t.append("👤 ").append(sessionMb.text("pub.book.wa.with")).append(' ')
+                .append(isBlank(employee) ? sessionMb.text("pub.book.wa.anyEmployee") : employee.trim()).append('\n');
+        t.append("📅 ").append(getBookedLongDate()).append('\n');
+        t.append("🕒 ").append(booked.getStartTime());
+        if (!isBlank(bookedEndTime)) {
+            t.append(" – ").append(bookedEndTime);
+        }
+        t.append(" hrs");
+        if (!isBlank(bookedTotalLabel)) {
+            t.append(" · ").append(bookedTotalLabel);
+        }
+        if (bookedTotalPrice != null) {
+            t.append("\n💰 ").append(sessionMb.fmtMoney(bookedTotalPrice));
+        }
+        t.append("\n\n").append(sessionMb.text("pub.book.wa.question"));
+        return WhatsAppLink.withText(getBusiness().getWaLink(), t.toString());
+    }
+
+    /** "Jueves 22 de octubre" of the booked day (from the appointment, not the picker: "again" resets it). */
+    private String getBookedLongDate() {
+        try {
+            String pattern = "es".equals(locale().getLanguage()) ? "EEEE d 'de' MMMM" : "EEEE, MMMM d";
+            String text = LocalDate.parse(booked.getDate()).format(java.time.format.DateTimeFormatter.ofPattern(pattern, locale()));
+            return Character.toUpperCase(text.charAt(0)) + text.substring(1);
+        } catch (RuntimeException e) {
+            return sessionMb.fmtDay(booked.getDate());
+        }
+    }
+
+    // ------------------------------------------------------------------ link preview (og:*)
+
+    public String getShareTitle() {
+        return getBusiness().getName() + " · " + sessionMb.text("pub.book.kicker");
+    }
+
+    public String getShareDescription() {
+        if (detail != null && !isBlank(detail.getDescription())) {
+            return detail.getDescription();
+        }
+        return isBlank(getBusiness().getSpecialty()) ? sessionMb.text("pub.book.share.desc") : getBusiness().getSpecialty();
+    }
+
+    public String getShareUrl() {
+        return PublicLinks.link(slug, PublicLinks.CITAS);
+    }
+
+    /** The logo shown in this page's hero (what the business recognizes in WhatsApp), else the cover. */
+    @Override
+    public String getShareImage() {
+        return isHasLogo() ? PublicLinks.absolute("/publicImage?logo=" + getBusiness().getId()) : super.getShareImage();
     }
 
     private static boolean isBlank(String s) {
@@ -399,12 +683,39 @@ public class PublicBookingMb extends PublicBusinessMb {
         return today().plusDays(30);
     }
 
+    /** First chosen service (null = none): the page only asks "is there a choice". */
     public Integer getServiceId() {
-        return serviceId;
+        return serviceIds.isEmpty() ? null : serviceIds.get(0);
     }
 
-    public void setServiceId(Integer serviceId) {
-        this.serviceId = serviceId;
+    /** What was booked (kept for the "done" card, the selection is reset on "again"). */
+    private List<ServiceVo> bookedServices = new ArrayList<>();
+    private String bookedTotalLabel;
+    private java.math.BigDecimal bookedTotalPrice;
+    private String bookedEndTime;
+
+    public List<ServiceVo> getBookedServices() {
+        return bookedServices;
+    }
+
+    public String getBookedNames() {
+        StringBuilder sb = new StringBuilder();
+        for (ServiceVo s : bookedServices) {
+            sb.append(sb.length() > 0 ? " + " : "").append(s.getName());
+        }
+        return sb.toString();
+    }
+
+    public String getBookedTotalLabel() {
+        return bookedTotalLabel;
+    }
+
+    public java.math.BigDecimal getBookedTotalPrice() {
+        return bookedTotalPrice;
+    }
+
+    public String getBookedEndTime() {
+        return bookedEndTime;
     }
 
     public Integer getEmployeeId() {

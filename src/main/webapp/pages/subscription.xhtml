@@ -34,16 +34,22 @@
                     </p:column>
                     <p:column headerText="#{msg['lbl.verified']}" width="120" sortBy="#{b.verificationStatus}">
                         <span class="#{b.verificationStatus eq 'VERIFIED' ? 'badge badge-success' : (b.verificationStatus eq 'REJECTED' ? 'badge badge-danger' : 'badge badge-warning')}">
-                            #{msg['status.'.concat(b.verificationStatus)]}
+                            #{msg['ver.'.concat(b.verificationStatus)]}
                         </span>
                     </p:column>
                     <p:column headerText="#{msg['rel.affiliate.subscription']}" width="130" sortBy="#{b.subscriptionStatus}" filterBy="#{b.subscriptionStatus}">
                         <h:outputText rendered="#{not empty b.subscriptionStatus}" styleClass="#{subscriptionMb.subscriptionBadge(b.subscriptionStatus)}"
-                                      value="#{msg['status.'.concat(b.subscriptionStatus)]}"/>
+                                      value="#{msg['substatus.'.concat(b.subscriptionStatus)]}"/>
+                        <h:panelGroup rendered="#{not empty b.disputeStatus}" layout="block" styleClass="mem-dispute mem-dispute-#{b.disputeStatus}"><i class="pi pi-exclamation-triangle"></i>&#160;#{msg['dispute.'.concat(b.disputeStatus)]}</h:panelGroup>
+                        <h:panelGroup rendered="#{not empty b.membershipPlan}" layout="block" styleClass="mem-plan-wrap">
+                            <span class="mem-plan mem-plan-#{b.membershipPlan eq 'COURTESY' ? 'courtesy' : 'stripe'}"><i class="#{sessionMb.planIcon(b)}"></i>&#160;#{sessionMb.planLabel(b)}</span>
+                        </h:panelGroup>
                         <h:outputText rendered="#{empty b.subscriptionStatus}" styleClass="badge badge-muted" value="-"/>
                     </p:column>
                     <p:column headerText="#{msg['rel.subscription.until']}" width="130" sortBy="#{b.subscriptionUntil}">
-                        <span class="#{subscriptionMb.isExpired(b) ? 'discount' : ''}">#{sessionMb.fmtDay(b.subscriptionUntil)}</span>
+                        <h:panelGroup rendered="#{not empty sessionMb.untilLabel(b)}" styleClass="mem-date#{sessionMb.isMembershipExpired(b) ? ' mem-date-expired' : ''}">
+                            <i class="pi #{empty b.subscriptionUntil ? 'pi-infinity' : 'pi-calendar'}"></i>&#160;#{sessionMb.untilLabel(b)}
+                        </h:panelGroup>
                         <h:panelGroup rendered="#{subscriptionMb.isExpired(b)}" layout="block" styleClass="small discount">#{msg['rel.subscription.expired']}</h:panelGroup>
                     </p:column>
                     <p:column headerText="#{msg['lbl.actions']}" width="80" styleClass="text-right">
@@ -59,10 +65,11 @@
                     <div class="field required">
                         <label>#{msg['lbl.status']}</label>
                         <p:selectOneMenu value="#{subscriptionMb.subscription.subscriptionStatus}" style="width:100%">
-                            <f:selectItem itemValue="TRIAL" itemLabel="#{msg['status.TRIAL']}"/>
-                            <f:selectItem itemValue="ACTIVE" itemLabel="#{msg['status.ACTIVE']}"/>
-                            <f:selectItem itemValue="SUSPENDED" itemLabel="#{msg['status.SUSPENDED']}"/>
-                            <f:selectItem itemValue="CANCELLED" itemLabel="#{msg['status.CANCELLED']}"/>
+                            <f:selectItem itemValue="PENDING" itemLabel="#{msg['substatus.PENDING']}"/>
+                            <f:selectItem itemValue="ACTIVE" itemLabel="#{msg['substatus.ACTIVE']}"/>
+                            <f:selectItem itemValue="PAST_DUE" itemLabel="#{msg['substatus.PAST_DUE']}"/>
+                            <f:selectItem itemValue="SUSPENDED" itemLabel="#{msg['substatus.SUSPENDED']}"/>
+                            <f:selectItem itemValue="CANCELLED" itemLabel="#{msg['substatus.CANCELLED']}"/>
                         </p:selectOneMenu>
                     </div>
                     <div class="field">

@@ -3,25 +3,46 @@
                 xmlns:f="jakarta.faces.core"
                 xmlns:ui="jakarta.faces.facelets"
                 xmlns:p="http://primefaces.org/ui"
+                xmlns:pt="jakarta.faces.passthrough"
                 template="/WEB-INF/public-template.xhtml">
     <ui:param name="pb" value="#{publicBookingMb}"/>
+    <ui:param name="hideBrand" value="true"/>
+    <!-- Link preview when this page is shared in WhatsApp / Facebook: the business logo, else the cover of "Mi página". -->
+    <ui:define name="meta">
+        <ui:fragment rendered="#{publicBookingMb.found}">
+            <meta name="description" content="#{publicBookingMb.shareDescription}"/>
+            <meta property="og:type" content="website"/>
+            <meta property="og:title" content="#{publicBookingMb.shareTitle}"/>
+            <meta property="og:description" content="#{publicBookingMb.shareDescription}"/>
+            <meta property="og:url" content="#{publicBookingMb.shareUrl}"/>
+            <ui:fragment rendered="#{not empty publicBookingMb.shareImage}">
+                <meta property="og:image" content="#{publicBookingMb.shareImage}"/>
+            </ui:fragment>
+        </ui:fragment>
+    </ui:define>
     <ui:define name="content">
         <h:form id="form">
-            <!-- Business hero (same feel as the business sheet of the app) -->
-            <!-- The logo already leads the black header (logos are often made for dark backgrounds). -->
-            <div class="bk-hero">
-                <div class="bk-hero-text">
+            <!-- Business hero: same storefront banner as the store (big tilted logo on the left,
+                 name, category, rating and address / hours chips on the right). The top bar only
+                 keeps the Citas / Tienda tabs. -->
+            <div class="pub-hero st-front bk-front">
+                <h:panelGroup rendered="#{publicBookingMb.hasLogo}">
+                    <img class="st-front-logo st-front-logo-#{publicBookingMb.logoTone}" src="#{publicBookingMb.logoUrl}" alt="#{publicBookingMb.business.name}"/>
+                </h:panelGroup>
+                <h:panelGroup rendered="#{not publicBookingMb.hasLogo}" styleClass="st-front-monogram">#{sessionMb.initialsOf(publicBookingMb.business.name)}</h:panelGroup>
+                <div class="st-front-body bk-hero-text">
+                    <span class="pub-kicker"><i class="pi pi-calendar"></i>&#160;#{msg['pub.book.kicker']}</span>
                     <h1>#{publicBookingMb.business.name}
                         <h:panelGroup rendered="#{publicBookingMb.business.verified}" styleClass="bk-verified" title="#{msg['lbl.verified']}"><i class="pi pi-verified"></i></h:panelGroup>
                     </h1>
-                    <div class="bk-hero-sub">#{publicBookingMb.business.categoryName}#{not empty publicBookingMb.business.specialty ? ' · '.concat(publicBookingMb.business.specialty) : ''}</div>
+                    <div class="st-front-specialty">#{publicBookingMb.business.categoryName}#{not empty publicBookingMb.business.specialty ? ' · '.concat(publicBookingMb.business.specialty) : ''}</div>
                     <h:panelGroup rendered="#{publicBookingMb.business.ratingCount gt 0}" layout="block" styleClass="bk-rating">
                         <i class="pi pi-star-fill"></i>&#160;#{publicBookingMb.business.ratingAverage} <span>(#{publicBookingMb.business.ratingCount})</span>
                     </h:panelGroup>
-                    <div class="bk-hero-meta">
-                        <h:panelGroup rendered="#{not empty publicBookingMb.business.address}"><i class="pi pi-map-marker"></i>&#160;#{publicBookingMb.business.address}</h:panelGroup>
+                    <h:panelGroup rendered="#{not empty publicBookingMb.business.address or not empty publicBookingMb.business.hoursText}" layout="block" styleClass="bk-hero-meta">
+                        <h:panelGroup rendered="#{not empty publicBookingMb.business.address}" styleClass="bk-addr"><i class="pi pi-map-marker"></i>&#160;#{publicBookingMb.business.address}</h:panelGroup>
                         <h:panelGroup rendered="#{not empty publicBookingMb.business.hoursText}" styleClass="bk-hours"><i class="pi pi-clock"></i>&#160;#{publicBookingMb.business.hoursText}</h:panelGroup>
-                    </div>
+                    </h:panelGroup>
                 </div>
             </div>
 
@@ -46,19 +67,22 @@
                             </h:panelGroup>
                             <h:panelGroup rendered="#{empty publicBookingMb.photo(publicBookingMb.selectedEmployee)}" styleClass="bk-avatar-mono">#{sessionMb.initialsOf(publicBookingMb.booked.employeeName)}</h:panelGroup>
                             <div>
-                                <strong>#{publicBookingMb.booked.serviceName}</strong>
+                                <strong>#{empty publicBookingMb.bookedServices ? publicBookingMb.booked.serviceName : publicBookingMb.bookedNames}</strong>
                                 <span>#{msg['pub.book.with']} #{publicBookingMb.booked.employeeName}</span>
                             </div>
                         </div>
                         <div class="bk-summary-row"><i class="pi pi-calendar"></i>#{publicBookingMb.longDate}</div>
-                        <div class="bk-summary-row"><i class="pi pi-clock"></i>#{publicBookingMb.booked.startTime} hrs</div>
+                        <div class="bk-summary-row"><i class="pi pi-clock"></i>#{publicBookingMb.booked.startTime}#{empty publicBookingMb.bookedEndTime ? '' : ' – '.concat(publicBookingMb.bookedEndTime)} hrs#{empty publicBookingMb.bookedTotalLabel ? '' : ' · '.concat(publicBookingMb.bookedTotalLabel)}</div>
+                        <h:panelGroup rendered="#{publicBookingMb.bookedTotalPrice ne null}" layout="block" styleClass="bk-summary-row"><i class="pi pi-wallet"></i>#{sessionMb.fmtMoney(publicBookingMb.bookedTotalPrice)}</h:panelGroup>
                     </div>
                     <p class="muted">#{msg['pub.book.done.hint']}</p>
                     <div class="pub-actions">
                         <h:panelGroup rendered="#{not empty publicBookingMb.whatsAppConfirm}">
-                            <a class="bk-btn bk-btn-wa" href="#{publicBookingMb.whatsAppConfirm}" target="_blank" rel="noopener"><i class="pi pi-whatsapp"></i>&#160;#{msg['pub.book.sendWa']}</a>
+                            <a class="bk-btn bk-btn-wa" href="#{publicBookingMb.whatsAppConfirm}" target="_blank" rel="noopener" onclick="cvTrack('WA_CLICK')"><i class="pi pi-whatsapp"></i>&#160;#{msg['pub.book.sendWa']}</a>
                         </h:panelGroup>
-                        <a class="bk-btn bk-btn-ghost" href="#{publicBookingMb.appIntent}"><i class="pi pi-mobile"></i>&#160;#{msg['pub.book.getApp']}</a>
+                        <h:panelGroup rendered="#{publicBookingMb.appReleased}">
+                            <a class="bk-btn bk-btn-ghost" href="#{publicBookingMb.appIntent}"><i class="pi pi-mobile"></i>&#160;#{msg['pub.book.getApp']}</a>
+                        </h:panelGroup>
                         <p:commandLink value="#{msg['pub.book.again']}" action="#{publicBookingMb.again}" process="@this"
                                        update=":form:booking" styleClass="pub-link"/>
                     </div>
@@ -67,28 +91,143 @@
                 <h:panelGroup rendered="#{publicBookingMb.booked eq null}" layout="block">
                     <!-- 1. Service -->
                     <section class="bk-section">
-                        <h2 class="bk-title">#{msg['pub.book.step.service']}</h2>
-                        <h:panelGroup rendered="#{empty publicBookingMb.services}" styleClass="muted">#{msg['pub.book.noServices']}</h:panelGroup>
-                        <div class="bk-services">
-                            <ui:repeat value="#{publicBookingMb.services}" var="s">
-                                <p:commandLink action="#{publicBookingMb.selectService(s.id)}" process="@this" update=":form:booking"
-                                               styleClass="bk-service #{publicBookingMb.serviceId eq s.id ? 'selected' : ''}">
-                                    <span class="bk-service-check"><i class="pi pi-check"></i></span>
-                                    <span class="bk-service-body">
-                                        <span class="bk-service-name">#{s.name}</span>
-                                        <h:panelGroup rendered="#{not empty s.description}" styleClass="bk-service-desc">#{s.description}</h:panelGroup>
-                                        <span class="bk-service-meta"><span class="bk-chip"><i class="pi pi-clock"></i>&#160;#{s.durationMinutes} min</span></span>
-                                    </span>
-                                    <span class="bk-service-price">#{sessionMb.fmtMoney(s.price)}</span>
-                                </p:commandLink>
+                        <h2 class="bk-title">#{publicBookingMb.proceeded ? msg['pub.book.step.services.chosen'] : msg['pub.book.step.services']}</h2>
+
+                        <!-- After "Seguir": just a summary of the visit; "Editar" goes back to the list -->
+                        <h:panelGroup rendered="#{publicBookingMb.proceeded}" layout="block" styleClass="bk-picked">
+                            <ui:repeat value="#{publicBookingMb.selectedServices}" var="s">
+                                <div class="bk-picked-line">
+                                    <span class="bk-picked-check"><i class="pi pi-check"></i></span>
+                                    <span class="bk-picked-name">#{s.name}<em>#{s.durationMinutes} min</em></span>
+                                    <span class="bk-picked-price">#{sessionMb.fmtMoney(s.price)}</span>
+                                </div>
                             </ui:repeat>
+                            <div class="bk-picked-foot">
+                                <span class="bk-picked-total"><i class="pi pi-clock"></i>&#160;#{publicBookingMb.totalDurationLabel} · <strong>#{sessionMb.fmtMoney(publicBookingMb.totalPrice)}</strong></span>
+                                <p:commandLink rendered="#{publicBookingMb.services.size() gt 1}" action="#{publicBookingMb.editServices}" process="@this" update=":form:booking"
+                                               styleClass="bk-picked-edit"><i class="pi pi-pencil"></i>&#160;#{msg['pub.book.editServices']}</p:commandLink>
+                            </div>
+                        </h:panelGroup>
+
+                        <h:panelGroup rendered="#{not publicBookingMb.proceeded}" layout="block">
+                        <p class="bk-step-hint"><i class="pi pi-check-square"></i>&#160;#{msg['pub.book.step.services.hint']}</p>
+                        <h:panelGroup rendered="#{empty publicBookingMb.services}" styleClass="muted">#{msg['pub.book.noServices']}</h:panelGroup>
+                        <!-- Filters (client side, resources/js/booking-services.js): search, sort and one chip per specialty -->
+                        <h:panelGroup rendered="#{publicBookingMb.showServiceFilters}" layout="block" styleClass="pub-filterbar bk-filterbar" id="svcFilters">
+                            <div class="bk-filter-top">
+                                <span class="pub-search bk-search">
+                                    <i class="pi pi-search"></i>
+                                    <input type="search" class="bk-search-input" placeholder="#{msg['pub.book.filter.search']}" autocomplete="off" aria-label="#{msg['pub.book.filter.search']}"/>
+                                </span>
+                                <label class="bk-sort">
+                                    <i class="pi pi-sort-alt"></i>
+                                    <select class="bk-sort-select" aria-label="#{msg['pub.book.sort']}">
+                                        <option value="">#{msg['pub.book.sort.default']}</option>
+                                        <option value="price-asc">#{msg['pub.book.sort.priceAsc']}</option>
+                                        <option value="price-desc">#{msg['pub.book.sort.priceDesc']}</option>
+                                        <option value="minutes-asc">#{msg['pub.book.sort.quick']}</option>
+                                    </select>
+                                </label>
+                            </div>
+                            <h:panelGroup rendered="#{publicBookingMb.grouped}" layout="block" styleClass="bk-chips" pt:role="group" pt:aria-label="#{msg['pub.book.filter.specialty']}">
+                                <button type="button" class="bk-fchip on" data-group="">#{msg['pub.book.filter.all']} <span>#{publicBookingMb.services.size()}</span></button>
+                                <ui:repeat value="#{publicBookingMb.serviceGroups}" var="g">
+                                    <button type="button" class="bk-fchip" data-group="#{g.key}">#{empty g.name ? msg['pub.book.group.other'] : g.name} <span>#{g.count}</span></button>
+                                </ui:repeat>
+                            </h:panelGroup>
+                        </h:panelGroup>
+
+                        <!-- Several specialties: one collapsible group each -->
+                        <h:panelGroup rendered="#{publicBookingMb.grouped}" layout="block" styleClass="bk-groups" id="svcGroups"
+                                      pt:data-selected="#{publicBookingMb.proceeded}">
+                            <ui:repeat value="#{publicBookingMb.serviceGroups}" var="g">
+                                <details class="bk-group" data-group="#{g.key}" data-default-open="#{not publicBookingMb.proceeded or g.selected}">
+                                    <summary class="bk-group-head">
+                                        <span class="bk-group-icon"><i class="pi pi-sparkles"></i></span>
+                                        <span class="bk-group-text">
+                                            <span class="bk-group-name">#{empty g.name ? msg['pub.book.group.other'] : g.name}</span>
+                                            <span class="bk-group-meta">
+                                                <h:outputFormat value="#{g.count eq 1 ? msg['pub.book.group.one'] : msg['pub.book.group.many']}"><f:param value="#{g.count}"/></h:outputFormat>
+                                                <h:outputText rendered="#{g.minPrice ne null}" value=" · #{msg['pub.book.group.from']} #{sessionMb.fmtMoney(g.minPrice)}"/>
+                                            </span>
+                                        </span>
+                                        <span class="bk-group-chevron"><i class="pi pi-chevron-down"></i></span>
+                                    </summary>
+                                    <div class="bk-services">
+                                        <ui:repeat value="#{g.services}" var="s">
+                                        <p:commandLink action="#{publicBookingMb.selectService(s.id)}" process="@this" update=":form:booking"
+                                                       styleClass="bk-service #{publicBookingMb.isSelected(s.id) ? 'selected' : ''}"
+                                                       pt:aria-pressed="#{publicBookingMb.isSelected(s.id)}"
+                                                       pt:data-search="#{s.name} #{s.description} #{s.specialty}"
+                                                       pt:data-price="#{s.price}" pt:data-minutes="#{s.durationMinutes}">
+                                            <span class="bk-service-check"><i class="pi pi-check"></i></span>
+                                            <span class="bk-service-body">
+                                                <span class="bk-service-name">#{s.name}</span>
+                                                <h:panelGroup rendered="#{not empty s.description}" styleClass="bk-service-desc">#{s.description}</h:panelGroup>
+                                                <span class="bk-service-meta"><span class="bk-chip"><i class="pi pi-clock"></i>&#160;#{s.durationMinutes} min</span></span>
+                                            </span>
+                                            <span class="bk-service-price">#{sessionMb.fmtMoney(s.price)}</span>
+                                        </p:commandLink>
+                                        </ui:repeat>
+                                    </div>
+                                </details>
+                            </ui:repeat>
+                        </h:panelGroup>
+
+                        <!-- One specialty (or none): plain list, as before -->
+                        <h:panelGroup rendered="#{not publicBookingMb.grouped}" layout="block" styleClass="bk-services bk-groups" id="svcList"
+                                      pt:data-selected="#{publicBookingMb.proceeded}">
+                            <ui:repeat value="#{publicBookingMb.services}" var="s">
+                                        <p:commandLink action="#{publicBookingMb.selectService(s.id)}" process="@this" update=":form:booking"
+                                                       styleClass="bk-service #{publicBookingMb.isSelected(s.id) ? 'selected' : ''}"
+                                                       pt:aria-pressed="#{publicBookingMb.isSelected(s.id)}"
+                                                       pt:data-search="#{s.name} #{s.description} #{s.specialty}"
+                                                       pt:data-price="#{s.price}" pt:data-minutes="#{s.durationMinutes}">
+                                            <span class="bk-service-check"><i class="pi pi-check"></i></span>
+                                            <span class="bk-service-body">
+                                                <span class="bk-service-name">#{s.name}</span>
+                                                <h:panelGroup rendered="#{not empty s.description}" styleClass="bk-service-desc">#{s.description}</h:panelGroup>
+                                                <span class="bk-service-meta"><span class="bk-chip"><i class="pi pi-clock"></i>&#160;#{s.durationMinutes} min</span></span>
+                                            </span>
+                                            <span class="bk-service-price">#{sessionMb.fmtMoney(s.price)}</span>
+                                        </p:commandLink>
+                            </ui:repeat>
+                        </h:panelGroup>
+                        <div class="bk-filter-empty" style="display:none">
+                            <i class="pi pi-search"></i>
+                            <span>#{msg['pub.book.filter.empty']}</span>
+                            <button type="button" class="bk-filter-clear">#{msg['pub.book.filter.clear']}</button>
                         </div>
+                        </h:panelGroup>
                     </section>
 
-                    <h:panelGroup rendered="#{publicBookingMb.serviceId ne null}" layout="block">
-                        <!-- 2. Who attends -->
-                        <section class="bk-section">
+                    <!-- Floating "Seguir": appears with the first service; the next steps use all of them together -->
+                    <h:panelGroup rendered="#{publicBookingMb.selectedCount gt 0 and not publicBookingMb.proceeded}" layout="block" styleClass="bk-float-spacer"/>
+                    <h:panelGroup rendered="#{publicBookingMb.selectedCount gt 0 and not publicBookingMb.proceeded}" layout="block" styleClass="bk-float">
+                        <div class="bk-float-info">
+                            <span class="bk-float-count">#{publicBookingMb.selectedCount}</span>
+                            <span class="bk-float-text">
+                                <strong>
+                                    <h:outputFormat value="#{publicBookingMb.selectedCount eq 1 ? msg['pub.book.float.one'] : msg['pub.book.float.many']}"><f:param value="#{publicBookingMb.selectedCount}"/></h:outputFormat>
+                                </strong>
+                                <span><i class="pi pi-clock"></i>&#160;#{publicBookingMb.totalDurationLabel} · #{sessionMb.fmtMoney(publicBookingMb.totalPrice)}</span>
+                            </span>
+                        </div>
+                        <p:commandLink action="#{publicBookingMb.proceed}" process="@this" update=":form:booking :messages"
+                                       oncomplete="var t=document.getElementById('bkStepWho');if(t)t.scrollIntoView({behavior:'smooth',block:'start'});"
+                                       styleClass="bk-float-btn">#{msg['pub.book.continue']}&#160;<i class="pi pi-arrow-right"></i></p:commandLink>
+                    </h:panelGroup>
+
+                    <h:panelGroup rendered="#{publicBookingMb.proceeded}" layout="block">
+                        <!-- 2. Who attends (people who do every chosen service) -->
+                        <section class="bk-section" id="bkStepWho">
                             <h2 class="bk-title">#{msg['pub.book.who']}</h2>
+                            <h:panelGroup rendered="#{publicBookingMb.selectedCount gt 1}" layout="block" styleClass="bk-step-hint">
+                                <i class="pi pi-info-circle"></i>&#160;<h:outputFormat value="#{msg['pub.book.who.multi']}"><f:param value="#{publicBookingMb.totalDurationLabel}"/></h:outputFormat>
+                            </h:panelGroup>
+                            <h:panelGroup rendered="#{empty publicBookingMb.employees}" layout="block" styleClass="bk-noslots">
+                                <i class="pi pi-user-minus"></i>&#160;#{msg['pub.book.who.none']}
+                            </h:panelGroup>
                             <p:outputPanel id="pros" styleClass="bk-scroller">
                                 <p:commandLink action="#{publicBookingMb.selectEmployee(null)}" process="@this"
                                                update=":form:pros :form:days :form:slots :form:confirm"
@@ -213,13 +352,18 @@
                                         <h:panelGroup rendered="#{publicBookingMb.selectedEmployee eq null}"><i class="pi pi-users"></i></h:panelGroup>
                                     </h:panelGroup>
                                     <div>
-                                        <strong>#{publicBookingMb.selectedService.name}</strong>
+                                        <strong>#{publicBookingMb.selectedNames}</strong>
                                         <span>#{publicBookingMb.selectedEmployee ne null ? msg['pub.book.with'].concat(' ').concat(publicBookingMb.selectedEmployee.fullName) : msg['pub.book.anyone']}</span>
                                     </div>
-                                    <span class="bk-summary-price">#{sessionMb.fmtMoney(publicBookingMb.selectedService.price)}</span>
+                                    <span class="bk-summary-price">#{sessionMb.fmtMoney(publicBookingMb.totalPrice)}</span>
                                 </div>
+                                <h:panelGroup rendered="#{publicBookingMb.selectedCount gt 1}" layout="block" styleClass="bk-summary-lines">
+                                    <ui:repeat value="#{publicBookingMb.selectedServices}" var="ss">
+                                        <div class="bk-summary-line"><span>#{ss.name} <em>#{ss.durationMinutes} min</em></span><span>#{sessionMb.fmtMoney(ss.price)}</span></div>
+                                    </ui:repeat>
+                                </h:panelGroup>
                                 <div class="bk-summary-row"><i class="pi pi-calendar"></i>#{publicBookingMb.longDate}</div>
-                                <div class="bk-summary-row"><i class="pi pi-clock"></i>#{publicBookingMb.selectedTime} hrs · #{publicBookingMb.selectedService.durationMinutes} min</div>
+                                <div class="bk-summary-row"><i class="pi pi-clock"></i>#{publicBookingMb.selectedTime} – #{publicBookingMb.selectedEndTime} hrs · #{publicBookingMb.totalDurationLabel}</div>
                             </div>
 
                             <h2 class="bk-title" style="margin-top:1.25rem">#{msg['pub.book.step.contact']}</h2>
@@ -249,5 +393,6 @@
                 </h:panelGroup>
             </p:outputPanel>
         </h:form>
+        <script type="text/javascript" src="#{request.contextPath}/resources/js/booking-services.js?v=20261013b"></script>
     </ui:define>
 </ui:composition>

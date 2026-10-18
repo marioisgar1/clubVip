@@ -14,8 +14,12 @@ import com.prolog.clubvip.rest.RestClient;
 import com.prolog.clubvip.rest.RestException;
 import com.prolog.clubvip.vo.ConsignmentDetailVo;
 import com.prolog.clubvip.vo.ConsignmentLineVo;
+import com.prolog.clubvip.vo.ConsignmentPaymentRequestVo;
+import com.prolog.clubvip.vo.ConsignmentPaymentVo;
+import com.prolog.clubvip.vo.ConsignmentReceiptVo;
 import com.prolog.clubvip.vo.ConsignmentProductVo;
 import com.prolog.clubvip.vo.ConsignmentReceiveVo;
+import com.prolog.clubvip.vo.ConsignmentSaleLineVo;
 import com.prolog.clubvip.vo.ConsignmentShipmentItemVo;
 import com.prolog.clubvip.vo.ConsignmentShipmentRequestVo;
 import com.prolog.clubvip.vo.ConsignmentShipmentVo;
@@ -49,6 +53,17 @@ public class ConsignmentFileMb extends BaseMb {
 
     // receive / view dialog
     private ConsignmentShipmentVo shipment;
+    /** Ventas: pending lines the store ticked to pay. */
+    private List<ConsignmentSaleLineVo> selectedSales = new ArrayList<>();
+    private String payNotes;
+    /** Receipt read in the browser (data URL), its name and type (hidden fields filled by JS). */
+    private String receiptBase64;
+    private String receiptName;
+    private String receiptContentType;
+    private ConsignmentReceiptVo receipt;
+    private ConsignmentPaymentVo viewingPayment;
+    private ConsignmentPaymentVo rejectingPayment;
+    private String rejectPaymentReason;
     private String receiveComment;
     private String rejectReason;
 
@@ -297,6 +312,302 @@ public class ConsignmentFileMb extends BaseMb {
         } catch (RestException e) {
             errors(e);
         }
+    }
+
+    // ------------------------------------------------------------------ ventas y cobranza
+    //  La tienda elige qué pendientes paga, ve la suma, adjunta el comprobante y paga (REPORTED);
+    //  el proveedor ve el comprobante y cierra el pago (CONFIRMED) o lo rechaza (regresan a pendiente).
+
+    /** Store: pending lines ticked to pay. */
+    public BigDecimal getSelectedTotal() {
+        BigDecimal sum = BigDecimal.ZERO;
+        for (ConsignmentSaleLineVo l : selectedSales) {
+            if (isPending(l) && l.getNetAmount() != null) {
+                sum = sum.add(l.getNetAmount());
+            }
+        }
+        return sum;
+    }
+
+    public int getSelectedCount() {
+        int n = 0;
+        for (ConsignmentSaleLineVo l : selectedSales) {
+            if (isPending(l)) {
+                n++;
+            }
+        }
+        return n;
+    }
+
+    /** Store: the line is ticked to pay. */
+    public boolean isSelected(ConsignmentSaleLineVo l) {
+        if (l == null) {
+            return false;
+        }
+        for (ConsignmentSaleLineVo x : selectedSales) {
+            if (x.getSaleItemId() != null && x.getSaleItemId().equals(l.getSaleItemId())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Store: the checkbox of a pending line. */
+    public void toggleLine(ConsignmentSaleLineVo l) {
+        if (l == null || !isPending(l)) {
+            return;
+        }
+        if (isSelected(l)) {
+            selectedSales.removeIf(x -> x.getSaleItemId() != null && x.getSaleItemId().equals(l.getSaleItemId()));
+        } else {
+            selectedSales.add(l);
+        }
+    }
+
+    public boolean isPending(ConsignmentSaleLineVo l) {
+        return l != null && (l.getPaymentStatus() == null || "PENDING".equals(l.getPaymentStatus()));
+    }
+
+    /** Store: every pending line is ticked (the button then offers to clear the selection). */
+    public boolean isAllPendingSelected() {
+        return detail != null && detail.getPendingCount() > 0 && getSelectedCount() >= detail.getPendingCount();
+    }
+
+    /** Store: "Seleccionar todo lo pendiente" / "Quitar selección". */
+    public void toggleAllPending() {
+        if (isAllPendingSelected()) {
+            selectedSales = new ArrayList<>();
+        } else {
+            selectAllPending();
+        }
+    }
+
+    /** Store: tick every pending line (the usual "pay everything I owe"). */
+    public void selectAllPending() {
+        selectedSales = new ArrayList<>();
+        if (detail != null) {
+            for (ConsignmentSaleLineVo l : detail.getSales()) {
+                if (isPending(l)) {
+                    selectedSales.add(l);
+                }
+            }
+        }
+    }
+
+    /** Store: opens the pay dialog with what is ticked (the button is disabled while nothing is). */
+    public void preparePay() {
+        if (getSelectedCount() == 0) {
+            errorKey("cons.msg.selectPending");
+            FacesContext.getCurrentInstance().validationFailed();
+            return;
+        }
+        payNotes = null;
+        receiptBase64 = null;
+        receiptName = null;
+        receiptContentType = null;
+    }
+
+    /** Store: reports the payment of the ticked pending lines with its receipt. */
+    public void reportPayment() {
+        List<Integer> ids = new ArrayList<>();
+        for (ConsignmentSaleLineVo l : selectedSales) {
+            if (isPending(l)) {
+                ids.add(l.getSaleItemId());
+            }
+        }
+        if (ids.isEmpty()) {
+            errorKey("cons.msg.selectPending");
+            return;
+        }
+        if (receiptBase64 == null || receiptBase64.isBlank()) {
+            errorKey("cons.pay.receiptMissing");
+            return;
+        }
+        ConsignmentPaymentRequestVo request = new ConsignmentPaymentRequestVo();
+        request.setSaleItemIds(ids);
+        request.setNotes(payNotes);
+        request.setReceiptBase64(receiptBase64);
+        request.setReceiptName(receiptName);
+        request.setReceiptContentType(receiptContentType);
+        if (refreshWith(RestCall.of(() -> RestClient.post("consignment/reportPayment/" + agreementId(), request,
+                ConsignmentDetailVo.class, userId(), locale())))) {
+            info("cons.msg.paymentReported");
+            PrimeFaces.current().executeScript("PF('consPayDlg').hide()");
+        }
+    }
+
+    /** Supplier: the money arrived, the payment is closed. */
+    public void confirmPayment(ConsignmentPaymentVo p) {
+        if (p != null && refreshWith(RestCall.of(() -> RestClient.post("consignment/confirmPayment/" + p.getId(), null,
+                ConsignmentDetailVo.class, userId(), locale())))) {
+            info("cons.msg.paymentConfirmed");
+        }
+    }
+
+    public void prepareReject(ConsignmentPaymentVo p) {
+        rejectingPayment = p;
+        rejectPaymentReason = null;
+    }
+
+    /** Supplier: did not receive it; its sales go back to pending. */
+    public void rejectPayment() {
+        if (rejectingPayment == null) {
+            return;
+        }
+        String reason = rejectPaymentReason == null || rejectPaymentReason.isBlank() ? ""
+                : "?reason=" + RestClient.encode(rejectPaymentReason.trim());
+        Integer id = rejectingPayment.getId();
+        if (refreshWith(RestCall.of(() -> RestClient.post("consignment/rejectPayment/" + id + reason, null,
+                ConsignmentDetailVo.class, userId(), locale())))) {
+            info("cons.msg.paymentRejected");
+            PrimeFaces.current().executeScript("PF('consRejectPayDlg').hide()");
+        }
+    }
+
+    /** Both: loads the receipt of a payment for the viewer dialog. */
+    public void viewReceipt(ConsignmentPaymentVo p) {
+        receipt = null;
+        viewingPayment = p;
+        if (p == null) {
+            return;
+        }
+        try {
+            receipt = RestClient.get("consignment/getPaymentReceipt/" + p.getId(), ConsignmentReceiptVo.class, userId(), locale());
+        } catch (RestException e) {
+            errors(e);
+        }
+    }
+
+    public boolean isReceiptImage() {
+        return receipt != null && receipt.getContentType() != null && receipt.getContentType().startsWith("image/");
+    }
+
+    /** data: URL of the receipt (images inline in the viewer, PDF in an embedded frame / download link). */
+    public String getReceiptDataUrl() {
+        return receipt == null || receipt.getBase64() == null ? ""
+                : "data:" + receipt.getContentType() + ";base64," + receipt.getBase64();
+    }
+
+    public org.primefaces.model.StreamedContent getReceiptFile() {
+        if (receipt == null || receipt.getBase64() == null) {
+            return null;
+        }
+        byte[] bytes = java.util.Base64.getDecoder().decode(receipt.getBase64());
+        return org.primefaces.model.DefaultStreamedContent.builder()
+                .name(receipt.getName() != null ? receipt.getName() : "comprobante")
+                .contentType(receipt.getContentType())
+                .stream(() -> new java.io.ByteArrayInputStream(bytes))
+                .build();
+    }
+
+    public String paymentStatusLabel(String status) {
+        return status != null ? sessionMb.text("cons.payStatus." + status) : "";
+    }
+
+    public String paymentStatusClass(String status) {
+        if ("CONFIRMED".equals(status)) {
+            return "badge badge-success";
+        }
+        if ("REJECTED".equals(status)) {
+            return "badge badge-danger";
+        }
+        return "badge badge-info";
+    }
+
+    public String lineStatusLabel(ConsignmentSaleLineVo l) {
+        String st = l != null && l.getPaymentStatus() != null ? l.getPaymentStatus() : "PENDING";
+        return sessionMb.text("cons.lineStatus." + st);
+    }
+
+    public String lineStatusClass(ConsignmentSaleLineVo l) {
+        String st = l != null && l.getPaymentStatus() != null ? l.getPaymentStatus() : "PENDING";
+        return "CONFIRMED".equals(st) ? "badge badge-success" : "REPORTED".equals(st) ? "badge badge-info" : "badge badge-warning";
+    }
+
+    /** Runs a call that answers the refreshed file; true when it worked. */
+    private boolean refreshWith(RestCall call) {
+        try {
+            ConsignmentDetailVo updated = call.run();
+            if (updated != null) {
+                detail = updated;
+            } else {
+                reload();
+            }
+            selectedSales = new ArrayList<>();
+            return true;
+        } catch (RestException e) {
+            errors(e);
+            return false;
+        }
+    }
+
+    @FunctionalInterface
+    private interface RestCall {
+        ConsignmentDetailVo run() throws RestException;
+
+        static RestCall of(RestCall c) {
+            return c;
+        }
+    }
+
+    public List<ConsignmentSaleLineVo> getSelectedSales() {
+        return selectedSales;
+    }
+
+    public void setSelectedSales(List<ConsignmentSaleLineVo> selectedSales) {
+        this.selectedSales = selectedSales != null ? selectedSales : new ArrayList<>();
+    }
+
+    public String getPayNotes() {
+        return payNotes;
+    }
+
+    public void setPayNotes(String payNotes) {
+        this.payNotes = payNotes;
+    }
+
+    public String getReceiptBase64() {
+        return receiptBase64;
+    }
+
+    public void setReceiptBase64(String receiptBase64) {
+        this.receiptBase64 = receiptBase64;
+    }
+
+    public String getReceiptName() {
+        return receiptName;
+    }
+
+    public void setReceiptName(String receiptName) {
+        this.receiptName = receiptName;
+    }
+
+    public String getReceiptContentType() {
+        return receiptContentType;
+    }
+
+    public void setReceiptContentType(String receiptContentType) {
+        this.receiptContentType = receiptContentType;
+    }
+
+    public ConsignmentReceiptVo getReceipt() {
+        return receipt;
+    }
+
+    public ConsignmentPaymentVo getViewingPayment() {
+        return viewingPayment;
+    }
+
+    public ConsignmentPaymentVo getRejectingPayment() {
+        return rejectingPayment;
+    }
+
+    public String getRejectPaymentReason() {
+        return rejectPaymentReason;
+    }
+
+    public void setRejectPaymentReason(String rejectPaymentReason) {
+        this.rejectPaymentReason = rejectPaymentReason;
     }
 
     // ------------------------------------------------------------------ view helpers

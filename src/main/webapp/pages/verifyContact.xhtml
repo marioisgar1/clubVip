@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:ui="jakarta.faces.facelets"
+      xmlns:p="http://primefaces.org/ui"
+      lang="#{sessionMb.language}">
+<f:view locale="#{sessionMb.locale}">
+<h:head>
+    <title>#{msg['app.title']} - #{msg['verify.title']}</title>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <link rel="icon" type="image/png" href="#{request.contextPath}/resources/img/favicon.png?v=20261010"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;display=swap"/>
+    <link rel="stylesheet" href="#{request.contextPath}/resources/css/clubvip.css?v=20261007a"/>
+    <link rel="stylesheet" href="#{request.contextPath}/resources/css/homepage.css?v=20261014a"/>
+    <link rel="stylesheet" href="#{request.contextPath}/resources/css/auth.css?v=20261012d"/>
+</h:head>
+<h:body styleClass="hp hp-auth">
+    <!-- Same header as login/register; the only way out is logging out -->
+    <header class="hp-nav au-nav">
+        <div class="hp-nav-in">
+            <a class="hp-logo" href="#{request.contextPath}/index.xhtml"><img src="#{request.contextPath}/resources/img/logo-clubvip.svg?v=20261014" alt="Club VIP"/></a>
+            <h:form id="langForm" styleClass="hp-lang">
+                <p:commandLink styleClass="#{sessionMb.language eq 'es' ? 'on' : ''}" process="@this" update="@none"
+                               action="#{sessionMb.changeLanguage('es')}" oncomplete="window.location.reload()">#{msg['hm.lang.es']}</p:commandLink>
+                <p:commandLink styleClass="#{sessionMb.language eq 'en' ? 'on' : ''}" process="@this" update="@none"
+                               action="#{sessionMb.changeLanguage('en')}" oncomplete="window.location.reload()">#{msg['hm.lang.en']}</p:commandLink>
+            </h:form>
+            <h:form id="outForm" style="display:inline">
+                <p:commandLink action="#{sessionMb.logout}" ajax="false" styleClass="hp-login">#{msg['logout']}</p:commandLink>
+            </h:form>
+        </div>
+    </header>
+
+    <main class="au-panel vf-panel">
+        <h:form id="form" styleClass="au-card au-card-wide vf-card">
+            <span class="au-caption">#{sessionMb.businessName}</span>
+            <h1 class="au-title">#{msg['verify.title']}</h1>
+            <p class="au-muted vf-lead">#{msg['verify.lead']}</p>
+            <p:messages id="msgs" showDetail="true" closable="true"/>
+
+            <p:outputPanel id="list">
+                <div class="vf-progress">
+                    <span class="vf-progress-text">
+                        <h:outputFormat value="#{msg['verify.progress']}">
+                            <f:param value="#{verifyContactMb.doneCount}"/>
+                            <f:param value="#{verifyContactMb.status.items.size()}"/>
+                        </h:outputFormat>
+                    </span>
+                    <span class="vf-progress-bar"><span style="width:#{verifyContactMb.status.items.size() gt 0 ? (verifyContactMb.doneCount * 100 / verifyContactMb.status.items.size()) : 0}%"></span></span>
+                </div>
+
+                <ui:repeat var="it" value="#{verifyContactMb.status.items}">
+                    <div class="vf-item #{it.verified ? 'vf-done' : ''}">
+                        <span class="vf-ico"><i class="#{it.verified ? 'pi pi-check' : verifyContactMb.channelIcon(it.channel)}"></i></span>
+                        <div class="vf-body">
+                            <div class="vf-head">
+                                <strong>#{verifyContactMb.channelLabel(it.channel)}</strong>
+                                <h:outputText rendered="#{it.verified}" styleClass="vf-tag vf-tag-ok" value="#{msg['verify.done']}"/>
+                                <h:outputText rendered="#{not it.verified and it.codeSent}" styleClass="vf-tag" value="#{msg['verify.codeSent']}"/>
+                            </div>
+
+                            <!-- The value, or the box to correct it -->
+                            <h:panelGroup rendered="#{not verifyContactMb.isEditing(it.channel)}" layout="block" styleClass="vf-target">
+                                <span class="vf-value">#{it.target}</span>
+                                <p:commandLink rendered="#{not it.verified}" value="#{msg['verify.change']}" styleClass="vf-link"
+                                               actionListener="#{verifyContactMb.startEdit(it.channel)}" process="@this" update=":form:list"/>
+                            </h:panelGroup>
+                            <h:panelGroup rendered="#{verifyContactMb.isEditing(it.channel)}" layout="block" styleClass="vf-edit">
+                                <p:inputText value="#{verifyContactMb.newValues[it.channel]}" styleClass="vf-input"
+                                             type="#{it.channel eq 'EMAIL' ? 'email' : 'tel'}" maxlength="150"/>
+                                <p:commandButton value="#{msg['verify.change.save']}" icon="pi pi-send" styleClass="au-submit"
+                                                 actionListener="#{verifyContactMb.change(it.channel)}" process="@this @parent" update=":form:list :form:msgs"/>
+                                <p:commandButton value="#{msg['action.cancel']}" styleClass="ui-button-flat"
+                                                 actionListener="#{verifyContactMb.cancelEdit}" process="@this" update=":form:list"/>
+                                <span class="hint">#{msg['verify.change.hint']}</span>
+                            </h:panelGroup>
+
+                            <h:panelGroup rendered="#{not it.verified and not verifyContactMb.isEditing(it.channel)}" layout="block" styleClass="vf-help">
+                                <i class="pi pi-info-circle"></i>
+                                <span>#{verifyContactMb.channelHelp(it.channel)}</span>
+                            </h:panelGroup>
+
+                            <!-- Code entry -->
+                            <h:panelGroup rendered="#{not it.verified and not verifyContactMb.isEditing(it.channel)}" layout="block" styleClass="vf-code">
+                                <p:inputText value="#{verifyContactMb.codes[it.channel]}" maxlength="6" placeholder="000000"
+                                             styleClass="vf-code-input" inputmode="numeric" autocomplete="one-time-code"/>
+                                <p:commandButton value="#{msg['verify.confirm']}" icon="pi pi-check" styleClass="au-submit"
+                                                 actionListener="#{verifyContactMb.confirm(it.channel)}" process="@this @parent" update=":form:list :form:msgs"/>
+                                <p:commandButton value="#{it.codeSent ? msg['verify.resend'] : msg['verify.send']}" icon="pi pi-refresh"
+                                                 styleClass="ui-button-secondary" disabled="#{it.sendsLeftThisHour le 0}"
+                                                 actionListener="#{verifyContactMb.send(it.channel)}" process="@this" update=":form:list :form:msgs"/>
+                                <span class="hint">
+                                    <h:outputFormat value="#{msg['verify.sendsLeft']}"><f:param value="#{it.sendsLeftThisHour}"/></h:outputFormat>
+                                </span>
+                            </h:panelGroup>
+                        </div>
+                    </div>
+                </ui:repeat>
+
+                <h:panelGroup rendered="#{verifyContactMb.allDone}" layout="block" styleClass="vf-finish">
+                    <i class="pi pi-check-circle"></i>
+                    <div>
+                        <strong>#{msg['verify.allDone']}</strong>
+                        <span class="au-muted">#{msg['verify.allDone.hint']}</span>
+                    </div>
+                    <p:commandButton value="#{msg['verify.enter']}" icon="pi pi-arrow-right" iconPos="right"
+                                     action="#{verifyContactMb.goHome}" ajax="false" styleClass="au-submit"/>
+                </h:panelGroup>
+
+                <h:panelGroup rendered="#{not verifyContactMb.allDone}" layout="block" styleClass="vf-later">
+                    <span class="au-muted">#{msg['verify.later.hint']}</span>
+                    <p:commandButton value="#{msg['verify.later']}" icon="pi pi-clock" action="#{verifyContactMb.postpone}"
+                                     ajax="false" styleClass="ui-button-secondary"/>
+                </h:panelGroup>
+            </p:outputPanel>
+        </h:form>
+    </main>
+</h:body>
+</f:view>
+</html>

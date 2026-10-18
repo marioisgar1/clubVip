@@ -53,12 +53,6 @@
                         <h:outputText value="#{serviceMb.whoGives(s)}"
                                       styleClass="#{empty s.employeeNames ? 'muted' : ''}"/>
                     </p:column>
-                    <p:column headerText="#{msg['cat.service.commission']}" width="110" styleClass="text-right"
-                              sortBy="#{s.commissionPercent}">
-                        <h:outputText value="#{s.commissionPercent} %" rendered="#{not empty s.commissionPercent}"/>
-                        <h:outputText value="#{msg['cat.service.commission.employee']}" styleClass="muted"
-                                      rendered="#{empty s.commissionPercent}"/>
-                    </p:column>
                     <p:column headerText="#{msg['lbl.price']}" width="110" styleClass="text-right" sortBy="#{s.price}">
                         <h:outputText value="#{sessionMb.fmtMoney(s.price)}" style="font-weight:600"/>
                     </p:column>
@@ -97,7 +91,9 @@
                         </div>
                         <div class="field">
                             <label for="form:svcSpecialty">#{msg['lbl.specialty']}</label>
-                            <p:inputText id="svcSpecialty" value="#{serviceMb.selected.specialty}" maxlength="120"/>
+                            <p:inputText id="svcSpecialty" value="#{serviceMb.selected.specialty}" maxlength="120"
+                                         placeholder="#{msg['cat.service.specialty.placeholder']}"/>
+                            <span class="hint"><i class="pi pi-calendar"></i>&#160;#{msg['cat.service.specialty.hint']}</span>
                         </div>
                         <div class="field required">
                             <label for="form:svcDuration">#{msg['lbl.duration']} (#{msg['lbl.minutes']})</label>
@@ -111,13 +107,6 @@
                                            minValue="0" required="true"
                                            requiredMessage="#{msg['lbl.price']}: #{msg['msg.required']}"/>
                         </div>
-                        <div class="field">
-                            <label for="form:svcCommission">#{msg['cat.service.commission']}</label>
-                            <p:inputNumber id="svcCommission" value="#{serviceMb.selected.commissionPercent}" symbol=" %"
-                                           symbolPosition="s" decimalPlaces="2" minValue="0" maxValue="100"
-                                           placeholder="#{msg['cat.service.commission.employee']}"/>
-                            <span class="hint">#{msg['cat.service.commission.hint']}</span>
-                        </div>
                         <div class="field span-2">
                             <div class="check-inline">
                                 <p:toggleSwitch id="svcActive" value="#{serviceMb.selected.activeForBooking}"/>
@@ -125,16 +114,12 @@
                             </div>
                             <span class="hint">#{msg['cat.service.activeForBooking.hint']}</span>
                         </div>
-                        <div class="field span-2">
-                            <label>#{msg['cat.service.employees']}</label>
-                            <p:selectManyCheckbox id="svcEmployees" value="#{serviceMb.selected.employeeIds}"
-                                                  layout="responsive" columns="2">
-                                <f:converter converterId="jakarta.faces.Integer"/>
-                                <f:selectItems value="#{serviceMb.employees}" var="e" itemLabel="#{e.fullName}"
-                                               itemValue="#{e.id}"/>
-                            </p:selectManyCheckbox>
+                        <!-- Quién da cada servicio se elige en Empleados (employee.xhtml), no aquí -->
+                        <h:panelGroup rendered="#{not empty serviceMb.selected.id}" styleClass="field span-2" layout="block">
+                            <label>#{msg['cat.service.whoGives']}</label>
+                            <span>#{serviceMb.whoGives(serviceMb.selected)}</span>
                             <span class="hint">#{msg['cat.service.employees.hint']}</span>
-                        </div>
+                        </h:panelGroup>
                     </div>
                     <f:facet name="footer">
                         <p:commandButton value="#{msg['action.save']}" icon="pi pi-check"

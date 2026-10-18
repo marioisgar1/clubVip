@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<!-- Stripe Checkout started from the Android app returns here (no portal session in the phone browser):
+     tells the result and sends the customer back to the app, which confirms the payment by itself. -->
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:ui="jakarta.faces.facelets"
+      lang="#{sessionMb.language}">
+<f:view locale="#{sessionMb.locale}">
+<h:head>
+    <title>#{msg['app.title']} - #{msg['memret.title']}</title>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <link rel="icon" type="image/png" href="#{request.contextPath}/resources/img/favicon.png?v=20261010"/>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&amp;display=swap"/>
+    <link rel="stylesheet" href="#{request.contextPath}/resources/css/clubvip.css?v=20261007a"/>
+    <link rel="stylesheet" href="#{request.contextPath}/resources/css/homepage.css?v=20261014a"/>
+    <link rel="stylesheet" href="#{request.contextPath}/resources/css/auth.css?v=20261012n"/>
+</h:head>
+<h:body styleClass="hp hp-auth">
+    <header class="hp-nav au-nav">
+        <div class="hp-nav-in">
+            <span class="hp-logo"><img src="#{request.contextPath}/resources/img/logo-clubvip.svg?v=20261014" alt="Club VIP"/></span>
+        </div>
+    </header>
+    <main class="au-panel">
+        <div class="au-card mr-card">
+            <ui:fragment rendered="#{empty param['canceled']}">
+                <span class="au-fp-badge au-fp-badge-ok">&#10003;</span>
+                <h1 class="au-title">#{msg['memret.ok.title']}</h1>
+                <p class="au-fp-lead">#{msg['memret.ok.lead']}</p>
+            </ui:fragment>
+            <ui:fragment rendered="#{not empty param['canceled']}">
+                <span class="au-fp-badge">!</span>
+                <h1 class="au-title">#{msg['memret.cancel.title']}</h1>
+                <p class="au-fp-lead">#{msg['memret.cancel.lead']}</p>
+            </ui:fragment>
+            <a id="backToApp" class="hp-btn mr-btn"
+               href="intent://membership?#{empty param['canceled'] ? 'session_id='.concat(param['session_id']) : 'canceled=1'}#Intent;scheme=clubvip;package=com.prolog.clubvip;end">#{msg['memret.back']}</a>
+            <p class="au-muted mr-hint">#{msg['memret.hint']}</p>
+        </div>
+    </main>
+    <script>
+    // Try to jump back to the app right away; the button stays for browsers that block it.
+    setTimeout(function () { var a = document.getElementById('backToApp'); if (a) { window.location.href = a.href; } }, 600);
+    </script>
+</h:body>
+</f:view>
+</html>

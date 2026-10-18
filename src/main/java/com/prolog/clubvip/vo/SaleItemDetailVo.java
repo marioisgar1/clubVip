@@ -12,6 +12,7 @@ public class SaleItemDetailVo implements Serializable {
     private String description;
     private String size;
     private String color;
+    private java.util.List<AttributeVo> attributes = new java.util.ArrayList<>();
     private String familyName;
     private Integer quantity;
     private BigDecimal listPrice;
@@ -97,5 +98,23 @@ public class SaleItemDetailVo implements Serializable {
 
     public void setLineTotal(BigDecimal lineTotal) {
         this.lineTotal = lineTotal;
+    }
+
+    public java.util.List<AttributeVo> getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(java.util.List<AttributeVo> attributes) {
+        this.attributes = attributes;
+    }
+
+    /** "Talla: M · Color: Negro" of the characteristics named by the category. */
+    public String getAttributesText() {
+        StringBuilder sb = new StringBuilder();
+        for (AttributeVo a : attributes != null ? attributes : java.util.Collections.<AttributeVo>emptyList()) {
+            if (sb.length() > 0) sb.append(" · ");
+            sb.append(a.getLabel()).append(": ").append(a.getValue());
+        }
+        return sb.toString();
     }
 }

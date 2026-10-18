@@ -26,15 +26,27 @@
                     </span>
                 </div>
 
-                <div class="dashboard-grid">
+                <div class="dashboard-grid cv-grid-wide">
                     <p:dataTable id="tblPreview" var="pv" value="#{payrollMb.previews}" reflow="true" stripedRows="true"
                                  emptyMessage="#{msg['msg.noData']}" rowIndexVar="idx">
-                        <p:column headerText="#{msg['lbl.employee']}">
+                        <p:column headerText="#{msg['lbl.employee']}" styleClass="cv-col-main">
+                          <div class="flex gap-2">
+                            <!-- Same as Personal: round photo from /employeePhoto when there is one, else initials -->
+                            <h:panelGroup rendered="#{pv.employeeHasPhoto}" styleClass="avatar avatar-photo">
+                                <img alt="" loading="lazy" src="#{request.contextPath}/employeePhoto?e=#{pv.employeeId}"/>
+                            </h:panelGroup>
+                            <h:panelGroup rendered="#{not pv.employeeHasPhoto}" styleClass="avatar">#{sessionMb.initialsOf(pv.employeeName)}</h:panelGroup>
+                           <div>
                             <span style="font-weight:600">#{pv.employeeName}</span>
                             <div class="muted">#{msg['rel.payScheme.'.concat(pv.payScheme)]}
-                                &#183; #{sessionMb.fmtDay(pv.periodStart)} - #{sessionMb.fmtDay(pv.periodEnd)}</div>
+                                &#183; #{sessionMb.fmtDay(pv.periodStart)} - #{sessionMb.fmtDay(pv.periodEnd)}
+                                <h:outputFormat value=" &#183; #{msg['rel.payroll.payDate']}" rendered="#{not empty pv.payDate}">
+                                    <f:param value="#{sessionMb.fmtDay(pv.payDate)}"/>
+                                </h:outputFormat></div>
+                           </div>
+                          </div>
                         </p:column>
-                        <p:column headerText="#{msg['rel.payroll.services']}" styleClass="text-right" width="80">
+                        <p:column headerText="#{sessionMb.payrollCountLabel}" styleClass="text-right" width="80">
                             #{pv.servicesCount != null ? pv.servicesCount : 0}
                         </p:column>
                         <p:column headerText="#{msg['rel.payroll.billed']}" styleClass="text-right">
@@ -46,14 +58,17 @@
                         <p:column headerText="#{msg['rel.payroll.salary']}" styleClass="text-right">
                             #{sessionMb.fmtMoney(pv.salaryAmount)}
                         </p:column>
+                        <p:column headerText="#{msg['rel.payroll.tips']}" styleClass="text-right">
+                            #{sessionMb.fmtMoney(pv.tipAmount)}
+                        </p:column>
                         <p:column headerText="#{msg['rel.payroll.toPay']}" styleClass="text-right">
                             <strong>#{sessionMb.fmtMoney(pv.totalAmount)}</strong>
                         </p:column>
                         <p:column headerText="#{msg['lbl.status']}" width="110">
                             <span class="badge badge-warning">#{msg['rel.payroll.status.PREVIEW']}</span>
                         </p:column>
-                        <p:column headerText="#{msg['lbl.actions']}" width="150" styleClass="text-right">
-                            <p:commandButton value="#{msg['rel.payroll.generate']}" icon="pi pi-lock"
+                        <p:column headerText="#{msg['rel.payroll.manualCut']}" width="120" styleClass="text-center cv-nowrap">
+                            <p:commandButton title="#{msg['rel.payroll.generate']}" icon="pi pi-lock"
                                              actionListener="#{payrollMb.generate(pv)}" update="@form :messages"
                                              styleClass="ui-button-sm" disabled="#{empty pv.periodStart or empty pv.periodEnd}">
                                 <p:confirm header="#{msg['action.confirm']}" message="#{msg['rel.payroll.confirmGenerate']}"
@@ -65,6 +80,7 @@
                     <div class="totals-box">
                         <div class="totals-row"><span>#{msg['rel.payroll.commission']}</span><span>#{sessionMb.fmtMoney(payrollMb.previewCommission)}</span></div>
                         <div class="totals-row"><span>#{msg['rel.payroll.salary']}</span><span>#{sessionMb.fmtMoney(payrollMb.previewSalary)}</span></div>
+                        <div class="totals-row"><span>#{msg['rel.payroll.tips']}</span><span>#{sessionMb.fmtMoney(payrollMb.previewTip)}</span></div>
                         <div class="totals-row grand-total"><span>#{msg['rel.payroll.periodTotal']}</span><span>#{sessionMb.fmtMoney(payrollMb.previewTotal)}</span></div>
                         <div class="totals-row"><span>#{msg['rel.payroll.pendingCuts']}</span><span>#{sessionMb.fmtMoney(payrollMb.pendingTotal)}</span></div>
                         <div class="totals-row"><span>#{msg['rel.payroll.pendingCommissions']}</span><span>#{sessionMb.fmtMoney(payrollMb.pendingCommissionTotal)}</span></div>
@@ -87,17 +103,32 @@
                              paginatorPosition="bottom" paginatorAlwaysVisible="false" reflow="true" stripedRows="true"
                              emptyMessage="#{msg['msg.noData']}" rowKey="#{pp.id}" filteredValue="#{payrollMb.filteredPeriods}">
                     <p:column headerText="#{msg['lbl.employee']}" sortBy="#{pp.employeeName}" filterBy="#{pp.employeeName}" filterMatchMode="contains">
-                        <span style="font-weight:600">#{pp.employeeName}</span>
+                        <div class="flex gap-2" style="align-items:center">
+                            <!-- Same as Personal: round photo from /employeePhoto when there is one, else initials -->
+                            <h:panelGroup rendered="#{pp.employeeHasPhoto}" styleClass="avatar avatar-photo">
+                                <img alt="" loading="lazy" src="#{request.contextPath}/employeePhoto?e=#{pp.employeeId}"/>
+                            </h:panelGroup>
+                            <h:panelGroup rendered="#{not pp.employeeHasPhoto}" styleClass="avatar">#{sessionMb.initialsOf(pp.employeeName)}</h:panelGroup>
+                            <span style="font-weight:600">#{pp.employeeName}</span>
+                        </div>
                     </p:column>
                     <p:column headerText="#{msg['rel.payroll.period']}" sortBy="#{pp.periodStart}">
                         #{sessionMb.fmtDay(pp.periodStart)} - #{sessionMb.fmtDay(pp.periodEnd)}
+                        <h:panelGroup rendered="#{not empty pp.payDate or pp.autoGenerated}" layout="block" styleClass="muted small">
+                            <h:outputFormat value="#{msg['rel.payroll.payDate']}" rendered="#{not empty pp.payDate}">
+                                <f:param value="#{sessionMb.fmtDay(pp.payDate)}"/>
+                            </h:outputFormat>
+                            <h:panelGroup rendered="#{pp.autoGenerated}" styleClass="badge badge-muted ml-1" style="font-size:.68rem"
+                                          title="#{msg['rel.payroll.auto.hint']}"><i class="pi pi-bolt" style="font-size:.65rem"></i> #{msg['rel.payroll.auto']}</h:panelGroup>
+                        </h:panelGroup>
                     </p:column>
                     <p:column headerText="#{msg['rel.payroll.frequency']}" width="110">
                         <h:outputText rendered="#{not empty pp.payFrequency}" value="#{msg['rel.payFrequency.'.concat(pp.payFrequency)]}"/>
                     </p:column>
-                    <p:column headerText="#{msg['rel.payroll.services']}" styleClass="text-right" width="80">#{pp.servicesCount}</p:column>
+                    <p:column headerText="#{sessionMb.payrollCountLabel}" styleClass="text-right" width="80">#{pp.servicesCount}</p:column>
                     <p:column headerText="#{msg['rel.payroll.commission']}" styleClass="text-right">#{sessionMb.fmtMoney(pp.commissionAmount)}</p:column>
                     <p:column headerText="#{msg['rel.payroll.salary']}" styleClass="text-right">#{sessionMb.fmtMoney(pp.salaryAmount)}</p:column>
+                    <p:column headerText="#{msg['rel.payroll.tips']}" styleClass="text-right">#{sessionMb.fmtMoney(pp.tipAmount)}</p:column>
                     <p:column headerText="#{msg['lbl.total']}" styleClass="text-right"><strong>#{sessionMb.fmtMoney(pp.totalAmount)}</strong></p:column>
                     <p:column headerText="#{msg['lbl.status']}" width="120">
                         <span class="#{payrollMb.statusBadge(pp.payStatus)}">#{msg['status.'.concat(pp.payStatus)]}</span>
@@ -120,14 +151,14 @@
 
             <!-- Pending commissions -->
             <div class="card">
-                <h3 class="section-title"><i class="pi pi-percentage gold"></i>&#160;#{msg['rel.payroll.pendingCommissions']}
+                <h3 class="section-title"><i class="pi pi-money-bill gold"></i>&#160;#{msg['rel.payroll.pendingCommissions']}
                     <span class="muted small">(#{sessionMb.fmtMoney(payrollMb.pendingCommissionTotal)})</span></h3>
                 <p:dataTable id="tblPending" var="c" value="#{payrollMb.pendingCommissions}" rows="10" paginator="true"
                              paginatorPosition="bottom" paginatorAlwaysVisible="false" reflow="true" stripedRows="true"
                              emptyMessage="#{msg['rel.payroll.noPending']}" rowKey="#{c.id}">
                     <p:column headerText="#{msg['lbl.date']}" sortBy="#{c.earnedDate}" width="110">#{sessionMb.fmtDay(c.earnedDate)}</p:column>
                     <p:column headerText="#{msg['lbl.employee']}" sortBy="#{c.employeeName}">#{c.employeeName}</p:column>
-                    <p:column headerText="#{msg['lbl.service']}" sortBy="#{c.serviceName}">#{c.serviceName}</p:column>
+                    <p:column headerText="#{msg['rel.payroll.concept']}" sortBy="#{c.serviceName}">#{c.serviceName}</p:column>
                     <p:column headerText="#{msg['rel.payroll.serviceAmount']}" styleClass="text-right">#{sessionMb.fmtMoney(c.serviceAmount)}</p:column>
                     <p:column headerText="%" styleClass="text-right" width="70">#{c.commissionPercent}</p:column>
                     <p:column headerText="#{msg['rel.payroll.commission']}" styleClass="text-right"><strong>#{sessionMb.fmtMoney(c.commissionAmount)}</strong></p:column>
@@ -138,7 +169,13 @@
             <p:dialog id="detailDialog" header="#{msg['rel.payroll.detail']}" widgetVar="detailDialog" modal="true"
                       width="720" resizable="false" responsive="true">
                 <div class="summary-bar">
-                    <span class="summary-item"><strong>#{payrollMb.detail.employeeName}</strong></span>
+                    <span class="summary-item flex gap-2" style="align-items:center">
+                            <!-- Same as Personal: round photo from /employeePhoto when there is one, else initials -->
+                            <h:panelGroup rendered="#{payrollMb.detail.employeeHasPhoto}" styleClass="avatar avatar-photo avatar-lg">
+                                <img alt="" loading="lazy" src="#{request.contextPath}/employeePhoto?e=#{payrollMb.detail.employeeId}"/>
+                            </h:panelGroup>
+                            <h:panelGroup rendered="#{not payrollMb.detail.employeeHasPhoto}" styleClass="avatar avatar-lg">#{sessionMb.initialsOf(payrollMb.detail.employeeName)}</h:panelGroup>
+                        <strong>#{payrollMb.detail.employeeName}</strong></span>
                     <span class="summary-item">#{sessionMb.fmtDay(payrollMb.detail.periodStart)} - #{sessionMb.fmtDay(payrollMb.detail.periodEnd)}</span>
                     <span class="summary-item">#{msg['lbl.total']}: <strong>#{sessionMb.fmtMoney(payrollMb.detail.totalAmount)}</strong></span>
                     <h:outputText rendered="#{not empty payrollMb.detail.payStatus}" styleClass="#{payrollMb.statusBadge(payrollMb.detail.payStatus)}"
@@ -147,7 +184,7 @@
                 <p:dataTable var="dc" value="#{payrollMb.detail.commissions}" reflow="true" stripedRows="true" scrollable="true"
                              scrollHeight="320" emptyMessage="#{msg['msg.noData']}">
                     <p:column headerText="#{msg['lbl.date']}" width="100">#{sessionMb.fmtDay(dc.earnedDate)}</p:column>
-                    <p:column headerText="#{msg['lbl.service']}">#{dc.serviceName}</p:column>
+                    <p:column headerText="#{msg['rel.payroll.concept']}">#{dc.serviceName}</p:column>
                     <p:column headerText="#{msg['rel.payroll.serviceAmount']}" styleClass="text-right">#{sessionMb.fmtMoney(dc.serviceAmount)}</p:column>
                     <p:column headerText="%" styleClass="text-right" width="60">#{dc.commissionPercent}</p:column>
                     <p:column headerText="#{msg['rel.payroll.commission']}" styleClass="text-right">#{sessionMb.fmtMoney(dc.commissionAmount)}</p:column>

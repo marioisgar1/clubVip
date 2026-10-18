@@ -94,8 +94,8 @@
                             <code>{customer} {business} {service} {date} {time} {employee} {address} {promo}</code></span></div>
                 </div>
                 <div class="flex gap-2" style="justify-content:flex-end">
-                    <p:commandButton value="#{msg['action.cancel']}" type="button" onclick="PF('templateDlg').hide()" styleClass="ui-button-secondary"/>
                     <p:commandButton value="#{msg['action.save']}" icon="pi pi-save" actionListener="#{messageMb.save}" update="@form :form :messages"/>
+                    <p:commandButton value="#{msg['action.cancel']}" type="button" onclick="PF('templateDlg').hide()" styleClass="ui-button-secondary"/>
                 </div>
             </h:form>
         </p:dialog>

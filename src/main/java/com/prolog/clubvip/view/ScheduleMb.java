@@ -35,7 +35,7 @@ public class ScheduleMb extends BaseMb implements Refreshable {
     private static final Type APPOINTMENT_LIST = new TypeToken<List<AppointmentVo>>() { }.getType();
     private static final Type EMPLOYEE_LIST = new TypeToken<List<EmployeeVo>>() { }.getType();
     private static final Type OCCUPANCY_LIST = new TypeToken<List<OccupancyVo>>() { }.getType();
-    private static final String[] PALETTE = {"#B8902F", "#2F5FA8", "#0E7A43", "#A11A2A", "#6A3FA0",
+    private static final String[] PALETTE = {"#5B7720", "#2F5FA8", "#0E7A43", "#A11A2A", "#6A3FA0",
         "#C2651C", "#1B8A8F", "#7A5C1E"};
 
     private LocalDate weekStart;
@@ -48,7 +48,13 @@ public class ScheduleMb extends BaseMb implements Refreshable {
     private List<LocalDate> days = new ArrayList<>();
     private List<Integer> hours = new ArrayList<>();
     private Set<Integer> closedWeekdays = new HashSet<>();
-    private Map<String, List<AppointmentVo>> cells = new HashMap<>();
+    private Map<String, List<VisitRow>> cells = new HashMap<>();
+
+    /** Height of one hour row in px (slot 64 + row gap 4): blocks are placed and sized in minutes with it. */
+    private static final int HOUR_PX = 68;
+
+    /** Side-by-side lane of each visit block and the lanes of its group of overlapping visits ([lane, lanes]). */
+    private Map<Integer, int[]> lanes = new HashMap<>();
     private Map<Integer, String> colors = new HashMap<>();
 
     @PostConstruct
@@ -139,6 +145,7 @@ public class ScheduleMb extends BaseMb implements Refreshable {
 
     private void buildCells() {
         cells = new HashMap<>();
+        List<AppointmentVo> shown = new ArrayList<>();
         for (AppointmentVo a : appointments) {
             if ("CANCELLED".equals(a.getAppointmentStatus())) {
                 continue;
@@ -149,12 +156,88 @@ public class ScheduleMb extends BaseMb implements Refreshable {
             if (a.getDate() == null || a.getStartTime() == null || a.getStartTime().length() < 2) {
                 continue;
             }
-            String key = a.getDate() + "|" + Integer.parseInt(a.getStartTime().substring(0, 2));
-            cells.computeIfAbsent(key, k -> new ArrayList<>()).add(a);
+            shown.add(a);
         }
-        for (List<AppointmentVo> list : cells.values()) {
+        // A visit (several services booked together) is one chip, placed at the hour it starts.
+        for (VisitRow v : VisitRow.group(shown)) {
+            String key = v.getDate() + "|" + Integer.parseInt(v.getStartTime().substring(0, 2));
+            cells.computeIfAbsent(key, k -> new ArrayList<>()).add(v);
+        }
+        for (List<VisitRow> list : cells.values()) {
             list.sort((x, y) -> String.valueOf(x.getStartTime()).compareTo(String.valueOf(y.getStartTime())));
         }
+        // Overlapping visits of a day sit side by side, like a calendar: greedy lanes per overlap group.
+        lanes = new HashMap<>();
+        Map<String, List<VisitRow>> byDay = new HashMap<>();
+        for (VisitRow v : VisitRow.group(shown)) {
+            byDay.computeIfAbsent(v.getDate(), k -> new ArrayList<>()).add(v);
+        }
+        for (List<VisitRow> day : byDay.values()) {
+            day.sort((x, y) -> minutes(x.getStartTime()) - minutes(y.getStartTime()));
+            List<VisitRow> group = new ArrayList<>();
+            List<Integer> laneEnds = new ArrayList<>();
+            int groupEnd = -1;
+            for (VisitRow v : day) {
+                int start = minutes(v.getStartTime());
+                int end = Math.max(start + 15, minutes(v.getEndTime()));
+                if (start >= groupEnd && !group.isEmpty()) {
+                    closeGroup(group, laneEnds.size());
+                    group = new ArrayList<>();
+                    laneEnds = new ArrayList<>();
+                }
+                int lane = -1;
+                for (int i = 0; i < laneEnds.size(); i++) {
+                    if (laneEnds.get(i) <= start) {
+                        lane = i;
+                        break;
+                    }
+                }
+                if (lane < 0) {
+                    lane = laneEnds.size();
+                    laneEnds.add(end);
+                } else {
+                    laneEnds.set(lane, end);
+                }
+                lanes.put(v.getId(), new int[] {lane, 1});
+                group.add(v);
+                groupEnd = Math.max(groupEnd, end);
+            }
+            closeGroup(group, laneEnds.size());
+        }
+    }
+
+    private void closeGroup(List<VisitRow> group, int count) {
+        for (VisitRow v : group) {
+            lanes.get(v.getId())[1] = Math.max(1, count);
+        }
+    }
+
+    private static int minutes(String hhmm) {
+        if (hhmm == null || hhmm.length() < 4) {
+            return 0;
+        }
+        String[] p = hhmm.split(":");
+        return Integer.parseInt(p[0]) * 60 + (p.length > 1 ? Integer.parseInt(p[1]) : 0);
+    }
+
+    /**
+     * Position of a visit block inside the cell of the hour it starts: top by its minutes, height by the
+     * whole visit (start to end) so it reaches the hour it finishes; side by side when visits overlap.
+     */
+    public String chipStyle(VisitRow v) {
+        int start = minutes(v.getStartTime());
+        int end = Math.max(start + 15, minutes(v.getEndTime()));
+        int top = Math.round((start % 60) * HOUR_PX / 60f) + 2;
+        int height = Math.max(26, Math.round((end - start) * HOUR_PX / 60f) - 4);
+        int[] l = lanes.getOrDefault(v.getId(), new int[] {0, 1});
+        double width = 100.0 / l[1];
+        return String.format(java.util.Locale.ROOT,
+                "top:%dpx;height:%dpx;left:calc(%.3f%% + 3px);width:calc(%.3f%% - 6px);", top, height, width * l[0], width);
+    }
+
+    /** Short blocks (under 45 min) only show the time and the services. */
+    public boolean isCompact(VisitRow v) {
+        return minutes(v.getEndTime()) - minutes(v.getStartTime()) < 45;
     }
 
     /** Employee filter changed: no backend call needed, only regroup. */
@@ -179,8 +262,8 @@ public class ScheduleMb extends BaseMb implements Refreshable {
 
     // ------------------------------------------------------------------ grid helpers
 
-    public List<AppointmentVo> cell(LocalDate day, Integer hour) {
-        List<AppointmentVo> list = cells.get(day + "|" + hour);
+    public List<VisitRow> cell(LocalDate day, Integer hour) {
+        List<VisitRow> list = cells.get(day + "|" + hour);
         return list != null ? list : new ArrayList<>();
     }
 

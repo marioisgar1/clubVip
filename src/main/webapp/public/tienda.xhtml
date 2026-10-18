@@ -5,6 +5,7 @@
                 xmlns:p="http://primefaces.org/ui"
                 template="/WEB-INF/public-template.xhtml">
     <ui:param name="pb" value="#{publicStoreMb}"/>
+    <ui:param name="hideBrand" value="true"/>
     <!-- Link preview (WhatsApp, Facebook…): the shared product (?p=id) with its photo, else the store. -->
     <ui:define name="meta">
         <ui:fragment rendered="#{publicStoreMb.found}">
@@ -29,59 +30,143 @@
             </h:panelGroup>
 
             <h:panelGroup rendered="#{publicStoreMb.hasStore}" layout="block">
+                <!-- Storefront: the business logo big on the left, name + search on the right.
+                     Same lime banner as every public page; works for any business logo (trimmed). -->
+                <div class="pub-hero st-front">
+                    <h:panelGroup rendered="#{publicStoreMb.hasLogo}">
+                        <img class="st-front-logo st-front-logo-#{publicStoreMb.logoTone}" src="#{publicStoreMb.logoUrl}" alt="#{publicStoreMb.business.name}"/>
+                    </h:panelGroup>
+                    <h:panelGroup rendered="#{not publicStoreMb.hasLogo}" styleClass="st-front-monogram">#{sessionMb.initialsOf(publicStoreMb.business.name)}</h:panelGroup>
+                    <div class="st-front-body">
+                        <span class="pub-kicker"><i class="pi pi-shopping-bag"></i>&#160;#{msg['pub.tab.tienda']}</span>
+                        <h1>#{publicStoreMb.business.name}</h1>
+                        <h:panelGroup rendered="#{not empty publicStoreMb.business.specialty}" layout="block" styleClass="st-front-specialty">#{publicStoreMb.business.specialty}</h:panelGroup>
+                        <p>#{msg['pub.store.hero.hint']}</p>
+                        <span class="pub-search st-front-search">
+                            <i class="pi pi-search"></i>
+                            <p:inputText value="#{publicStoreMb.query}" placeholder="#{msg['pub.store.search']}" styleClass="pub-search-input">
+                                <p:ajax event="keyup" delay="300" listener="#{publicStoreMb.resetPage}" update=":form:filters :form:grid"/>
+                            </p:inputText>
+                        </span>
+                    </div>
+                </div>
                 <!-- Línea / Outlet (only when the store has both) -->
                 <p:outputPanel id="sections" rendered="#{publicStoreMb.hasSections}" styleClass="pub-sections">
-                    <p:commandLink action="#{publicStoreMb.showLine('line')}" process="@this" update=":form:sections :form:grid"
+                    <p:commandLink action="#{publicStoreMb.showLine('line')}" process="@this" update=":form:sections :form:filters :form:grid"
                                    styleClass="pub-section#{publicStoreMb.line eq 'line' ? ' active' : ''}">
                         #{msg['pub.store.line']} <span class="pub-section-count">#{publicStoreMb.lineCount}</span>
                     </p:commandLink>
-                    <p:commandLink action="#{publicStoreMb.showLine('outlet')}" process="@this" update=":form:sections :form:grid"
+                    <p:commandLink action="#{publicStoreMb.showLine('outlet')}" process="@this" update=":form:sections :form:filters :form:grid"
                                    styleClass="pub-section outlet#{publicStoreMb.line eq 'outlet' ? ' active' : ''}">
                         <i class="pi pi-tag"></i>&#160;#{msg['pub.store.outlet']} <span class="pub-section-count">#{publicStoreMb.outletCount}</span>
                     </p:commandLink>
                 </p:outputPanel>
-                <div class="pub-filters">
-                    <span class="ui-input-icon-left pub-search">
-                        <i class="pi pi-search"></i>
-                        <p:inputText value="#{publicStoreMb.query}" placeholder="#{msg['pub.store.search']}">
-                            <p:ajax event="keyup" delay="300" listener="#{publicStoreMb.resetPage}" update=":form:grid"/>
-                        </p:inputText>
-                    </span>
-                    <p:selectOneMenu value="#{publicStoreMb.family}" rendered="#{publicStoreMb.families.size() gt 1}">
-                        <f:selectItem itemLabel="#{msg['pub.store.allFamilies']}" itemValue=""/>
-                        <f:selectItems value="#{publicStoreMb.families}"/>
-                        <p:ajax listener="#{publicStoreMb.resetPage}" update=":form:grid"/>
-                    </p:selectOneMenu>
-                    <p:selectOneMenu value="#{publicStoreMb.brand}" rendered="#{publicStoreMb.brands.size() gt 1}">
-                        <f:selectItem itemLabel="#{msg['pub.store.allBrands']}" itemValue=""/>
-                        <f:selectItems value="#{publicStoreMb.brands}"/>
-                        <p:ajax listener="#{publicStoreMb.resetPage}" update=":form:grid"/>
-                    </p:selectOneMenu>
-                    <p:selectOneMenu value="#{publicStoreMb.model}" rendered="#{publicStoreMb.models.size() gt 1}">
-                        <f:selectItem itemLabel="#{msg['pub.store.allModels']}" itemValue=""/>
-                        <f:selectItems value="#{publicStoreMb.models}"/>
-                        <p:ajax listener="#{publicStoreMb.resetPage}" update=":form:grid"/>
-                    </p:selectOneMenu>
+                <!-- Filters: searchable combos whose options (and counts) follow the other filters,
+                     a price range slider, the sort order and the active filters as removable tags. -->
+                <!-- On phones the fields fold under the "Filtros" button. The open state lives on this
+                     wrapper because :form:filters is re-rendered on every change. -->
+                <div class="pub-filters-wrap" id="pubFiltersWrap">
+                <p:outputPanel id="filters" styleClass="pub-filterbar">
+                    <div class="pub-filter-row">
+                        <button type="button" class="pub-filter-title" aria-expanded="false" aria-controls="pubFilterFields" onclick="pubToggleFilters()">
+                            <i class="pi pi-sliders-h"></i>#{msg['pub.store.filters']}
+                            <h:outputText rendered="#{publicStoreMb.hasFilters}" styleClass="pub-filter-badge" value="#{publicStoreMb.activeFilters.size()}"/>
+                            <i class="pi pi-chevron-down pub-filter-chev"></i>
+                        </button>
+                        <div class="pub-filter-fields" id="pubFilterFields"><div class="pub-filter-fields-in">
+                        <p:selectOneMenu value="#{publicStoreMb.family}" styleClass="pub-combo#{not empty publicStoreMb.family ? ' on' : ''}"
+                                         filter="true" filterMatchMode="contains" filterPlaceholder="#{msg['pub.store.filter.search']}" panelStyleClass="pub-combo-panel"
+                                         rendered="#{publicStoreMb.familyOptions.size() gt 1 or not empty publicStoreMb.family}">
+                            <f:selectItem itemLabel="#{msg['pub.store.allFamilies']}" itemValue=""/>
+                            <f:selectItems value="#{publicStoreMb.familyOptions}"/>
+                            <p:ajax listener="#{publicStoreMb.resetPage}" update=":form:filters :form:grid"/>
+                        </p:selectOneMenu>
+                        <p:selectOneMenu value="#{publicStoreMb.brand}" styleClass="pub-combo#{not empty publicStoreMb.brand ? ' on' : ''}"
+                                         filter="true" filterMatchMode="contains" filterPlaceholder="#{msg['pub.store.filter.search']}" panelStyleClass="pub-combo-panel"
+                                         rendered="#{publicStoreMb.brandOptions.size() gt 1 or not empty publicStoreMb.brand}">
+                            <f:selectItem itemLabel="#{msg['pub.store.allBrands']}" itemValue=""/>
+                            <f:selectItems value="#{publicStoreMb.brandOptions}"/>
+                            <p:ajax listener="#{publicStoreMb.resetPage}" update=":form:filters :form:grid"/>
+                        </p:selectOneMenu>
+                        <p:selectOneMenu value="#{publicStoreMb.model}" styleClass="pub-combo#{not empty publicStoreMb.model ? ' on' : ''}"
+                                         filter="true" filterMatchMode="contains" filterPlaceholder="#{msg['pub.store.filter.search']}" panelStyleClass="pub-combo-panel"
+                                         rendered="#{publicStoreMb.modelOptions.size() gt 1 or not empty publicStoreMb.model}">
+                            <f:selectItem itemLabel="#{msg['pub.store.allModels']}" itemValue=""/>
+                            <f:selectItems value="#{publicStoreMb.modelOptions}"/>
+                            <p:ajax listener="#{publicStoreMb.resetPage}" update=":form:filters :form:grid"/>
+                        </p:selectOneMenu>
+                        <!-- One combo per characteristic of the products (Talla, Color, Sabor, Material…) -->
+                        <ui:repeat value="#{publicStoreMb.filterLabels}" var="al">
+                            <p:selectOneMenu value="#{publicStoreMb.attrFilter[al]}" styleClass="pub-combo#{not empty publicStoreMb.attrFilter[al] ? ' on' : ''}"
+                                             filter="true" filterMatchMode="contains" filterPlaceholder="#{msg['pub.store.filter.search']}" panelStyleClass="pub-combo-panel"
+                                             rendered="#{publicStoreMb.attrOptions(al).size() gt 1 or not empty publicStoreMb.attrFilter[al]}">
+                                <f:selectItem itemLabel="#{al}: #{msg['pub.store.allValues']}" itemValue=""/>
+                                <f:selectItems value="#{publicStoreMb.attrOptions(al)}"/>
+                                <p:ajax listener="#{publicStoreMb.resetPage}" update=":form:filters :form:grid"/>
+                            </p:selectOneMenu>
+                        </ui:repeat>
+                        <h:panelGroup rendered="#{publicStoreMb.hasPriceRange}" layout="block" styleClass="pub-price#{publicStoreMb.priceFiltered ? ' on' : ''}">
+                            <span class="pub-price-head">
+                                <span class="pub-price-title">#{msg['pub.store.price']}</span>
+                                <span class="pub-price-value" id="pubPriceLbl">#{publicStoreMb.priceLabel}</span>
+                            </span>
+                            <h:inputHidden id="priceMin" value="#{publicStoreMb.priceMinValue}"/>
+                            <h:inputHidden id="priceMax" value="#{publicStoreMb.priceMaxValue}"/>
+                            <p:slider for="priceMin,priceMax" range="true" minValue="#{publicStoreMb.priceFloor}" maxValue="#{publicStoreMb.priceCeil}"
+                                      step="#{publicStoreMb.priceStep}" styleClass="pub-slider" onSlide="pubPriceLabel(ui.values)">
+                                <p:ajax event="slideEnd" process="@this :form:priceMin :form:priceMax" listener="#{publicStoreMb.resetPage}"
+                                        update=":form:filters :form:grid"/>
+                            </p:slider>
+                        </h:panelGroup>
+                        </div></div>
+                    </div>
+                    <h:panelGroup rendered="#{publicStoreMb.hasFilters}" layout="block" styleClass="pub-active">
+                        <ui:repeat value="#{publicStoreMb.activeFilters}" var="af">
+                            <p:commandLink action="#{publicStoreMb.clearFilter(af.key)}" process="@this" update=":form:filters :form:grid"
+                                           styleClass="pub-tag" title="#{msg['pub.store.removeFilter']}">#{af.label}<i class="pi pi-times"></i></p:commandLink>
+                        </ui:repeat>
+                        <p:commandLink action="#{publicStoreMb.clearFilters}" process="@this" update=":form:filters :form:grid"
+                                       styleClass="pub-tag-clear">#{msg['pub.store.clearFilters']}</p:commandLink>
+                    </h:panelGroup>
+                </p:outputPanel>
                 </div>
 
                 <p:outputPanel id="grid">
-                    <p class="muted small">#{publicStoreMb.filtered.size()} #{msg['pub.store.count']}</p>
+                    <div class="pub-toolbar">
+                        <p class="pub-count"><strong>#{publicStoreMb.filtered.size()}</strong> #{msg['pub.store.count']}</p>
+                        <span class="pub-sort">
+                            <i class="pi pi-sort-alt"></i>
+                            <p:selectOneMenu value="#{publicStoreMb.sort}" styleClass="pub-combo pub-sort-menu" panelStyleClass="pub-combo-panel">
+                                <f:selectItem itemLabel="#{msg['pub.store.sort.relevance']}" itemValue="relevance"/>
+                                <f:selectItem itemLabel="#{msg['pub.store.sort.priceAsc']}" itemValue="priceAsc"/>
+                                <f:selectItem itemLabel="#{msg['pub.store.sort.priceDesc']}" itemValue="priceDesc"/>
+                                <f:selectItem itemLabel="#{msg['pub.store.sort.nameAsc']}" itemValue="nameAsc"/>
+                                <f:selectItem itemLabel="#{msg['pub.store.sort.newest']}" itemValue="newest"/>
+                                <p:ajax listener="#{publicStoreMb.resetPage}" update=":form:grid"/>
+                            </p:selectOneMenu>
+                        </span>
+                    </div>
                     <h:panelGroup rendered="#{empty publicStoreMb.filtered}" layout="block" styleClass="pub-empty small">
-                        #{publicStoreMb.total eq 0 ? msg['pub.store.none'] : msg['pub.store.noMatch']}
+                        <i class="pi #{publicStoreMb.total eq 0 ? 'pi-box' : 'pi-filter-slash'}"></i>
+                        <p>#{publicStoreMb.total eq 0 ? msg['pub.store.none'] : msg['pub.store.noMatch']}</p>
                     </h:panelGroup>
                     <div class="pub-grid">
-                        <ui:repeat value="#{publicStoreMb.visible}" var="pr">
-                            <p:commandLink action="#{publicStoreMb.select(pr)}" process="@this" update=":form:productDlg"
+                        <!-- One card per reference: its sizes / colours are chosen in the detail dialog. -->
+                        <ui:repeat value="#{publicStoreMb.visible}" var="g">
+                            <p:commandLink action="#{publicStoreMb.select(g)}" process="@this" update=":form:productDlg"
                                            oncomplete="PF('productDlg').show()" styleClass="pub-product">
                                 <div class="pub-photo">
-                                    <h:panelGroup rendered="#{pr.outlet}" styleClass="pub-outlet-badge">#{msg['pub.store.outlet']}</h:panelGroup>
-                                    <img src="#{publicStoreMb.photoUrl(pr)}" alt="" loading="lazy"
+                                    <h:panelGroup rendered="#{g.main.outlet}" styleClass="pub-outlet-badge">#{msg['pub.store.outlet']}</h:panelGroup>
+                                    <img src="#{publicStoreMb.photoUrl(g.main)}" alt="" loading="lazy"
                                          onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
                                     <span class="pub-photo-empty" style="display:none"><i class="pi pi-image"></i></span>
                                 </div>
-                                <span class="pub-product-name">#{pr.name}</span>
-                                <span class="pub-product-meta">#{pr.brandName}#{not empty pr.familyName ? ' · '.concat(pr.familyName) : ''}#{not empty pr.size ? ' · '.concat(pr.size) : ''}</span>
-                                <span class="pub-product-price">#{sessionMb.fmtMoney(pr.price)}</span>
+                                <span class="pub-product-name">#{g.title}</span>
+                                <span class="pub-product-meta">#{g.main.brandName}#{not empty g.main.familyName ? ' · '.concat(g.main.familyName) : ''}#{not empty publicStoreMb.variantSummary(g) ? ' · '.concat(publicStoreMb.variantSummary(g)) : ''}</span>
+                                <span class="pub-product-foot">
+                                    <span class="pub-product-price"><h:outputText value="#{msg['pub.store.from']} " styleClass="pub-price-from" rendered="#{not g.samePrice}"/>#{sessionMb.fmtMoney(g.minPrice)}</span>
+                                    <span class="pub-product-go"><i class="pi pi-arrow-right"></i></span>
+                                </span>
                             </p:commandLink>
                         </ui:repeat>
                     </div>
@@ -92,7 +177,9 @@
                 </p:outputPanel>
 
                 <p:dialog id="productDlg" widgetVar="productDlg" modal="true" responsive="true" width="440" styleClass="pub-product-dlg"
-                          header="#{publicStoreMb.selected.name}" closeOnEscape="true" fitViewport="true">
+                          header="#{publicStoreMb.selectedGroup ne null and publicStoreMb.selectedGroup.multiName ? publicStoreMb.selectedGroup.title : publicStoreMb.selected.name}" closeOnEscape="true" fitViewport="true">
+                  <!-- Picking a size / colour re-renders only the body, so the dialog stays open. -->
+                  <p:outputPanel id="productBody">
                     <h:panelGroup rendered="#{publicStoreMb.selected ne null}" layout="block" styleClass="pub-product-detail">
                         <!-- Gallery: main photo with arrows / swipe and a strip of thumbnails when there is more than one. -->
                         <div class="pub-photo big pub-gallery" ontouchstart="pubGallerySwipeStart(event)" ontouchend="pubGallerySwipeEnd(this, event)">
@@ -117,25 +204,72 @@
                         <div class="pub-product-price big">#{sessionMb.fmtMoney(publicStoreMb.selected.price)}
                             <h:panelGroup rendered="#{publicStoreMb.selected.outlet}" styleClass="pub-outlet-badge inline">#{msg['pub.store.outlet']}</h:panelGroup>
                         </div>
+                        <!-- Product (model with different products), then size / colour of the product picked -->
+                        <h:panelGroup rendered="#{publicStoreMb.selectedGroup ne null and publicStoreMb.selectedGroup.multi}" layout="block" styleClass="pub-variants">
+                            <h:panelGroup rendered="#{publicStoreMb.selectedGroup.multiName}" layout="block">
+                                <span class="pub-var-label">#{msg['pub.store.product']}</span>
+                                <div class="pub-chips">
+                                    <ui:repeat value="#{publicStoreMb.selectedGroup.names}" var="nm">
+                                        <p:commandLink action="#{publicStoreMb.pickName(nm)}" process="@this" update=":form:productBody"
+                                                       styleClass="pub-chip#{publicStoreMb.isNameActive(nm) ? ' active' : ''}">#{nm}</p:commandLink>
+                                    </ui:repeat>
+                                </div>
+                            </h:panelGroup>
+                            <ui:repeat value="#{publicStoreMb.dialogLabels}" var="dl">
+                                <div>
+                                    <span class="pub-var-label">#{dl}</span>
+                                    <div class="pub-chips">
+                                        <ui:repeat value="#{publicStoreMb.dialogValues(dl)}" var="dv">
+                                            <p:commandLink action="#{publicStoreMb.pickAttr(dl, dv)}" process="@this" update=":form:productBody"
+                                                           styleClass="pub-chip#{publicStoreMb.attrActive(dl, dv) ? ' active' : ''}#{publicStoreMb.attrAvailable(dl, dv) ? '' : ' off'}"
+                                                           title="#{publicStoreMb.attrAvailable(dl, dv) ? '' : msg['pub.store.variant.off']}">#{dv}</p:commandLink>
+                                        </ui:repeat>
+                                    </div>
+                                </div>
+                            </ui:repeat>
+                            <span class="pub-var-hint">#{publicStoreMb.selectedGroup.multiName ? msg['pub.store.products.hint'] : msg['pub.store.attrs.hint']}</span>
+                        </h:panelGroup>
                         <h:panelGroup rendered="#{not empty publicStoreMb.selected.shortDescription}" layout="block">#{publicStoreMb.selected.shortDescription}</h:panelGroup>
                         <dl class="pub-specs">
                             <h:panelGroup rendered="#{not empty publicStoreMb.selected.familyName}"><dt>#{msg['pub.store.family']}</dt><dd>#{publicStoreMb.selected.familyName}</dd></h:panelGroup>
                             <h:panelGroup rendered="#{not empty publicStoreMb.selected.brandName}"><dt>#{msg['pub.store.brand']}</dt><dd>#{publicStoreMb.selected.brandName}</dd></h:panelGroup>
                             <h:panelGroup rendered="#{not empty publicStoreMb.selected.modelName}"><dt>#{msg['pub.store.model']}</dt><dd>#{publicStoreMb.selected.modelName}</dd></h:panelGroup>
-                            <h:panelGroup rendered="#{not empty publicStoreMb.selected.size}"><dt>#{msg['pub.store.size']}</dt><dd>#{publicStoreMb.selected.size}</dd></h:panelGroup>
-                            <h:panelGroup rendered="#{not empty publicStoreMb.selected.color}"><dt>#{msg['pub.store.color']}</dt><dd>#{publicStoreMb.selected.color}</dd></h:panelGroup>
+                            <h:panelGroup rendered="#{not empty publicStoreMb.selected.referenceCode}"><dt>#{msg['pub.store.reference']}</dt><dd>#{publicStoreMb.selected.referenceCode}</dd></h:panelGroup>
+                            <ui:repeat value="#{publicStoreMb.selected.attributes}" var="sa"><dt>#{sa.label}</dt><dd>#{sa.value}</dd></ui:repeat>
                             <h:panelGroup rendered="#{not empty publicStoreMb.selected.barcode}"><dt>#{msg['pub.store.code']}</dt><dd>#{publicStoreMb.selected.barcode}</dd></h:panelGroup>
                         </dl>
                         <h:panelGroup rendered="#{not empty publicStoreMb.whatsApp(publicStoreMb.selected)}">
-                            <a class="pub-primary wide" href="#{publicStoreMb.whatsApp(publicStoreMb.selected)}" target="_blank" rel="noopener">
+                            <a class="pub-primary wide" href="#{publicStoreMb.whatsApp(publicStoreMb.selected)}" target="_blank" rel="noopener" onclick="cvTrack('WA_CLICK')">
                                 <i class="pi pi-whatsapp"></i>&#160;#{msg['pub.store.interested']}</a>
                         </h:panelGroup>
                     </h:panelGroup>
+                  </p:outputPanel>
                 </p:dialog>
                 <ui:fragment rendered="#{publicStoreMb.openOnLoad}">
                     <script>window.addEventListener('load', function () { PF('productDlg').show(); });</script>
                 </ui:fragment>
                 <script>
+                    // Filters on phones: fold / unfold; the button's aria-expanded is restored after each ajax re-render.
+                    function pubSyncFilters() {
+                        var w = document.getElementById('pubFiltersWrap');
+                        var b = w ? w.querySelector('.pub-filter-title') : null;
+                        if (b) b.setAttribute('aria-expanded', w.classList.contains('open') ? 'true' : 'false');
+                    }
+                    function pubToggleFilters() {
+                        var w = document.getElementById('pubFiltersWrap');
+                        if (!w) return;
+                        w.classList.toggle('open');
+                        pubSyncFilters();
+                    }
+                    if (window.jQuery) jQuery(document).on('pfAjaxComplete', pubSyncFilters);
+                    // Price slider: the label follows the handles while sliding (the filter applies on release).
+                    function pubPriceLabel(values) {
+                        var el = document.getElementById('pubPriceLbl');
+                        if (el) el.textContent = pubMoney(values[0]) + ' – ' + pubMoney(values[1]);
+                    }
+                    function pubMoney(n) {
+                        return '$' + Number(n).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                    }
                     // Product detail gallery: the thumbnails hold the photo URLs; the main image follows them.
                     function pubGalleryShow(el, i) {
                         var root = el.closest('.pub-product-detail');

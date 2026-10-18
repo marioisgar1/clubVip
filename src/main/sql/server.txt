@@ -1,8 +1,16 @@
-R02-03-2024
+Stripe
+mario.isgar@gmail.com entro con cuenta gmail
+Autenticator 
+zves-obrv-ffdo-vtgk-azxv
+
+
+https://play.google.com/console/u/0/signup
+WidolsMusic@gmail.com
+Santafe29
 
 
 
-74.208.197.92
+Ip publica 74.208.197.92
 
 
 
@@ -22,8 +30,11 @@ mysql -u trust_deal_user -p
 
 https://login.ionos.mx/
 w@widols.com
-2Dfg75_@tP-815NviaTu@l
+2Dfg75_@tP-815NviaTu@l	
 
+www.brevo.com
+w@widols.com
+Szcr_6/4#62B22t
 
 matar wildfly
 pgrep -d" " -f "wildfly" | xargs kill;
@@ -48,7 +59,7 @@ scp standalone.xml root@74.208.197.92:/home/server/wildfly-39.0.1.Final/standalo
  scp clubVipServices.jar root@74.208.197.92:/home/server/microservices
  
  sss
- scp respaldo_leonisa_ambassador04dic2026.sql root@74.208.197.92:/home/respaldos
+ scp leonisa_ambassador10oct2026.sql root@74.208.197.92:/home/respaldos
 
 
 

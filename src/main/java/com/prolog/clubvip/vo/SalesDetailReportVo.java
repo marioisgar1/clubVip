@@ -18,6 +18,8 @@ public class SalesDetailReportVo implements Serializable {
     private BigDecimal totalRevenue;      // sum of subtotals
     private BigDecimal totalDiscounts;
     private BigDecimal totalCommissions;
+    /** Commissions earned by the sellers (admin only). */
+    private BigDecimal totalStaffCommissions;
     private BigDecimal totalCogs;
     private BigDecimal totalVenueCost;    // venue expenses that fall inside the window
     private BigDecimal totalProfit;       // subtotal - cogs - commissions - venue cost
@@ -84,6 +86,14 @@ public class SalesDetailReportVo implements Serializable {
 
     public void setTotalCommissions(BigDecimal totalCommissions) {
         this.totalCommissions = totalCommissions;
+    }
+
+    public BigDecimal getTotalStaffCommissions() {
+        return totalStaffCommissions;
+    }
+
+    public void setTotalStaffCommissions(BigDecimal totalStaffCommissions) {
+        this.totalStaffCommissions = totalStaffCommissions;
     }
 
     public BigDecimal getTotalCogs() {

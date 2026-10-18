@@ -67,6 +67,34 @@ public class MyPayrollMb implements Serializable {
         return getCurrent().getCommissions() != null ? getCurrent().getCommissions() : new ArrayList<>();
     }
 
+    /** "Servicios", "Ventas" or both, from what the commissions of the current period really are. */
+    public String getCurrentCountLabel() {
+        PayrollPeriodVo c = getCurrent();
+        int total = c.getServicesCount() != null ? c.getServicesCount() : 0;
+        Integer sales = c.getSalesCount();
+        if (sales == null) {
+            return sessionMb.getPayrollCountLabel();
+        }
+        if (sales == 0) {
+            return sessionMb.text(total == 0 && !sessionMb.isAppointmentsEnabled() ? "rel.payroll.sales" : "rel.payroll.services");
+        }
+        if (sales >= total) {
+            return sessionMb.text("rel.payroll.sales");
+        }
+        return sessionMb.text("rel.payroll.servicesSales");
+    }
+
+    /** "3 servicios · 4 ventas" when the period mixes both; null otherwise. */
+    public String getCurrentCountHint() {
+        PayrollPeriodVo c = getCurrent();
+        int total = c.getServicesCount() != null ? c.getServicesCount() : 0;
+        Integer sales = c.getSalesCount();
+        if (sales == null || sales == 0 || sales >= total) {
+            return null;
+        }
+        return java.text.MessageFormat.format(sessionMb.text("rel.payroll.mixHint"), total - sales, sales);
+    }
+
     public String getCurrentPeriodLabel() {
         PayrollPeriodVo c = getCurrent();
         if (c.getPeriodStart() == null && c.getPeriodEnd() == null) {

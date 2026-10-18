@@ -26,6 +26,14 @@ public class InventorySummaryVo implements Serializable {
 
     private BigDecimal soldAmountMonth;
 
+    /** Bajo mínimo en Línea */
+    private int belowMinimumLine;
+    /** Bajo mínimo en Outlet */
+    private int belowMinimumOutlet;
+
+    /** Valor del inventario a precio de venta */
+    private BigDecimal retailValue = BigDecimal.ZERO;
+
     public BigDecimal getStockValue() {
         return stockValue;
     }
@@ -80,5 +88,29 @@ public class InventorySummaryVo implements Serializable {
 
     public void setSoldAmountMonth(BigDecimal soldAmountMonth) {
         this.soldAmountMonth = soldAmountMonth;
+    }
+
+    public int getBelowMinimumLine() {
+        return belowMinimumLine;
+    }
+
+    public void setBelowMinimumLine(int belowMinimumLine) {
+        this.belowMinimumLine = belowMinimumLine;
+    }
+
+    public int getBelowMinimumOutlet() {
+        return belowMinimumOutlet;
+    }
+
+    public void setBelowMinimumOutlet(int belowMinimumOutlet) {
+        this.belowMinimumOutlet = belowMinimumOutlet;
+    }
+
+    public BigDecimal getRetailValue() {
+        return retailValue;
+    }
+
+    public void setRetailValue(BigDecimal retailValue) {
+        this.retailValue = retailValue;
     }
 }

@@ -14,6 +14,7 @@ import com.prolog.clubvip.rest.RestResponse;
 import com.prolog.clubvip.vo.BusinessVo;
 import com.prolog.clubvip.vo.FileVo;
 import com.prolog.clubvip.vo.NetworkStatsVo;
+import com.prolog.clubvip.vo.SubscriptionVo;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.faces.application.FacesMessage;
@@ -40,6 +41,11 @@ public class AffiliateMb implements Serializable {
     private List<BusinessVo> affiliates = new ArrayList<>();
     private List<BusinessVo> filtered;
     private BusinessVo selected = new BusinessVo();
+
+    private static final java.time.format.DateTimeFormatter ISO_DAY = java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
+    /** Courtesy dialog: on/off and the last day (null = no expiry). */
+    private boolean courtesyEnabled;
+    private java.time.LocalDate courtesyUntil;
     private String rejectReason;
     private FileVo license;
 
@@ -84,6 +90,80 @@ public class AffiliateMb implements Serializable {
         RestResponse r = RestClient.post("business/approveVerification/" + b.getId(), null, userId(), locale());
         if (r.isOk()) {
             info(sessionMb.text("rel.affiliate.approved"));
+            refresh();
+        } else {
+            errors(r);
+        }
+    }
+
+    /** Contact the operator is about to confirm or un-confirm by hand (dialog). */
+    private String contactChannel;
+
+    public void prepareContact(BusinessVo b, String channel) {
+        selected = b;
+        contactChannel = channel;
+    }
+
+    public String getContactChannel() {
+        return contactChannel;
+    }
+
+    /** "Correo electrónico" / "Celular del negocio" / "Teléfono de contacto". */
+    public String getContactLabel() {
+        return contactChannel != null ? sessionMb.text("verify.channel." + contactChannel) : "";
+    }
+
+    public String getContactValue() {
+        if (selected == null || contactChannel == null) {
+            return "";
+        }
+        switch (contactChannel) {
+            case "EMAIL":
+                return selected.getOwnerEmail();
+            case "PHONE":
+                return selected.getGroupPhone();
+            default:
+                return selected.getContactPhone();
+        }
+    }
+
+    private java.util.Date contactVerifiedAt() {
+        if (selected == null || contactChannel == null) {
+            return null;
+        }
+        switch (contactChannel) {
+            case "EMAIL":
+                return selected.getOwnerEmailVerifiedAt();
+            case "PHONE":
+                return selected.getOwnerPhoneVerifiedAt();
+            default:
+                return selected.getContactPhoneVerifiedAt();
+        }
+    }
+
+    public boolean isContactVerified() {
+        return contactVerifiedAt() != null;
+    }
+
+    public String getContactVerifiedStamp() {
+        java.util.Date d = contactVerifiedAt();
+        return d != null ? new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm").format(d) : "";
+    }
+
+    public boolean isContactEmail() {
+        return "EMAIL".equals(contactChannel);
+    }
+
+    /** "Marcar como confirmado" / "Marcar sin confirmar" from the dialog. */
+    public void confirmContact() {
+        if (selected == null || contactChannel == null) {
+            return;
+        }
+        boolean verified = !isContactVerified();
+        RestResponse r = RestClient.post("business/setContactVerified/" + selected.getId() + "?channel=" + contactChannel
+                + "&verified=" + verified, null, userId(), locale());
+        if (r.isOk()) {
+            info(sessionMb.text(verified ? "rel.affiliate.markedConfirmed" : "rel.affiliate.markedUnconfirmed"));
             refresh();
         } else {
             errors(r);
@@ -270,5 +350,63 @@ public class AffiliateMb implements Serializable {
 
     public FileVo getLicense() {
         return license;
+    }
+
+    // ------------------------------------------------------------ membership / courtesy
+
+    public boolean isCourtesy(BusinessVo b) {
+        return "ACTIVE".equals(b.getSubscriptionStatus()) && "COURTESY".equals(b.getMembershipPlan());
+    }
+
+    public void prepareCourtesy(BusinessVo b) {
+        selected = b;
+        courtesyEnabled = isCourtesy(b);
+        courtesyUntil = null;
+        if (courtesyEnabled && b.getSubscriptionUntil() != null && !b.getSubscriptionUntil().isBlank()) {
+            try {
+                courtesyUntil = java.time.LocalDate.parse(b.getSubscriptionUntil(), ISO_DAY);
+            } catch (RuntimeException e) {
+                courtesyUntil = null;
+            }
+        }
+    }
+
+    /** Courtesy on: ACTIVE + COURTESY until the chosen day (none = no expiry). Off: back to "Sin pagar". */
+    public void saveCourtesy() {
+        SubscriptionVo vo = new SubscriptionVo();
+        vo.setBusinessId(selected.getId());
+        if (courtesyEnabled) {
+            vo.setSubscriptionStatus("ACTIVE");
+            vo.setMembershipPlan("COURTESY");
+            vo.setSubscriptionUntil(courtesyUntil != null ? courtesyUntil.format(ISO_DAY) : null);
+        } else {
+            vo.setSubscriptionStatus("PENDING");
+            vo.setMembershipPlan("");
+            vo.setSubscriptionUntil(null);
+        }
+        RestResponse r = RestClient.post("business/updateSubscription", vo, userId(), locale());
+        if (r.isOk()) {
+            info(sessionMb.text("msg.saved"));
+            PrimeFaces.current().executeScript("PF('courtesyDialog').hide()");
+            refresh();
+        } else {
+            errors(r);
+        }
+    }
+
+    public boolean isCourtesyEnabled() {
+        return courtesyEnabled;
+    }
+
+    public void setCourtesyEnabled(boolean courtesyEnabled) {
+        this.courtesyEnabled = courtesyEnabled;
+    }
+
+    public java.time.LocalDate getCourtesyUntil() {
+        return courtesyUntil;
+    }
+
+    public void setCourtesyUntil(java.time.LocalDate courtesyUntil) {
+        this.courtesyUntil = courtesyUntil;
     }
 }

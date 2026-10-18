@@ -52,18 +52,18 @@
                         <h:panelGroup id="dayPanel" layout="block">
                             <div class="kpi-grid">
                                 <div class="kpi-card kpi-ink">
-                                    <span class="kpi-label">#{msg['rel.report.day.appointments']}</span>
+                                    <span class="kpi-icon"><i class="pi pi-calendar"></i></span><span class="kpi-label">#{msg['rel.report.day.appointments']}</span>
                                     <span class="kpi-value">#{reportMb.daily.appointmentsCount != null ? reportMb.daily.appointmentsCount : 0}</span>
                                     <span class="kpi-hint">#{msg['rel.report.day.attended']}: #{reportMb.daily.attended != null ? reportMb.daily.attended : 0}
                                         &#183; #{msg['rel.report.day.pending']}: #{reportMb.daily.pending != null ? reportMb.daily.pending : 0}</span>
                                 </div>
                                 <div class="kpi-card">
-                                    <span class="kpi-label">#{msg['rel.report.day.cancelled']}</span>
+                                    <span class="kpi-icon"><i class="pi pi-times-circle"></i></span><span class="kpi-label">#{msg['rel.report.day.cancelled']}</span>
                                     <span class="kpi-value">#{reportMb.daily.cancelled != null ? reportMb.daily.cancelled : 0}</span>
                                     <span class="kpi-hint">#{msg['rel.report.day.noShow']}: #{reportMb.daily.noShow != null ? reportMb.daily.noShow : 0}</span>
                                 </div>
                                 <div class="kpi-card">
-                                    <span class="kpi-label">#{msg['rel.report.revenue']}</span>
+                                    <span class="kpi-icon"><i class="pi pi-dollar"></i></span><span class="kpi-label">#{msg['rel.report.revenue']}</span>
                                     <span class="kpi-value">#{sessionMb.fmtMoney(reportMb.daily.revenue)}</span>
                                     <span class="kpi-hint">#{msg['rel.report.day.services']}: #{sessionMb.fmtMoney(reportMb.daily.servicesRevenue)}
                                         &#183; #{msg['rel.report.day.products']}: #{sessionMb.fmtMoney(reportMb.daily.productsRevenue)}</span>
@@ -102,17 +102,17 @@
                     <p:tab title="#{msg['rel.report.tab.revenue']}">
                         <div class="kpi-grid">
                             <div class="kpi-card kpi-ink">
-                                <span class="kpi-label">#{msg['rel.report.revenue']}</span>
+                                <span class="kpi-icon"><i class="pi pi-dollar"></i></span><span class="kpi-label">#{msg['rel.report.revenue']}</span>
                                 <span class="kpi-value">#{sessionMb.fmtMoney(reportMb.revenue.total)}</span>
                                 <span class="kpi-hint">#{sessionMb.fmtDay(reportMb.revenue.from)} - #{sessionMb.fmtDay(reportMb.revenue.to)}</span>
                             </div>
                             <div class="kpi-card">
-                                <span class="kpi-label">#{msg['rel.report.day.appointments']}</span>
+                                <span class="kpi-icon"><i class="pi pi-calendar"></i></span><span class="kpi-label">#{msg['rel.report.day.appointments']}</span>
                                 <span class="kpi-value">#{reportMb.revenue.appointments != null ? reportMb.revenue.appointments : 0}</span>
                                 <span class="kpi-hint">#{msg['rel.report.attendedInRange']}</span>
                             </div>
                             <div class="kpi-card">
-                                <span class="kpi-label">#{msg['rel.report.variation']}</span>
+                                <span class="kpi-icon"><i class="pi pi-chart-line"></i></span><span class="kpi-label">#{msg['rel.report.variation']}</span>
                                 <span class="kpi-value">
                                     <span class="#{reportMb.variationBadge}" style="font-size:1rem;padding:.3rem .8rem">
                                         <h:outputText value="#{reportMb.variation}"><f:convertNumber maxFractionDigits="1" minFractionDigits="1"/></h:outputText>%
@@ -190,19 +190,19 @@
                     <p:tab title="#{msg['rel.report.tab.customers']}">
                         <div class="kpi-grid">
                             <div class="kpi-card kpi-ink">
-                                <span class="kpi-label">#{msg['rel.report.customers.total']}</span>
+                                <span class="kpi-icon"><i class="pi pi-users"></i></span><span class="kpi-label">#{msg['rel.report.customers.total']}</span>
                                 <span class="kpi-value">#{reportMb.customerStats.total != null ? reportMb.customerStats.total : 0}</span>
                             </div>
                             <div class="kpi-card">
-                                <span class="kpi-label">#{msg['rel.report.customers.newWeek']}</span>
+                                <span class="kpi-icon"><i class="pi pi-user-plus"></i></span><span class="kpi-label">#{msg['rel.report.customers.newWeek']}</span>
                                 <span class="kpi-value">#{reportMb.customerStats.newThisWeek != null ? reportMb.customerStats.newThisWeek : 0}</span>
                             </div>
                             <div class="kpi-card">
-                                <span class="kpi-label">#{msg['rel.report.customers.inactive']}</span>
+                                <span class="kpi-icon"><i class="pi pi-user-minus"></i></span><span class="kpi-label">#{msg['rel.report.customers.inactive']}</span>
                                 <span class="kpi-value">#{reportMb.customerStats.inactive != null ? reportMb.customerStats.inactive : 0}</span>
                             </div>
                             <div class="kpi-card">
-                                <span class="kpi-label">#{msg['rel.report.customers.birthdaysToday']}</span>
+                                <span class="kpi-icon"><i class="pi pi-gift"></i></span><span class="kpi-label">#{msg['rel.report.customers.birthdaysToday']}</span>
                                 <span class="kpi-value">#{reportMb.customerStats.birthdaysToday != null ? reportMb.customerStats.birthdaysToday : 0}</span>
                                 <span class="kpi-hint">#{msg['rel.report.customers.birthdaysMonth']}: #{reportMb.customerStats.birthdaysMonth != null ? reportMb.customerStats.birthdaysMonth : 0}</span>
                             </div>

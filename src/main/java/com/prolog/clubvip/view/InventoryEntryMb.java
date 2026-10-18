@@ -3,6 +3,7 @@ package com.prolog.clubvip.view;
 import java.io.Serializable;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,45 +22,39 @@ import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 
+import org.primefaces.PrimeFaces;
+
 /**
  * Inventory entries (INVENTORY_ENTRY): build a purchase / reception line by line and post it,
- * plus the history of previous entries. inventory/saveEntry · inventory/getEntries · product/getProducts
+ * plus the history of previous entries. Same flow as the app: scan (or type) the barcode, a dialog
+ * asks quantity and cost, and Agregar adds the line (Guardar entrada posts it).
+ * inventory/saveEntry · inventory/getEntries · product/getProductByBarcode
  */
 @Named("inventoryEntryMb")
 @ViewScoped
 public class InventoryEntryMb implements Serializable {
 
     private static final long serialVersionUID = 1L;
-    private static final Type PRODUCT_LIST = new TypeToken<List<ProductVo>>() { }.getType();
+    /** Leonisa's acquisition-cost rule: suggested cost when there is no moving average yet. */
+    private static final int FALLBACK_COST_PERCENT = 40;
     private static final Type ENTRY_LIST = new TypeToken<List<InventoryEntryVo>>() { }.getType();
 
     @Inject
     private SessionMb sessionMb;
 
-    private List<ProductVo> products = new ArrayList<>();
     private List<InventoryEntryVo> entries = new ArrayList<>();
 
     private String notes;
     private List<InventoryEntryItemVo> items = new ArrayList<>();
-    private Integer productId;
+    private String barcode;
+    /** Product found by the last scan: the one the line dialog is editing. */
+    private ProductVo product;
     private Integer quantity = 1;
     private BigDecimal unitCost;
 
     @PostConstruct
     public void init() {
-        loadProducts();
         refresh();
-    }
-
-    private void loadProducts() {
-        try {
-            List<ProductVo> list = RestClient.get("product/getProducts?includeImages=false", PRODUCT_LIST,
-                    userId(), sessionMb.getLocale());
-            products = list != null ? list : new ArrayList<>();
-        } catch (RestException e) {
-            products = new ArrayList<>();
-            errors(e.getMessages());
-        }
     }
 
     public void refresh() {
@@ -72,16 +67,55 @@ public class InventoryEntryMb implements Serializable {
         }
     }
 
-    /** When a product is picked, propose its current average cost as unit cost. */
-    public void onProductChange() {
-        ProductVo p = findProduct(productId);
-        if (p != null && p.getAverageCost() != null && p.getAverageCost().signum() > 0) {
-            unitCost = p.getAverageCost();
+    /**
+     * GET product/getProductByBarcode/{barcode} (USB readers type the code and press Enter) and open
+     * the line dialog with quantity 1 and the average acquisition cost, or
+     * {@link #FALLBACK_COST_PERCENT}% of the retail price when the product has none yet.
+     */
+    public void scan() {
+        if (barcode == null || barcode.isBlank()) {
+            return;
+        }
+        String code = barcode.trim();
+        barcode = null;
+        try {
+            ProductVo p = RestClient.get("product/getProductByBarcode/" + RestClient.encode(code) + "?includeImages=false",
+                    ProductVo.class, userId(), sessionMb.getLocale());
+            if (p == null || p.getId() == null) {
+                warn(sessionMb.text("pos.sale.notFound"));
+                return;
+            }
+            product = p;
+            quantity = 1;
+            unitCost = isAverageCostKnown() ? p.getAverageCost() : getSuggestedCost();
+            PrimeFaces.current().executeScript("PF('lineDialog').show()");
+        } catch (RestException e) {
+            errors(e.getMessages());
         }
     }
 
+    /** True when the scanned product already has a moving-average acquisition cost. */
+    public boolean isAverageCostKnown() {
+        return product != null && product.getAverageCost() != null && product.getAverageCost().signum() > 0;
+    }
+
+    /** {@link #FALLBACK_COST_PERCENT}% of the retail price of the scanned product. */
+    public BigDecimal getSuggestedCost() {
+        BigDecimal retail = product != null && product.getPrice() != null ? product.getPrice() : BigDecimal.ZERO;
+        return retail.multiply(BigDecimal.valueOf(FALLBACK_COST_PERCENT)).divide(BigDecimal.valueOf(100), 2,
+                RoundingMode.HALF_UP);
+    }
+
+    public int getFallbackCostPercent() {
+        return FALLBACK_COST_PERCENT;
+    }
+
+    public void cancelLine() {
+        resetLine();
+    }
+
     public void addItem() {
-        ProductVo p = findProduct(productId);
+        ProductVo p = product;
         if (p == null) {
             warn(sessionMb.text("cat.entry.selectProduct"));
             return;
@@ -99,7 +133,7 @@ public class InventoryEntryMb implements Serializable {
             if (p.getId().equals(it.getProductId()) && unitCost.compareTo(it.getUnitCost()) == 0) {
                 it.setQuantity(it.getQuantity() + quantity);
                 it.setLineTotal(unitCost.multiply(BigDecimal.valueOf(it.getQuantity())));
-                resetLine();
+                closeLine();
                 return;
             }
         }
@@ -110,11 +144,16 @@ public class InventoryEntryMb implements Serializable {
         it.setUnitCost(unitCost);
         it.setLineTotal(unitCost.multiply(BigDecimal.valueOf(quantity)));
         items.add(it);
+        closeLine();
+    }
+
+    private void closeLine() {
         resetLine();
+        PrimeFaces.current().executeScript("PF('lineDialog').hide()");
     }
 
     private void resetLine() {
-        productId = null;
+        product = null;
         quantity = 1;
         unitCost = null;
     }
@@ -147,23 +186,10 @@ public class InventoryEntryMb implements Serializable {
             items = new ArrayList<>();
             notes = null;
             resetLine();
-            loadProducts();
             refresh();
         } else {
             errors(RestClient.extractErrors(r.getBody()));
         }
-    }
-
-    private ProductVo findProduct(Integer id) {
-        if (id == null) {
-            return null;
-        }
-        for (ProductVo p : products) {
-            if (id.equals(p.getId())) {
-                return p;
-            }
-        }
-        return null;
     }
 
     private Integer userId() {
@@ -194,10 +220,6 @@ public class InventoryEntryMb implements Serializable {
 
     // ------------------------------------------------------------------ getters / setters
 
-    public List<ProductVo> getProducts() {
-        return products;
-    }
-
     public List<InventoryEntryVo> getEntries() {
         return entries;
     }
@@ -214,12 +236,16 @@ public class InventoryEntryMb implements Serializable {
         return items;
     }
 
-    public Integer getProductId() {
-        return productId;
+    public String getBarcode() {
+        return barcode;
     }
 
-    public void setProductId(Integer productId) {
-        this.productId = productId;
+    public void setBarcode(String barcode) {
+        this.barcode = barcode;
+    }
+
+    public ProductVo getProduct() {
+        return product;
     }
 
     public Integer getQuantity() {

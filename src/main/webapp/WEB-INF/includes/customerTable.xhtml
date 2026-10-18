@@ -6,7 +6,7 @@
     <!-- Customer list. Params: tableId, list, mode (all | inactive | birthday | new). Inside h:form id="form". -->
     <p:dataTable id="#{tableId}" var="c" value="#{list}" rowKey="#{c.customerId}" emptyMessage="#{msg['msg.noData']}"
                  paginator="true" rows="15" paginatorAlwaysVisible="false" reflow="true" stripedRows="true">
-        <p:column headerText="#{msg['lbl.customer']}" sortBy="#{c.fullName}">
+        <p:column headerText="#{msg['lbl.customer']}" sortBy="#{c.fullName}" styleClass="cv-col-main">
             <div class="flex gap-2">
                 <span class="avatar">#{sessionMb.initialsOf(c.fullName)}</span>
                 <span>

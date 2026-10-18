@@ -124,6 +124,13 @@ public class BusinessMb implements Serializable {
         return business.getSlug() != null ? PublicLinks.link(business.getSlug(), PublicLinks.TIENDA) : null;
     }
 
+    /** Consignment needs the sales module: switching sales off switches it off too. */
+    public void onModulesChange() {
+        if (business != null && !Boolean.TRUE.equals(business.getModuleSales())) {
+            business.setModuleConsignment(Boolean.FALSE);
+        }
+    }
+
     public void uploadLogo() {
         if (isBlank(newLogoBase64)) {
             warn(sessionMb.text("cat.business.logo.none"));

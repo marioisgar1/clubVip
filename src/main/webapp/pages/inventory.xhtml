@@ -16,65 +16,58 @@
             </div>
 
             <!-- KPI cards (admin only: hidden when the summary call is rejected) -->
-            <h:panelGroup rendered="#{inventoryMb.summaryAvailable}" layout="block" styleClass="kpi-grid">
+            <h:panelGroup rendered="#{inventoryMb.summaryAvailable}" layout="block" styleClass="kpi-grid cv-kpi-3">
                 <div class="kpi-card kpi-ink">
-                    <span class="kpi-label">#{msg['cat.inventory.kpi.value']}</span>
+                    <span class="kpi-icon"><i class="pi pi-dollar"></i></span><span class="kpi-label">#{msg['cat.inventory.kpi.value']}</span>
                     <span class="kpi-value">#{sessionMb.fmtMoney(inventoryMb.summary.stockValue)}</span>
                     <span class="kpi-hint">#{msg['cat.inventory.kpi.value.hint']}</span>
                 </div>
                 <div class="kpi-card">
-                    <span class="kpi-label">#{msg['cat.inventory.kpi.units']}</span>
+                    <span class="kpi-icon"><i class="pi pi-tag"></i></span><span class="kpi-label">#{msg['cat.inventory.kpi.retail']}</span>
+                    <span class="kpi-value">#{sessionMb.fmtMoney(inventoryMb.summary.retailValue)}</span>
+                    <span class="kpi-hint">#{msg['cat.inventory.kpi.retail.hint']} #{sessionMb.fmtMoney(inventoryMb.potentialProfit)}</span>
+                </div>
+                <div class="kpi-card">
+                    <span class="kpi-icon"><i class="pi pi-box"></i></span><span class="kpi-label">#{msg['cat.inventory.kpi.units']}</span>
                     <span class="kpi-value">#{inventoryMb.summary.unitsOnHand != null ? inventoryMb.summary.unitsOnHand : 0}</span>
                     <span class="kpi-hint">#{inventoryMb.summary.productsWithStock != null ? inventoryMb.summary.productsWithStock : 0} #{msg['cat.inventory.kpi.units.hint']}</span>
-                </div>
-                <div class="kpi-card">
-                    <span class="kpi-label">#{msg['cat.inventory.kpi.belowMin']}</span>
-                    <span class="kpi-value" style="#{inventoryMb.summary.belowMinimumCount gt 0 ? 'color:var(--vip-danger)' : ''}">#{inventoryMb.summary.belowMinimumCount != null ? inventoryMb.summary.belowMinimumCount : 0}</span>
-                    <span class="kpi-hint">#{empty inventoryMb.belowMinimumNames() ? msg['cat.inventory.kpi.belowMin.none'] : inventoryMb.belowMinimumNames()}</span>
-                </div>
-                <div class="kpi-card">
-                    <span class="kpi-label">#{msg['cat.inventory.kpi.sold']}</span>
-                    <span class="kpi-value">#{sessionMb.fmtMoney(inventoryMb.summary.soldAmountMonth)}</span>
-                    <span class="kpi-hint">#{inventoryMb.summary.soldUnitsMonth != null ? inventoryMb.summary.soldUnitsMonth : 0} #{msg['cat.inventory.kpi.sold.hint']}</span>
                 </div>
             </h:panelGroup>
 
             <div class="card">
-                <p:toolbar rendered="#{sessionMb.admin}">
-                    <p:toolbarGroup>
-                        <p:button value="#{msg['cat.inventory.newEntry']}" icon="pi pi-plus" outcome="/pages/inventoryEntry.xhtml"
-                                  styleClass="ui-button-primary"/>
-                        <p:button value="#{msg['cat.inventory.stockCount']}" icon="pi pi-check-square" outcome="/pages/stockCount.xhtml"
-                                  styleClass="ui-button-secondary ml-2"/>
-                    </p:toolbarGroup>
-                </p:toolbar>
-                <h:panelGroup rendered="#{not sessionMb.admin}" layout="block" styleClass="muted mb-2">
-                    <i class="pi pi-lock"></i>&#160;#{msg['cat.inventory.readOnly']}
-                </h:panelGroup>
-
                 <p:dataTable id="table" var="s" value="#{inventoryMb.items}" paginator="true" rows="10"
-                             emptyMessage="#{msg['msg.noData']}" styleClass="mt-2" widgetVar="stockTable"
+                             emptyMessage="#{msg['msg.noData']}" widgetVar="stockTable"
                              filteredValue="#{inventoryMb.filtered}" globalFilterOnly="true" reflow="true"
                              paginatorAlwaysVisible="false" rowKey="#{s.productId}" stripedRows="true"
-                             selectionMode="single" selection="#{inventoryMb.selected}"
                              rowStyleClass="#{s.belowMinimum ? 'row-alert' : ''}">
-                    <p:ajax event="rowSelect" listener="#{inventoryMb.onRowSelect}" update=":form:movementsPanel :messages"/>
-                    <p:ajax event="rowUnselect" listener="#{inventoryMb.onRowUnselect}" update=":form:movementsPanel"/>
                     <f:facet name="header">
                         <div class="flex-between wrap gap-2">
-                            <span class="muted">#{msg['cat.inventory.selectHint']}</span>
+                            <span class="muted">#{inventoryMb.items.size()} #{msg['cat.inventory.products']}</span>
                             <p:inputText id="globalFilter" onkeyup="PF('stockTable').filter()"
-                                         placeholder="#{msg['action.search']}"/>
+                                         placeholder="#{msg['cat.inventory.searchPh']}"/>
                         </div>
                     </f:facet>
-                    <p:column headerText="#{msg['cat.product.name']}" sortBy="#{s.name}" filterBy="#{s.name}"
+                    <p:column headerText="" style="width:4.2rem;text-align:center">
+                        <!-- Same lazy photo as Productos: /productPhoto, cached by the browser; no photo -> placeholder -->
+                        <img alt="" class="cv-thumb" loading="lazy"
+                             src="#{request.contextPath}/productPhoto?id=#{s.productId}&amp;v=#{sessionMb.productPhotoVersion}"
+                             onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex'"/>
+                        <span class="cv-thumb cv-thumb-empty" style="display:none"><i class="pi pi-image"></i></span>
+                    </p:column>
+                    <p:column headerText="#{msg['cat.product.name']}" sortBy="#{s.name}" filterBy="#{s.name} #{s.barcode} #{s.brand} #{s.attributesText}"
                               filterMatchMode="contains">
                         <span style="font-weight:600">#{s.name}</span>
-                        <h:panelGroup rendered="#{not empty s.brand}" styleClass="muted" layout="block">#{s.brand}</h:panelGroup>
+                        <h:panelGroup rendered="#{not empty s.brand or not empty s.barcode}" styleClass="muted" layout="block">#{s.barcode}<h:outputText value=" · " rendered="#{not empty s.brand and not empty s.barcode}"/>#{s.brand}</h:panelGroup>
                     </p:column>
-                    <p:column headerText="#{msg['cat.product.onHand']}" sortBy="#{s.quantityOnHand}" width="100" styleClass="text-right">
-                        <span style="font-weight:600;#{s.belowMinimum ? 'color:var(--vip-danger)' : ''}">#{s.quantityOnHand != null ? s.quantityOnHand : 0}</span>
-                        <span class="muted"> / #{s.minStock != null ? s.minStock : 0}</span>
+                    <p:column headerText="#{msg['cat.product.onHand']}" sortBy="#{s.quantityOnHand}" width="150" styleClass="text-center">
+                        <!-- Piezas disponibles como en Productos (app): verde hay, ámbar bajo mínimo, rojo agotado -->
+                        <h:panelGroup rendered="#{(s.quantityOnHand != null ? s.quantityOnHand : 0) le 0}" styleClass="cv-stock-pill is-out">
+                            <i class="pi pi-times-circle"></i>#{msg['cat.inventory.pill.out']}</h:panelGroup>
+                        <h:panelGroup rendered="#{s.quantityOnHand gt 0 and (s.belowMinimum or (s.minStock != null and s.quantityOnHand lt s.minStock))}" styleClass="cv-stock-pill is-low">
+                            <i class="pi pi-exclamation-triangle"></i>#{s.quantityOnHand} #{msg['cat.inventory.pill.of']} #{s.minStock}</h:panelGroup>
+                        <h:panelGroup rendered="#{s.quantityOnHand gt 0 and not s.belowMinimum and (s.minStock == null or s.quantityOnHand ge s.minStock)}" styleClass="cv-stock-pill is-ok">
+                            <b>#{s.quantityOnHand}</b>&#160;#{msg['cat.inventory.pill.pcs']}</h:panelGroup>
+                        <div class="muted" style="font-size:.72rem;margin-top:.2rem">#{msg['cat.product.minShort']} #{s.minStock != null ? s.minStock : 0}</div>
                     </p:column>
                     <p:column headerText="#{msg['cat.inventory.averageCost']}" sortBy="#{s.averageCost}" width="120" styleClass="text-right">
                         <h:outputText value="#{sessionMb.fmtMoney(s.averageCost)}"/>
@@ -94,41 +87,19 @@
                 </p:dataTable>
             </div>
 
-            <p:outputPanel id="movementsPanel">
-                <h:panelGroup rendered="#{inventoryMb.selected != null}" layout="block" styleClass="card">
-                    <h3 class="section-title"><i class="pi pi-history gold"></i>&#160;#{msg['cat.inventory.movements']}:
-                        #{inventoryMb.selected.name}</h3>
-                    <h:panelGroup rendered="#{not inventoryMb.movementsAvailable}" layout="block" styleClass="empty-state">
-                        <i class="pi pi-lock"></i>#{msg['cat.inventory.movements.restricted']}
-                    </h:panelGroup>
-                    <p:dataTable id="movements" var="m" value="#{inventoryMb.movements}" paginator="true" rows="15"
-                                 emptyMessage="#{msg['msg.noData']}" reflow="true" paginatorAlwaysVisible="false"
-                                 rendered="#{inventoryMb.movementsAvailable}" stripedRows="true">
-                        <p:column headerText="#{msg['lbl.date']}" width="150" sortBy="#{m.movementDate}">
-                            <h:outputText value="#{m.movementDate}">
-                                <f:convertDateTime pattern="dd/MM/yyyy HH:mm" timeZone="America/Mexico_City"/>
-                            </h:outputText>
-                        </p:column>
-                        <p:column headerText="#{msg['cat.inventory.movementType']}" width="110">
-                            <span class="#{inventoryMb.movementBadge(m.movementType)}">#{msg['cat.inventory.type.'.concat(m.movementType)]}</span>
-                        </p:column>
-                        <p:column headerText="#{msg['lbl.quantity']}" width="90" styleClass="text-right">
-                            <span style="font-weight:600">#{m.quantity}</span>
-                        </p:column>
-                        <p:column headerText="#{msg['cat.inventory.unitCost']}" width="110" styleClass="text-right">
-                            <h:outputText value="#{sessionMb.fmtMoney(m.unitCost)}" rendered="#{not empty m.unitCost}"/>
-                        </p:column>
-                        <p:column headerText="#{msg['cat.inventory.balance']}" width="90" styleClass="text-right">
-                            <h:outputText value="#{m.balanceAfter}"/>
-                        </p:column>
-                        <p:column headerText="#{msg['cat.inventory.reference']}">
-                            <h:outputText value="#{m.referenceType}" rendered="#{not empty m.referenceType}"/>
-                            <h:outputText value=" ##{m.referenceId}" rendered="#{not empty m.referenceId}"/>
-                            <h:panelGroup rendered="#{not empty m.notes}" styleClass="muted" layout="block">#{m.notes}</h:panelGroup>
-                        </p:column>
-                    </p:dataTable>
-                </h:panelGroup>
-            </p:outputPanel>
         </h:form>
+        <style type="text/css">
+            /* Existencias: what the stock is worth (at cost and at sale price) and how many pieces (restock lives in Productos a surtir) */
+            .kpi-grid.cv-kpi-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+            @media (max-width: 700px) { .kpi-grid.cv-kpi-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .kpi-grid.cv-kpi-3 > :first-child { grid-column: span 2; } }
+            .cv-thumb { width: 52px; height: 52px; object-fit: cover; border-radius: 10px; border: 1px solid var(--vip-border); background: var(--vip-surface-2); vertical-align: middle; }
+            .cv-thumb-empty { display: inline-flex; align-items: center; justify-content: center; color: var(--vip-text-muted); }
+            .cv-stock-pill { display: inline-flex; align-items: center; gap: .3rem; padding: .3rem .75rem; border-radius: 999px; font-size: .82rem; font-weight: 600; white-space: nowrap; }
+            .cv-stock-pill b { font-size: 1rem; }
+            .cv-stock-pill .pi { font-size: .8rem; }
+            .cv-stock-pill.is-ok { background: #EEF8D6; color: #5B7720; box-shadow: inset 0 0 0 1px #D6EAA6; }
+            .cv-stock-pill.is-low { background: #FFF3D6; color: #9A6400; box-shadow: inset 0 0 0 1px #F2DCA6; }
+            .cv-stock-pill.is-out { background: #FDE7E7; color: #B3261E; box-shadow: inset 0 0 0 1px #F5C6C6; }
+        </style>
     </ui:define>
 </ui:composition>

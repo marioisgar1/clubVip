@@ -1,0 +1,158 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <div class="page-header">
+            <span class="page-icon"><i class="pi pi-wallet"></i></span>
+            <h2>#{msg['menu.admin.expense']}</h2>
+            <span class="page-subtitle">#{msg['biz.expense.subtitle']}</span>
+        </div>
+
+        <h:form id="form">
+            <div class="card">
+                <p:toolbar styleClass="mb-2">
+                    <p:toolbarGroup>
+                        <p:commandButton value="#{msg['biz.expense.new']}" icon="pi pi-plus"
+                                         process="@this" actionListener="#{businessExpenseMb.prepareNew}"
+                                         update=":form:dialog" oncomplete="PF('businessExpenseDialog').show()"
+                                         styleClass="ui-button-primary"/>
+                    </p:toolbarGroup>
+                    <p:toolbarGroup align="right">
+                        <span class="field-inline">
+                            <label>#{msg['pos.report.from']}</label>
+                            <p:datePicker value="#{businessExpenseMb.from}" pattern="dd/MM/yyyy" showIcon="true" style="width:150px"/>
+                        </span>
+                        <span class="field-inline ml-2">
+                            <label>#{msg['pos.report.to']}</label>
+                            <p:datePicker value="#{businessExpenseMb.to}" pattern="dd/MM/yyyy" showIcon="true" style="width:150px"/>
+                        </span>
+                        <p:commandButton icon="pi pi-search" title="#{msg['action.search']}"
+                                         actionListener="#{businessExpenseMb.refresh}" update="@form :messages"
+                                         styleClass="ui-button-secondary ml-2" style="margin-top:1.1rem"/>
+                    </p:toolbarGroup>
+                </p:toolbar>
+
+                <h:panelGroup rendered="#{not sessionMb.admin}" layout="block" styleClass="cv-note mb-2">
+                    <i class="pi pi-info-circle"></i>&#160;#{msg['biz.expense.employee.hint']}
+                </h:panelGroup>
+
+                <h:panelGroup id="summary" layout="block" styleClass="kpi-grid mb-2">
+                    <div class="kpi-card kpi-ink">
+                        <span class="kpi-icon"><i class="pi pi-wallet"></i></span><span class="kpi-label">#{msg['biz.expense.total']}</span>
+                        <span class="kpi-value">#{sessionMb.fmtMoney(businessExpenseMb.total)}</span>
+                        <span class="kpi-hint">#{sessionMb.fmtDay(businessExpenseMb.from)} &#8211; #{sessionMb.fmtDay(businessExpenseMb.to)} &#183; #{businessExpenseMb.expenses.size()} #{msg['biz.expense.count']}</span>
+                    </div>
+                    <ui:repeat value="#{businessExpenseMb.byCategory}" var="c">
+                        <div class="kpi-card">
+                            <span class="kpi-icon"><i class="pi pi-tag"></i></span><span class="kpi-label">#{businessExpenseMb.categoryLabel(c.key)}</span>
+                            <span class="kpi-value">#{sessionMb.fmtMoney(c.value)}</span>
+                        </div>
+                    </ui:repeat>
+                </h:panelGroup>
+
+                <p:dataTable id="table" var="ex" value="#{businessExpenseMb.expenses}" paginator="true" rows="15"
+                             emptyMessage="#{msg['biz.expense.empty']}" widgetVar="expenseTable"
+                             filteredValue="#{businessExpenseMb.filtered}" globalFilterOnly="true" reflow="true"
+                             paginatorAlwaysVisible="false" rowKey="#{ex.id}" stripedRows="true">
+                    <f:facet name="header">
+                        <div class="flex-between wrap gap-2">
+                            <span class="muted">#{businessExpenseMb.expenses.size()} #{msg['biz.expense.count']}</span>
+                            <p:inputText id="globalFilter" onkeyup="PF('expenseTable').filter()"
+                                         placeholder="#{msg['action.search']}"/>
+                        </div>
+                    </f:facet>
+                    <p:column headerText="#{msg['lbl.date']}" sortBy="#{ex.expenseDate}" width="120">
+                        #{sessionMb.fmtDay(ex.expenseDate)}
+                    </p:column>
+                    <p:column headerText="#{msg['biz.expense.category']}" sortBy="#{ex.category}" width="170"
+                              filterBy="#{businessExpenseMb.categoryLabel(ex.category)}" filterMatchMode="contains">
+                        <span class="cv-chip">#{businessExpenseMb.categoryLabel(ex.category)}</span>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.description']}" sortBy="#{ex.description}" styleClass="cv-col-main"
+                              filterBy="#{ex.description}" filterMatchMode="contains">
+                        <span style="font-weight:600">#{ex.description}</span>
+                    </p:column>
+                    <p:column headerText="#{msg['biz.expense.createdBy']}" sortBy="#{ex.createdByName}" width="190"
+                              filterBy="#{ex.createdByName}" filterMatchMode="contains" rendered="#{sessionMb.admin}">
+                        <h:panelGroup rendered="#{not empty ex.createdByName}" styleClass="cv-who">
+                            <span class="avatar cv-who-av">#{sessionMb.initialsOf(ex.createdByName)}</span>#{ex.createdByName}
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{empty ex.createdByName}" styleClass="muted">&#8212;</h:panelGroup>
+                    </p:column>
+                    <p:column headerText="#{msg['biz.expense.amount']}" sortBy="#{ex.amount}" width="130" styleClass="text-right">
+                        <strong>#{sessionMb.fmtMoney(ex.amount)}</strong>
+                    </p:column>
+                    <p:column headerText="" style="width:7rem;text-align:center">
+                        <p:commandButton icon="pi pi-pencil" title="#{msg['action.edit']}"
+                                         process="@this" actionListener="#{businessExpenseMb.prepareEdit(ex)}"
+                                         update=":form:dialog :messages" oncomplete="PF('businessExpenseDialog').show()"
+                                         styleClass="ui-button-rounded ui-button-text"/>
+                        <p:commandButton icon="pi pi-trash" title="#{msg['action.delete']}"
+                                         process="@this" actionListener="#{businessExpenseMb.delete(ex)}"
+                                         update=":form:table :form:summary :messages"
+                                         styleClass="ui-button-rounded ui-button-text ui-button-danger">
+                            <p:confirm header="#{msg['action.confirm']}" message="#{msg['msg.confirmDelete']}"
+                                       icon="pi pi-exclamation-triangle"/>
+                        </p:commandButton>
+                    </p:column>
+                </p:dataTable>
+
+                <p:dialog header="#{msg['biz.expense.dialog']}" widgetVar="businessExpenseDialog" modal="true" id="dialog"
+                          width="520" resizable="false" fitViewport="true" responsive="true" closeOnEscape="true">
+                    <div class="form-grid" style="margin-top:.5rem">
+                        <div class="field required">
+                            <label for="form:exDate">#{msg['lbl.date']}</label>
+                            <p:datePicker id="exDate" value="#{businessExpenseMb.expenseDate}" pattern="dd/MM/yyyy"
+                                          showIcon="true" required="true" requiredMessage="#{msg['lbl.date']}: #{msg['msg.required']}"/>
+                        </div>
+                        <div class="field required">
+                            <label for="form:exCat">#{msg['biz.expense.category']}</label>
+                            <p:selectOneMenu id="exCat" value="#{businessExpenseMb.selected.category}" required="true"
+                                             requiredMessage="#{msg['biz.expense.category']}: #{msg['msg.required']}">
+                                <f:selectItems value="#{businessExpenseMb.categories}" var="c"
+                                               itemLabel="#{businessExpenseMb.categoryLabel(c)}" itemValue="#{c}"/>
+                            </p:selectOneMenu>
+                        </div>
+                        <div class="field required span-2">
+                            <label for="form:exDesc">#{msg['lbl.description']}</label>
+                            <p:inputText id="exDesc" value="#{businessExpenseMb.selected.description}" maxlength="255" required="true"
+                                         requiredMessage="#{msg['lbl.description']}: #{msg['msg.required']}"
+                                         placeholder="#{msg['biz.expense.description.hint']}"/>
+                        </div>
+                        <div class="field required">
+                            <label for="form:exAmount">#{msg['biz.expense.amount']}</label>
+                            <p:inputNumber id="exAmount" value="#{businessExpenseMb.selected.amount}" symbol="$ " decimalPlaces="2"
+                                           minValue="0" required="true" requiredMessage="#{msg['biz.expense.amount']}: #{msg['msg.required']}"/>
+                        </div>
+                    </div>
+                    <span class="hint" style="display:block;margin-top:.4rem">#{msg['biz.expense.hint']}</span>
+                    <f:facet name="footer">
+                        <p:commandButton value="#{msg['action.save']}" icon="pi pi-check"
+                                         actionListener="#{businessExpenseMb.save}" update=":form:table :form:summary :messages"
+                                         styleClass="ui-button-primary"/>
+                        <p:commandButton value="#{msg['action.cancel']}" icon="pi pi-times"
+                                         onclick="PF('businessExpenseDialog').hide()" type="button"
+                                         styleClass="ui-button-secondary"/>
+                    </f:facet>
+                </p:dialog>
+
+                <p:confirmDialog global="true">
+                    <p:commandButton value="#{msg['action.yes']}" type="button"
+                                     styleClass="ui-confirmdialog-yes ui-button-primary"/>
+                    <p:commandButton value="#{msg['action.no']}" type="button"
+                                     styleClass="ui-confirmdialog-no ui-button-secondary"/>
+                </p:confirmDialog>
+            </div>
+        </h:form>
+        <style type="text/css">
+            .cv-who { display: inline-flex; align-items: center; gap: .5rem; white-space: nowrap; }
+            .ui-datatable .avatar.cv-who-av { width: 1.9rem; height: 1.9rem; font-size: .7rem; }
+            .cv-note { display: flex; align-items: center; gap: .3rem; padding: .7rem .9rem; border-radius: 14px;
+                       background: var(--vip-accent-soft); color: var(--vip-text); font-size: .88rem; }
+            .cv-note .pi { color: var(--vip-gold-deep); }
+        </style>
+    </ui:define>
+</ui:composition>

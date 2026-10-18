@@ -35,19 +35,27 @@
 
     <div class="kpi-grid">
         <div class="kpi-card kpi-ink">
-            <div class="kpi-label">#{msg['cons.kpi.atStore']}</div>
+            <span class="kpi-icon"><i class="pi pi-shop"></i></span><div class="kpi-label">#{msg['cons.kpi.atStore']}</div>
             <div class="kpi-value">#{d.piecesAtStore}</div>
             <div class="kpi-hint">#{msg['cons.kpi.atStoreHint']} #{sessionMb.fmtMoney(d.valueAtStore)}</div>
         </div>
         <div class="kpi-card">
-            <div class="kpi-label">#{msg['cons.kpi.inTransit']}</div>
+            <span class="kpi-icon"><i class="pi pi-truck"></i></span><div class="kpi-label">#{msg['cons.kpi.inTransit']}</div>
             <div class="kpi-value">#{d.piecesInTransit}</div>
             <div class="kpi-hint">#{msg['cons.kpi.inTransitHint']}</div>
         </div>
         <div class="kpi-card">
-            <div class="kpi-label">#{msg['cons.kpi.sold']}</div>
-            <div class="kpi-value cons-kpi-text muted">—</div>
-            <div class="kpi-hint">#{msg['cons.kpi.soldHint']}</div>
+            <span class="kpi-icon"><i class="pi pi-shopping-bag"></i></span><div class="kpi-label">#{msg['cons.kpi.sold']}</div>
+            <div class="kpi-value">#{d.piecesSold}</div>
+            <div class="kpi-hint">#{consignmentFileMb.supplier ? msg['cons.kpi.soldNetSupplier'] : msg['cons.kpi.soldNetStore']} #{sessionMb.fmtMoney(d.soldNet)}</div>
+        </div>
+        <div class="kpi-card #{d.pendingNet gt 0 ? 'cons-kpi-pending' : ''}">
+            <span class="kpi-icon"><i class="pi pi-wallet"></i></span><div class="kpi-label">#{consignmentFileMb.supplier ? msg['cons.kpi.owedToYou'] : msg['cons.kpi.youOwe']}</div>
+            <div class="kpi-value">#{sessionMb.fmtMoney(d.pendingNet)}</div>
+            <div class="kpi-hint">
+                <h:outputText value="#{msg['cons.kpi.toConfirm']} #{sessionMb.fmtMoney(d.reportedNet)} · " rendered="#{d.reportedNet gt 0}"/>
+                #{consignmentFileMb.supplier ? msg['cons.kpi.collected'] : msg['cons.kpi.paid']} #{sessionMb.fmtMoney(d.paidNet)}
+            </div>
         </div>
     </div>
 
@@ -58,6 +66,97 @@
     </h:panelGroup>
 
     <p:tabView id="fileTabs" dynamic="false">
+        <!-- Ventas: lo que la tienda vendió de estas prendas. La tienda paga lo pendiente con comprobante;
+             el proveedor ve el comprobante y cierra el pago (o lo rechaza y regresa a pendiente). -->
+        <p:tab title="#{msg['cons.tab.sales']} (#{d.sales.size()})">
+            <h:panelGroup id="salesTotals" layout="block" styleClass="cons-sales-totals">
+                <div><span>#{msg['cons.sales.sold']}</span><b>#{sessionMb.fmtMoney(d.soldValue)}</b></div>
+                <div><span>#{msg['cons.sales.commission']} (#{consignmentMb.pct(ag.commissionPercent)})</span><b class="muted">−#{sessionMb.fmtMoney(d.soldCommission)}</b></div>
+                <div><span>#{consignmentFileMb.supplier ? msg['cons.sales.netSupplier'] : msg['cons.sales.netStore']}</span><b>#{sessionMb.fmtMoney(d.soldNet)}</b></div>
+                <div class="is-pending"><span>#{msg['cons.sales.pending']}</span><b>#{sessionMb.fmtMoney(d.pendingNet)}</b></div>
+                <div class="is-reported"><span>#{msg['cons.kpi.toConfirm']}</span><b>#{sessionMb.fmtMoney(d.reportedNet)}</b></div>
+                <div><span>#{consignmentFileMb.supplier ? msg['cons.kpi.collected'] : msg['cons.kpi.paid']}</span><b class="cons-ok">#{sessionMb.fmtMoney(d.paidNet)}</b></div>
+            </h:panelGroup>
+
+            <!-- Tienda: elige qué paga, ve la suma y paga con comprobante -->
+            <h:panelGroup id="payBar" rendered="#{d.canPay}" layout="block" styleClass="cons-paybar">
+                <span>#{msg['cons.pay.hint']}</span>
+                <p:commandButton value="#{consignmentFileMb.allPendingSelected ? msg['cons.pay.clearSelection'] : msg['cons.pay.selectAll']}"
+                                 icon="#{consignmentFileMb.allPendingSelected ? 'pi pi-minus-circle' : 'pi pi-check-square'}" process="@this"
+                                 actionListener="#{consignmentFileMb.toggleAllPending}" update="@(.cons-sales-table) @(.cons-paybar)"
+                                 styleClass="ui-button-secondary ui-button-sm"/>
+                <p:commandButton value="#{msg['cons.pay.payButton']} #{sessionMb.fmtMoney(consignmentFileMb.selectedTotal)} (#{consignmentFileMb.selectedCount})"
+                                 icon="pi pi-credit-card" disabled="#{consignmentFileMb.selectedCount eq 0}"
+                                 process="@this" actionListener="#{consignmentFileMb.preparePay}"
+                                 update=":payForm :messages" oncomplete="if (!args.validationFailed) PF('consPayDlg').show()" styleClass="ui-button-primary"/>
+            </h:panelGroup>
+
+            <p:dataTable id="sales" var="l" value="#{d.sales}" rowKey="#{l.saleItemId}" reflow="true" stripedRows="true" styleClass="cons-sales-table"
+                         emptyMessage="#{consignmentFileMb.supplier ? msg['cons.sales.emptySupplier'] : msg['cons.sales.emptyStore']}"
+                         paginator="true" rows="15" paginatorAlwaysVisible="false" rowStyleClass="#{l.paid ? 'cons-row-paid' : (consignmentFileMb.isSelected(l) ? 'cons-row-selected' : '')}">
+                <!-- Tienda: casilla propia al inicio de cada venta pendiente; cada clic suma o resta en el botón Pagar -->
+                <p:column style="width:3rem;text-align:center" rendered="#{d.canPay}">
+                    <p:commandLink rendered="#{consignmentFileMb.isPending(l)}" process="@this"
+                                   actionListener="#{consignmentFileMb.toggleLine(l)}" update="@(.cons-sales-table) @(.cons-paybar)"
+                                   styleClass="cons-chk #{consignmentFileMb.isSelected(l) ? 'is-on' : ''}"
+                                   title="#{msg['cons.pay.payButton']}" ariaLabel="#{l.folio}">
+                        <i class="pi pi-check"></i>
+                    </p:commandLink>
+                </p:column>
+                <p:column headerText="#{msg['lbl.date']}" width="140" sortBy="#{l.saleDate}">
+                    #{consignmentFileMb.stamp(l.saleDate)}
+                    <span class="muted" style="display:block">#{l.folio}</span>
+                </p:column>
+                <p:column headerText="#{msg['cons.lbl.product']}" sortBy="#{l.name}">
+                    <b>#{l.name}</b>
+                    <span class="muted" style="display:block">#{l.attributesText}</span>
+                </p:column>
+                <p:column headerText="#{msg['lbl.quantity']}" width="70" styleClass="text-center">#{l.quantity}</p:column>
+                <p:column headerText="#{msg['cons.sales.sold']}" width="110" styleClass="text-right">#{sessionMb.fmtMoney(l.lineTotal)}</p:column>
+                <p:column headerText="#{msg['cons.sales.commission']}" width="110" styleClass="text-right"><span class="muted">−#{sessionMb.fmtMoney(l.commissionAmount)}</span></p:column>
+                <p:column headerText="#{consignmentFileMb.supplier ? msg['cons.sales.netSupplier'] : msg['cons.sales.netStore']}" width="120" styleClass="text-right"><b>#{sessionMb.fmtMoney(l.netAmount)}</b></p:column>
+                <p:column headerText="#{msg['lbl.status']}" width="160">
+                    <span class="#{consignmentFileMb.lineStatusClass(l)}">#{consignmentFileMb.lineStatusLabel(l)}</span>
+                    <h:panelGroup rendered="#{l.paid}" styleClass="muted" style="display:block;font-size:.78rem">#{consignmentFileMb.stamp(l.paidAt)}</h:panelGroup>
+                    <h:panelGroup rendered="#{l.paymentStatus eq 'REPORTED'}" styleClass="muted" style="display:block;font-size:.78rem">#{consignmentFileMb.stamp(l.reportedAt)}</h:panelGroup>
+                </p:column>
+            </p:dataTable>
+
+            <!-- Pagos que reportó la tienda: el proveedor ve el comprobante y lo cierra -->
+            <h:panelGroup rendered="#{not empty d.payments}" layout="block">
+                <h3 class="section-title mt-2"><i class="pi pi-wallet gold"></i>&#160;#{msg['cons.payments.title']}</h3>
+                <p:dataTable id="payments" var="p" value="#{d.payments}" rowKey="#{p.id}" reflow="true" stripedRows="true">
+                    <p:column headerText="#{msg['cons.payments.reportedAt']}" width="150">
+                        #{consignmentFileMb.stamp(p.reportedAt)}
+                        <span class="muted" style="display:block">#{p.reportedByName}</span>
+                    </p:column>
+                    <p:column headerText="#{msg['cons.payments.sales']}">
+                        <h:outputText value="#{p.folios}" rendered="#{not empty p.folios}"/>
+                        <h:outputText value="#{p.lineCount} #{msg['cons.payments.lines']}" styleClass="muted" rendered="#{empty p.folios}"/>
+                        <h:panelGroup rendered="#{not empty p.notes}" styleClass="muted" layout="block">#{p.notes}</h:panelGroup>
+                    </p:column>
+                    <p:column headerText="#{msg['cons.payments.amount']}" width="120" styleClass="text-right"><b>#{sessionMb.fmtMoney(p.amount)}</b></p:column>
+                    <p:column headerText="#{msg['lbl.status']}" width="170">
+                        <span class="#{consignmentFileMb.paymentStatusClass(p.paymentStatus)}">#{consignmentFileMb.paymentStatusLabel(p.paymentStatus)}</span>
+                        <h:panelGroup rendered="#{p.paymentStatus eq 'CONFIRMED'}" styleClass="muted" style="display:block;font-size:.78rem">#{consignmentFileMb.stamp(p.confirmedAt)}</h:panelGroup>
+                        <h:panelGroup rendered="#{not empty p.rejectionReason}" styleClass="muted" style="display:block;font-size:.78rem">#{p.rejectionReason}</h:panelGroup>
+                    </p:column>
+                    <p:column headerText="" width="290" styleClass="text-right">
+                        <p:commandButton value="#{msg['cons.payments.viewReceipt']}" icon="pi pi-paperclip" rendered="#{p.hasReceipt}" process="@this"
+                                         actionListener="#{consignmentFileMb.viewReceipt(p)}" update=":receiptForm :messages"
+                                         oncomplete="PF('consReceiptDlg').show()" styleClass="ui-button-text ui-button-sm"/>
+                        <p:commandButton value="#{msg['cons.payments.close']}" icon="pi pi-check" rendered="#{p.canConfirm}" process="@this"
+                                         actionListener="#{consignmentFileMb.confirmPayment(p)}" update=":form :messages"
+                                         styleClass="ui-button-success ui-button-sm ml-1">
+                            <p:confirm header="#{msg['action.confirm']}" message="#{msg['cons.payments.closeConfirm']} #{sessionMb.fmtMoney(p.amount)}" icon="pi pi-wallet"/>
+                        </p:commandButton>
+                        <p:commandButton icon="pi pi-times" title="#{msg['cons.payments.reject']}" rendered="#{p.canConfirm}" process="@this"
+                                         actionListener="#{consignmentFileMb.prepareReject(p)}" update=":rejectPayForm"
+                                         oncomplete="PF('consRejectPayDlg').show()" styleClass="ui-button-rounded ui-button-text ui-button-danger ml-1"/>
+                    </p:column>
+                </p:dataTable>
+            </h:panelGroup>
+        </p:tab>
         <p:tab title="#{msg['cons.tab.shipments']}">
             <p:dataTable id="shipments" var="s" value="#{d.shipments}" rowKey="#{s.id}" reflow="true" stripedRows="true"
                          emptyMessage="#{consignmentFileMb.supplier ? msg['cons.shipments.emptySupplier'] : msg['cons.shipments.emptyStore']}"
@@ -94,7 +193,7 @@
                          emptyMessage="#{msg['cons.inventory.empty']}" paginator="true" rows="15" paginatorAlwaysVisible="false">
                 <p:column headerText="#{msg['cons.lbl.product']}" sortBy="#{i.name}">
                     <b>#{i.name}</b>
-                    <span class="muted" style="display:block">#{consignmentFileMb.variant(i.size, i.color)}</span>
+                    <span class="muted" style="display:block">#{i.attributesText}</span>
                 </p:column>
                 <p:column headerText="#{msg['cons.lbl.barcode']}" width="150">#{i.barcode}</p:column>
                 <p:column headerText="#{msg['cons.lbl.price']}" width="110" styleClass="text-right">#{sessionMb.fmtMoney(i.price)}</p:column>
@@ -104,4 +203,24 @@
     </p:tabView>
 
     <div class="hint mt-2"><i class="pi pi-info-circle"></i> #{msg['cons.nextPhase2']}</div>
+    <style type="text/css">
+        .cons-sales-totals { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: .5rem; margin: .25rem 0 .75rem; }
+        .cons-sales-totals .is-reported { background: #E6F1FB; }
+        .cons-paybar { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; padding: .7rem .9rem; margin: 0 0 .75rem; border-radius: 12px; background: #F7FBEA; border: 1px solid #DDEBB8; }
+        .cons-paybar > span { flex: 1 1 16rem; color: var(--vip-text-muted); font-size: .9rem; }
+        .cons-sales-totals > div { background: var(--vip-surface-2, #F6F5F1); border-radius: 12px; padding: .6rem .8rem; min-width: 0; }
+        .cons-sales-totals span { display: block; font-size: .72rem; color: var(--vip-text-muted); text-transform: uppercase; letter-spacing: .04em; }
+        .cons-sales-totals b { font-size: 1.05rem; white-space: nowrap; }
+        .cons-sales-totals .is-pending { background: #FFF3B1; }
+        .cons-sales-totals .cons-ok { color: var(--vip-success, #2E7D32); }
+        .cons-kpi-pending { border-color: #F2E29E; background: #FFFBE0; }
+        .cons-row-paid td { opacity: .8; }
+        .cons-row-selected td { background: #F7FBEA !important; }
+        .cons-chk { display: inline-grid; place-items: center; width: 1.45rem; height: 1.45rem; border: 2px solid #BDBBB2; border-radius: 6px; background: #fff; text-decoration: none; transition: background-color .15s, border-color .15s; }
+        .cons-chk i { font-size: .8rem; color: transparent; }
+        .cons-chk:hover { border-color: #5B7720; }
+        .cons-chk.is-on { background: var(--vip-gold, #CEF187); border-color: var(--vip-gold-deep, #5B7720); }
+        .cons-chk.is-on i { color: var(--vip-ink, #0B0B0C); }
+        @media (max-width: 700px) { .cons-sales-totals { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    </style>
 </ui:composition>

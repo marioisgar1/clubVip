@@ -63,6 +63,9 @@ public class AppointmentVo implements Serializable {
 
     private BigDecimal total;
 
+    /** Tip of this service (goes to its employee; not part of total). */
+    private BigDecimal tipAmount;
+
     private String appointmentStatus;
 
     private String paymentMode;
@@ -90,6 +93,12 @@ public class AppointmentVo implements Serializable {
     private String previousVisitDate;
 
     private List<AppointmentItemVo> items = new ArrayList<>();
+
+    /** Visit this appointment belongs to (id of its first appointment), null when booked alone. */
+    private Integer visitId;
+
+    /** Every appointment of the visit in order (details only), empty for a standalone appointment. */
+    private List<AppointmentVo> visitAppointments = new ArrayList<>();
 
     private Boolean canReview;
 
@@ -451,5 +460,29 @@ public class AppointmentVo implements Serializable {
 
     public void setCreatedAt(Date createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public Integer getVisitId() {
+        return visitId;
+    }
+
+    public void setVisitId(Integer visitId) {
+        this.visitId = visitId;
+    }
+
+    public List<AppointmentVo> getVisitAppointments() {
+        return visitAppointments;
+    }
+
+    public void setVisitAppointments(List<AppointmentVo> visitAppointments) {
+        this.visitAppointments = visitAppointments;
+    }
+
+    public BigDecimal getTipAmount() {
+        return tipAmount;
+    }
+
+    public void setTipAmount(BigDecimal tipAmount) {
+        this.tipAmount = tipAmount;
     }
 }

@@ -120,6 +120,8 @@ public class LoyaltyMb implements Serializable {
         }
         RestResponse r = RestClient.post("loyalty/saveUpdateProgram", program, userId(), locale());
         if (r.isOk()) {
+            // Rewards is configured now: checkout starts asking for the member card right away.
+            sessionMb.markRewardsConfigured();
             info(sessionMb.text("msg.saved"));
             refresh();
         } else {

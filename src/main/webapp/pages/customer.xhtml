@@ -12,19 +12,19 @@
 
         <div class="kpi-grid">
             <div class="kpi-card kpi-ink">
-                <span class="kpi-label">#{msg['op.customer.kpi.total']}</span>
+                <span class="kpi-icon"><i class="pi pi-users"></i></span><span class="kpi-label">#{msg['op.customer.kpi.total']}</span>
                 <span class="kpi-value">#{empty customerMb.stats.total ? 0 : customerMb.stats.total}</span>
             </div>
             <div class="kpi-card">
-                <span class="kpi-label">#{msg['op.customer.kpi.newWeek']}</span>
+                <span class="kpi-icon"><i class="pi pi-user-plus"></i></span><span class="kpi-label">#{msg['op.customer.kpi.newWeek']}</span>
                 <span class="kpi-value">#{empty customerMb.stats.newThisWeek ? 0 : customerMb.stats.newThisWeek}</span>
             </div>
             <div class="kpi-card">
-                <span class="kpi-label">#{msg['op.customer.kpi.inactive']}</span>
+                <span class="kpi-icon"><i class="pi pi-user-minus"></i></span><span class="kpi-label">#{msg['op.customer.kpi.inactive']}</span>
                 <span class="kpi-value">#{empty customerMb.stats.inactive ? 0 : customerMb.stats.inactive}</span>
             </div>
             <div class="kpi-card">
-                <span class="kpi-label">#{msg['op.customer.kpi.birthdaysToday']}</span>
+                <span class="kpi-icon"><i class="pi pi-gift"></i></span><span class="kpi-label">#{msg['op.customer.kpi.birthdaysToday']}</span>
                 <span class="kpi-value">#{empty customerMb.stats.birthdaysToday ? 0 : customerMb.stats.birthdaysToday}</span>
                 <span class="kpi-hint">#{empty customerMb.stats.birthdaysMonth ? 0 : customerMb.stats.birthdaysMonth} #{msg['op.customer.kpi.birthdaysMonth']}</span>
             </div>
@@ -133,9 +133,9 @@
                         <p:inputTextarea value="#{customerMb.newCustomer.notes}" rows="2" autoResize="false"/></div>
                 </div>
                 <div class="flex gap-2" style="justify-content:flex-end">
-                    <p:commandButton value="#{msg['action.cancel']}" type="button" onclick="PF('customerDlg').hide()" styleClass="ui-button-secondary"/>
                     <p:commandButton value="#{msg['action.save']}" icon="pi pi-save" actionListener="#{customerMb.saveCustomer}"
                                      update="@form :form :messages"/>
+                    <p:commandButton value="#{msg['action.cancel']}" type="button" onclick="PF('customerDlg').hide()" styleClass="ui-button-secondary"/>
                 </div>
             </h:form>
         </p:dialog>
@@ -189,13 +189,13 @@
                         <i class="pi pi-comment"></i> #{customerMb.file.customer.notes}</h:panelGroup>
 
                     <div class="kpi-grid">
-                        <div class="kpi-card"><span class="kpi-label">#{msg['op.customer.services']}</span>
+                        <div class="kpi-card"><span class="kpi-icon"><i class="pi pi-check-circle"></i></span><span class="kpi-label">#{msg['op.customer.services']}</span>
                             <span class="kpi-value">#{empty customerMb.file.customer.visitsCount ? 0 : customerMb.file.customer.visitsCount}</span></div>
-                        <div class="kpi-card"><span class="kpi-label">#{msg['op.customer.totalSpent']}</span>
+                        <div class="kpi-card"><span class="kpi-icon"><i class="pi pi-dollar"></i></span><span class="kpi-label">#{msg['op.customer.totalSpent']}</span>
                             <span class="kpi-value">#{sessionMb.fmtMoney(customerMb.file.customer.totalSpent)}</span></div>
-                        <div class="kpi-card"><span class="kpi-label">#{msg['op.customer.avgTicket']}</span>
+                        <div class="kpi-card"><span class="kpi-icon"><i class="pi pi-receipt"></i></span><span class="kpi-label">#{msg['op.customer.avgTicket']}</span>
                             <span class="kpi-value">#{sessionMb.fmtMoney(customerMb.file.customer.averageTicket)}</span></div>
-                        <div class="kpi-card"><span class="kpi-label">#{msg['op.customer.loyalty']}</span>
+                        <div class="kpi-card"><span class="kpi-icon"><i class="pi pi-star"></i></span><span class="kpi-label">#{msg['op.customer.loyalty']}</span>
                             <span class="kpi-value">#{customerMb.loyaltyLabel(customerMb.file.customer)}</span>
                             <span class="kpi-hint">
                                 <h:outputText value="#{customerMb.file.card.programName} &#183; #{customerMb.file.card.rewardsAvailable} #{msg['op.customer.rewardsAvailable']}"

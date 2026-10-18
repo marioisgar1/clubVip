@@ -11,6 +11,11 @@
             <span class="page-subtitle">#{msg['pos.report.consulted.subtitle']}</span>
         </div>
 
+        <style type="text/css">
+            .cv-thumb { width: 56px; height: 56px; object-fit: cover; border-radius: 8px; border: 1px solid var(--vip-border); background: var(--vip-surface-2); vertical-align: middle; }
+            .cv-thumb-empty { display: inline-flex; align-items: center; justify-content: center; color: var(--vip-text-muted); }
+        </style>
+
         <h:form id="form">
             <div class="card">
                 <p:toolbar styleClass="mb-2">
@@ -50,14 +55,21 @@
                 <p:dataTable id="table" var="r" value="#{reportConsultedMb.rows}" paginator="true" rows="15" rowIndexVar="i"
                              paginatorAlwaysVisible="false" reflow="true" stripedRows="true" emptyMessage="#{msg['msg.noData']}">
                     <p:column headerText="#" width="50" styleClass="text-right">#{i + 1}</p:column>
+                    <p:column headerText="" style="width:4.25rem;text-align:center">
+                        <!-- Same as the product list: each visible row loads its photo from /productPhoto
+                             (cached by the browser). No photo (404) -> placeholder. -->
+                        <img alt="" class="cv-thumb" loading="lazy"
+                             src="#{request.contextPath}/productPhoto?id=#{r.productId}&amp;v=#{sessionMb.productPhotoVersion}"
+                             onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex'"/>
+                        <span class="cv-thumb cv-thumb-empty" style="display:none"><i class="pi pi-image"></i></span>
+                    </p:column>
                     <p:column headerText="#{msg['pos.lbl.barcode']}" sortBy="#{r.barcode}" width="130"><span class="muted">#{r.barcode}</span></p:column>
                     <p:column headerText="#{msg['lbl.description']}" sortBy="#{r.description}">
                         <span style="font-weight:600">#{r.description}</span>
                         <span class="muted" style="display:block">
                             <h:outputText value="#{r.familyName}" rendered="#{not empty r.familyName}"/>
                             <h:outputText value=" &#183; #{r.brandName}" rendered="#{not empty r.brandName}"/>
-                            <h:outputText value=" &#183; #{r.size}" rendered="#{not empty r.size}"/>
-                            <h:outputText value=" &#183; #{r.color}" rendered="#{not empty r.color}"/>
+                            <h:outputText value=" &#183; #{r.attributesText}" rendered="#{not empty r.attributesText}"/>
                         </span>
                     </p:column>
                     <p:column headerText="#{msg['pos.report.consultCount']}" sortBy="#{r.value}" width="120" styleClass="text-right">

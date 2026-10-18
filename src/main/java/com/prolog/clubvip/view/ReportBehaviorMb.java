@@ -2,6 +2,7 @@ package com.prolog.clubvip.view;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import com.google.gson.Gson;
@@ -12,12 +13,14 @@ import com.prolog.clubvip.rest.RestException;
 import com.prolog.clubvip.vo.BusinessCustomerVo;
 import com.prolog.clubvip.vo.CustomerBehaviorVo;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.faces.view.ViewScoped;
 import jakarta.inject.Named;
 
 /**
- * Customer payment record (REPORT_BEHAVIOR): look a customer up by phone or name, pick her and
- * read how punctual she has been before granting more credit.
+ * Customer payment record (REPORT_BEHAVIOR): every customer of the business is listed on open
+ * (nobody has to search blind without the phone at hand); the search narrows the list, pick her
+ * and read how punctual she has been before granting more credit.
  * customer/getCustomers?search= · credit/getCustomerBehavior?customerId=
  */
 @Named("reportBehaviorMb")
@@ -33,20 +36,25 @@ public class ReportBehaviorMb extends BaseMb {
     private boolean searched;
     private CustomerBehaviorVo selected;
 
+    @PostConstruct
+    public void init() {
+        find();
+    }
+
+    /** Empty search lists every customer (customer/getCustomers without search). */
     public void find() {
         selected = null;
         searched = true;
         matches = new ArrayList<>();
-        if (search == null || search.trim().length() < 2) {
-            errorKey("pos.behavior.search.tooShort");
-            return;
-        }
+        String text = search != null ? search.trim() : "";
         try {
-            List<BusinessCustomerVo> list = RestClient.get("customer/getCustomers?search=" + RestClient.encode(search.trim()),
-                    CUSTOMER_LIST, userId(), locale());
+            List<BusinessCustomerVo> list = RestClient.get(text.isEmpty() ? "customer/getCustomers"
+                    : "customer/getCustomers?search=" + RestClient.encode(text), CUSTOMER_LIST, userId(), locale());
             matches = list != null ? list : new ArrayList<>();
-            // A single match is what the seller almost always wants: open it right away.
-            if (matches.size() == 1) {
+            matches.sort(Comparator.comparing(c -> c.getFullName() != null ? c.getFullName() : "",
+                    String.CASE_INSENSITIVE_ORDER));
+            // A single match of a search is what the seller almost always wants: open it right away.
+            if (!text.isEmpty() && matches.size() == 1) {
                 select(matches.get(0));
             }
         } catch (RestException e) {

@@ -32,17 +32,17 @@
                 <h:panelGroup rendered="#{not empty reportStockDiffMb.report}" layout="block">
                     <div class="kpi-grid">
                         <div class="kpi-card">
-                            <span class="kpi-label">#{msg['pos.report.shortage']}</span>
+                            <span class="kpi-icon"><i class="pi pi-arrow-down"></i></span><span class="kpi-label">#{msg['pos.report.shortage']}</span>
                             <span class="kpi-value" style="color:var(--vip-danger)">#{reportStockDiffMb.report.shortageUnits}</span>
                             <span class="kpi-hint">#{msg['pos.report.units']}</span>
                         </div>
                         <div class="kpi-card">
-                            <span class="kpi-label">#{msg['pos.report.surplus']}</span>
+                            <span class="kpi-icon"><i class="pi pi-arrow-up"></i></span><span class="kpi-label">#{msg['pos.report.surplus']}</span>
                             <span class="kpi-value" style="color:var(--vip-success)">#{reportStockDiffMb.report.surplusUnits}</span>
                             <span class="kpi-hint">#{msg['pos.report.units']}</span>
                         </div>
                         <div class="kpi-card kpi-ink">
-                            <span class="kpi-label">#{msg['pos.report.differenceValue']}</span>
+                            <span class="kpi-icon"><i class="pi pi-dollar"></i></span><span class="kpi-label">#{msg['pos.report.differenceValue']}</span>
                             <span class="kpi-value">#{sessionMb.fmtMoney(reportStockDiffMb.report.totalDifferenceValue)}</span>
                             <span class="kpi-hint">#{msg['pos.report.differenceValue.hint']}</span>
                         </div>

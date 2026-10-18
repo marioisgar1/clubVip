@@ -2,10 +2,13 @@ package com.prolog.clubvip.view;
 
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
+import java.text.Normalizer;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+
+import org.primefaces.PrimeFaces;
 
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -65,6 +68,10 @@ public class SaleMb extends BaseMb {
     private List<PaymentMethodVo> paymentMethods = new ArrayList<>();
     private List<SaleLocationVo> saleLocations = new ArrayList<>();
     private Integer paymentMethodId;
+    /** Tip for the seller: "0" (none), "10" / "15" / "20" (percent) or "OTHER" (tipCustomValue in tipCustomMode). */
+    private String tipChoice = "0";
+    private BigDecimal tipCustomValue;
+    private String tipCustomMode = "PERCENT";
     private Integer saleLocationId;
 
     // --- credit setup ---
@@ -200,6 +207,8 @@ public class SaleMb extends BaseMb {
                 }
             }
         }
+        // The results open in a dialog where several products can be added before closing it.
+        PrimeFaces.current().ajax().addCallbackParam("searchOpen", true);
     }
 
     private static boolean contains(String value, String q) {
@@ -232,6 +241,19 @@ public class SaleMb extends BaseMb {
         item.setUnitPrice(price);
         item.setLineTotal(price);
         cart.add(item);
+    }
+
+    /** Units of the product already in the cart (shown next to each search result). */
+    public int cartQuantity(ProductVo p) {
+        if (p == null || p.getId() == null) {
+            return 0;
+        }
+        for (SaleItemVo line : cart) {
+            if (p.getId().equals(line.getProductId())) {
+                return nz(line.getQuantity());
+            }
+        }
+        return 0;
     }
 
     public void removeFromCart(SaleItemVo item) {
@@ -425,9 +447,60 @@ public class SaleMb extends BaseMb {
     // ------------------------------------------------------------------ register
 
     /** POST sale/registerSale with the cart (and the credit plan when the method is credit). */
-    public void registerSale() {
+    /**
+     * "Cobrar": checks the cart and opens the checkout dialog, where the payment method, the sale
+     * location and the Rewards card are asked all at once (so none of them is forgotten). The
+     * dialog opens with the usual payment method and the only location preselected.
+     */
+    public void openCheckout() {
+        boolean ready = validateCart();
+        if (ready) {
+            if (paymentMethodId == null) {
+                paymentMethodId = defaultPaymentMethodId();
+            }
+            if (saleLocationId == null && saleLocations.size() == 1) {
+                saleLocationId = saleLocations.get(0).getId();
+            }
+        }
+        PrimeFaces.current().ajax().addCallbackParam("checkoutReady", ready);
+    }
+
+    /** Same rule as the app: the first settled (non credit) method named "tarjeta", else the first settled one. */
+    private Integer defaultPaymentMethodId() {
+        PaymentMethodVo firstSettled = null;
+        for (PaymentMethodVo m : paymentMethods) {
+            if (Boolean.TRUE.equals(m.getCredit())) {
+                continue;
+            }
+            String name = m.getName() != null ? Normalizer.normalize(m.getName(), Normalizer.Form.NFD)
+                    .replaceAll("\\p{M}", "").toLowerCase() : "";
+            if (name.contains("tarjeta")) {
+                return m.getId();
+            }
+            if (firstSettled == null) {
+                firstSettled = m;
+            }
+        }
+        return firstSettled != null ? firstSettled.getId() : null;
+    }
+
+    private boolean validateCart() {
         if (cart.isEmpty()) {
             errorKey("pos.sale.emptyCart");
+            return false;
+        }
+        for (SaleItemVo c : cart) {
+            if (nz(c.getQuantity()) < 1 || c.getUnitPrice() == null || c.getUnitPrice().signum() < 0) {
+                errorKey("pos.sale.invalidLine");
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** "Aceptar" of the checkout dialog: saves the sale; the callback param saleDone closes the dialog. */
+    public void registerSale() {
+        if (!validateCart()) {
             return;
         }
         if (paymentMethodId == null) {
@@ -437,12 +510,6 @@ public class SaleMb extends BaseMb {
         if (saleLocationId == null) {
             errorKey("pos.sale.pickLocation");
             return;
-        }
-        for (SaleItemVo c : cart) {
-            if (nz(c.getQuantity()) < 1 || c.getUnitPrice() == null || c.getUnitPrice().signum() < 0) {
-                errorKey("pos.sale.invalidLine");
-                return;
-            }
         }
         SaleRequestVo payload = new SaleRequestVo();
         payload.setPaymentMethodId(paymentMethodId);
@@ -457,6 +524,12 @@ public class SaleMb extends BaseMb {
             items.add(line);
         }
         payload.setItems(items);
+        // Tip for the seller: the backend recomputes a percent on the subtotal and keeps it out of the total.
+        if (isTipAllowed() && getTipAmount().signum() > 0) {
+            BigDecimal pct = tipPercent();
+            payload.setTipMode(pct != null ? "PERCENT" : "AMOUNT");
+            payload.setTipValue(pct != null ? pct : getTipAmount());
+        }
 
         if (isCreditSelected()) {
             if (customer == null || customer.getId() == null) {
@@ -502,8 +575,12 @@ public class SaleMb extends BaseMb {
             awardPoints(lastSale);
             clearCart();
             paymentMethodId = null;
+            tipChoice = "0";
+            tipCustomValue = null;
+            tipCustomMode = "PERCENT";
             products = null; // stock changed: reload on the next search
             info("pos.sale.registered");
+            PrimeFaces.current().ajax().addCallbackParam("saleDone", true);
         } catch (RestException e) {
             errors(e);
         }
@@ -525,6 +602,77 @@ public class SaleMb extends BaseMb {
             lastPointsError = e.getMessages() != null && !e.getMessages().isEmpty() ? e.getMessages().get(0) : null;
         }
         clearMember();
+    }
+
+    // ------------------------------------------------------------------ tip
+
+    /** Not on credit (a tip is paid at once); when the owner sells, the tip is theirs (informative, no payroll). */
+    public boolean isTipAllowed() {
+        return !isCreditSelected();
+    }
+
+    public boolean isTipForOwner() {
+        return sessionMb.isAdmin();
+    }
+
+    private BigDecimal tipPercent() {
+        if ("OTHER".equals(tipChoice)) {
+            return "PERCENT".equals(tipCustomMode) ? tipCustomValue : null;
+        }
+        try {
+            BigDecimal p = new BigDecimal(tipChoice);
+            return p.signum() > 0 ? p : null;
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    /** Tip in money: a percent of the ticket, or the amount typed. */
+    public BigDecimal getTipAmount() {
+        if (!isTipAllowed()) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal pct = tipPercent();
+        if (pct != null) {
+            return getTotal().multiply(pct).divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+        }
+        if ("OTHER".equals(tipChoice) && "AMOUNT".equals(tipCustomMode) && tipCustomValue != null && tipCustomValue.signum() > 0) {
+            return tipCustomValue.setScale(2, java.math.RoundingMode.HALF_UP);
+        }
+        return BigDecimal.ZERO;
+    }
+
+    public boolean isHasTip() {
+        return getTipAmount().signum() > 0;
+    }
+
+    /** What the customer pays now: the ticket plus the tip. */
+    public BigDecimal getAmountToCharge() {
+        return getTotal().add(getTipAmount());
+    }
+
+    public String getTipChoice() {
+        return tipChoice;
+    }
+
+    public void setTipChoice(String tipChoice) {
+        this.tipChoice = tipChoice != null ? tipChoice : "0";
+    }
+
+    public BigDecimal getTipCustomValue() {
+        return tipCustomValue;
+    }
+
+    public void setTipCustomValue(BigDecimal tipCustomValue) {
+        this.tipCustomValue = tipCustomValue;
+    }
+
+    public String getTipCustomMode() {
+        return tipCustomMode;
+    }
+
+    public void setTipCustomMode(String tipCustomMode) {
+        this.tipCustomMode = tipCustomMode;
     }
 
     public void closeResult() {

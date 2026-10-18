@@ -10,66 +10,90 @@
                 <span class="page-icon"><i class="pi pi-building"></i></span>
                 <h2>#{msg['menu.admin.business']}</h2>
                 <span class="page-subtitle">#{msg['cat.business.subtitle']}</span>
+                <!-- What the owner looks for most: her public page and the links to share it -->
+                <div class="page-actions">
+                    <a class="ui-button ui-button-primary" href="#{request.contextPath}/pages/myPage.xhtml"><i class="pi pi-palette"></i>&#160;#{msg['biz.page.design']}</a>
+                    <a class="ui-button ui-button-secondary" href="#{businessMb.pageLink}" target="_blank" rel="noopener"
+                       style="#{empty businessMb.business.slug ? 'display:none' : ''}"><i class="pi pi-external-link"></i>&#160;#{msg['biz.page.view']}</a>
+                    <a class="ui-button ui-button-secondary" href="#links"><i class="pi pi-share-alt"></i>&#160;#{msg['biz.page.links']}</a>
+                </div>
             </div>
 
-            <!-- Header card: logo, name, category, verification and subscription -->
+            <!-- Hero: logo (click to change), identity and status at a glance -->
             <p:outputPanel id="headerCard">
-                <div class="card cv-biz-header">
+                <div class="card cv-biz-hero">
                     <div class="cv-biz-logo">
-                        <h:panelGroup rendered="#{not empty businessMb.business.logoBase64}">
-                            <img alt="" src="data:image/png;base64,#{businessMb.business.logoBase64}"/>
-                        </h:panelGroup>
-                        <h:panelGroup rendered="#{empty businessMb.business.logoBase64}" styleClass="cv-biz-logo-empty">
-                            <i class="pi pi-image"></i>
-                        </h:panelGroup>
+                        <label class="cv-biz-logo-box" title="#{msg['cat.business.changeLogo']}">
+                            <h:panelGroup rendered="#{not empty businessMb.business.logoBase64}">
+                                <img id="logoCurrent" alt="" src="data:image/png;base64,#{businessMb.business.logoBase64}"/>
+                            </h:panelGroup>
+                            <h:panelGroup rendered="#{empty businessMb.business.logoBase64}" styleClass="cv-biz-monogram">#{sessionMb.businessInitials}</h:panelGroup>
+                            <img id="logoPreview" alt="" class="cv-biz-logo-new" style="display:none"/>
+                            <span class="cv-biz-logo-hover"><i class="pi pi-camera"></i>&#160;#{msg['cat.business.changeLogo']}</span>
+                            <input type="file" accept="image/*" style="display:none"
+                                   onchange="cvReadLogo(this)"/>
+                        </label>
+                        <span class="cv-biz-logo-spec"><i class="pi pi-image"></i>&#160;#{msg['cat.business.logoSpec']}</span>
+                        <p:inputTextarea id="logoB64" value="#{businessMb.newLogoBase64}" styleClass="logoB64" style="display:none"/>
+                        <!-- Hidden until a file is picked (cvReadLogo shows it). It must NOT be disabled="true":
+                             PrimeFaces ignores clicks on a button that is disabled on the server, even if JS enabled it. -->
+                        <p:commandButton id="logoBtn" value="#{msg['cat.business.uploadLogo']}" icon="pi pi-upload"
+                                         actionListener="#{businessMb.uploadLogo}" process="@this logoB64"
+                                         update=":form:headerCard :messages :topbarBrand" oncomplete="cvResetLogo()"
+                                         style="display:none" styleClass="ui-button-primary cv-biz-logo-btn"/>
                     </div>
                     <div class="cv-biz-info">
-                        <h3 style="margin:0">#{businessMb.business.name}</h3>
+                        <h3>#{businessMb.business.name}</h3>
                         <span class="muted">#{businessMb.business.categoryName}
                             <h:outputText value=" &#183; #{businessMb.business.specialty}" rendered="#{not empty businessMb.business.specialty}"/>
                         </span>
-                        <div class="flex wrap gap-2 mt-2">
-                            <h:panelGroup rendered="#{businessMb.verified}" styleClass="badge badge-success" style="font-size:.85rem">
+                        <div class="cv-biz-badges">
+                            <h:panelGroup rendered="#{businessMb.verified}" styleClass="badge badge-success">
                                 <span class="verified-badge" style="margin-right:.3rem">&#10004;</span>#{msg['cat.business.verified']}
                             </h:panelGroup>
-                            <h:panelGroup rendered="#{businessMb.pendingVerification}" styleClass="badge badge-warning" style="font-size:.85rem">
+                            <h:panelGroup rendered="#{businessMb.pendingVerification}" styleClass="badge badge-warning">
                                 <i class="pi pi-clock"></i>&#160;#{msg['cat.business.inReview']}
                             </h:panelGroup>
-                            <h:panelGroup rendered="#{businessMb.rejected}" styleClass="badge badge-danger" style="font-size:.85rem">
+                            <h:panelGroup rendered="#{businessMb.rejected}" styleClass="badge badge-danger">
                                 <i class="pi pi-times-circle"></i>&#160;#{msg['cat.business.rejected']}
                             </h:panelGroup>
                             <h:panelGroup rendered="#{not empty businessMb.business.subscriptionStatus}"
-                                          styleClass="#{businessMb.subscriptionBadge()}" style="font-size:.85rem">
+                                          styleClass="#{businessMb.subscriptionBadge()}">
                                 #{msg['cat.business.subscription']}: #{msg['status.'.concat(businessMb.business.subscriptionStatus)]}
                                 <h:outputText value=" &#183; #{msg['cat.business.until']} #{sessionMb.fmtDay(businessMb.business.subscriptionUntil)}"
                                               rendered="#{not empty businessMb.business.subscriptionUntil}"/>
                             </h:panelGroup>
+                            <span class="badge cv-biz-rating" title="#{msg['dashboard.kpi.reviews']}">
+                                <i class="pi pi-star-fill"></i>&#160;#{businessMb.business.ratingAverage != null ? businessMb.business.ratingAverage : 0}
+                                <span class="muted">&#160;(#{businessMb.business.ratingCount != null ? businessMb.business.ratingCount : 0})</span>
+                            </span>
                         </div>
-                        <h:panelGroup rendered="#{businessMb.rejected}" layout="block" styleClass="cv-reject mt-2">
+                        <h:panelGroup rendered="#{businessMb.rejected}" layout="block" styleClass="cv-reject">
                             <strong>#{msg['cat.business.rejectionReason']}:</strong> #{businessMb.business.rejectionReason}
                             <span class="muted" style="display:block">#{msg['cat.business.reupload.hint']}</span>
                         </h:panelGroup>
-                        <h:panelGroup rendered="#{businessMb.verified and not empty businessMb.business.verifiedAt}" styleClass="muted" layout="block">
+                        <h:panelGroup rendered="#{businessMb.verified and not empty businessMb.business.verifiedAt}" styleClass="muted small" layout="block">
                             #{msg['cat.business.verifiedAt']}
                             <h:outputText value="#{businessMb.business.verifiedAt}">
                                 <f:convertDateTime pattern="dd/MM/yyyy HH:mm" timeZone="America/Mexico_City"/>
                             </h:outputText>
                         </h:panelGroup>
-                        <span class="muted" style="display:block">
-                            <span class="stars">#{businessMb.business.ratingAverage != null ? businessMb.business.ratingAverage : 0}</span>
-                            &#160;(#{businessMb.business.ratingCount != null ? businessMb.business.ratingCount : 0} #{msg['dashboard.kpi.reviews']})
-                        </span>
                     </div>
                 </div>
             </p:outputPanel>
 
             <div class="cv-biz-grid">
-                <!-- Profile form -->
-                <div class="card">
-                    <h3 class="section-title"><i class="pi pi-pencil gold"></i>&#160;#{msg['cat.business.profile']}</h3>
-                    <div class="form-grid">
-                        <div class="form-section">#{msg['register.section.business']}</div>
-                        <div class="field required">
+                <!-- Profile: one card per topic, same look as the sign-up steps -->
+                <div class="cv-biz-main">
+                <section class="card cv-sec" id="sec-business">
+                    <div class="cv-sec-head">
+                        <i class="pi pi-shop"></i>
+                        <div>
+                            <h3>#{msg['register.section.business']}</h3>
+                            <p>#{msg['biz.sec.business.desc']}</p>
+                        </div>
+                    </div>
+                    <div class="form-grid">                        <div class="field required">
                             <label for="form:name">#{msg['register.businessName']}</label>
                             <p:inputText id="name" value="#{businessMb.business.name}" required="true" maxlength="120"
                                          requiredMessage="#{msg['register.businessName']}: #{msg['msg.required']}"/>
@@ -121,35 +145,64 @@
                             </div>
                             <span class="hint">#{msg['cat.business.coordinates.hint']}</span>
                         </div>
-
-                        <div class="form-section">#{msg['pos.business.section.modules']}</div>
-                        <div class="field">
-                            <div class="check-inline">
+                    </div>
+                </section>
+                <section class="card cv-sec" id="sec-modules">
+                    <div class="cv-sec-head">
+                        <i class="pi pi-sparkles"></i>
+                        <div>
+                            <h3>#{msg['pos.business.section.modules']}</h3>
+                            <p>#{msg['biz.sec.modules.desc']}</p>
+                        </div>
+                    </div>
+                    <div class="form-grid">                        <!-- Same module cards as step 1 of the sign-up (texts and look), so both screens match. -->
+                        <div class="span-2 au-mod-grid" style="margin-bottom:.9rem">
+                            <label class="au-mod" for="form:moduleAppointments">
+                                <span class="au-mod-ico"><i class="pi pi-calendar"></i></span>
+                                <span class="au-mod-txt">
+                                    <strong>#{msg['register.module.appointments']}</strong>
+                                    <span>#{msg['register.module.appointments.hint']}</span>
+                                </span>
                                 <p:toggleSwitch id="moduleAppointments" value="#{businessMb.business.moduleAppointments}"/>
-                                <label for="form:moduleAppointments" style="margin:0">#{msg['pos.business.moduleAppointments']}</label>
-                            </div>
-                            <span class="hint">#{msg['pos.business.moduleAppointments.hint']}</span>
-                        </div>
-                        <div class="field">
-                            <div class="check-inline">
-                                <p:toggleSwitch id="moduleSales" value="#{businessMb.business.moduleSales}"/>
-                                <label for="form:moduleSales" style="margin:0">#{msg['pos.business.moduleSales']}</label>
-                            </div>
-                            <span class="hint">#{msg['pos.business.moduleSales.hint']}</span>
-                        </div>
-                        <div class="field">
-                            <div class="check-inline">
-                                <p:toggleSwitch id="moduleConsignment" value="#{businessMb.business.moduleConsignment}"/>
-                                <label for="form:moduleConsignment" style="margin:0">#{msg['pos.business.moduleConsignment']}</label>
-                            </div>
-                            <span class="hint">#{msg['pos.business.moduleConsignment.hint']}</span>
-                        </div>
-                        <div class="field">
-                            <div class="check-inline">
+                            </label>
+                            <label class="au-mod" for="form:moduleSales">
+                                <span class="au-mod-ico"><i class="pi pi-shopping-cart"></i></span>
+                                <span class="au-mod-txt">
+                                    <strong>#{msg['register.module.sales']}</strong>
+                                    <span>#{msg['register.module.sales.hint']}</span>
+                                </span>
+                                <p:toggleSwitch id="moduleSales" value="#{businessMb.business.moduleSales}">
+                                    <p:ajax listener="#{businessMb.onModulesChange}" process="@this" update=":form:modConsignmentWrap"/>
+                                </p:toggleSwitch>
+                            </label>
+                            <label class="au-mod" for="form:modulePayroll">
+                                <span class="au-mod-ico"><i class="pi pi-money-bill"></i></span>
+                                <span class="au-mod-txt">
+                                    <strong>#{msg['register.module.payroll']}</strong>
+                                    <span>#{msg['register.module.payroll.hint']}</span>
+                                </span>
+                                <p:toggleSwitch id="modulePayroll" value="#{businessMb.business.modulePayroll}"/>
+                            </label>
+                            <h:panelGroup id="modConsignmentWrap" layout="block"
+                                          styleClass="au-mod#{businessMb.business.moduleSales ? '' : ' au-mod-off'}">
+                                <label for="form:moduleConsignment" class="au-mod-inner">
+                                    <span class="au-mod-ico"><i class="pi pi-box"></i></span>
+                                    <span class="au-mod-txt">
+                                        <strong>#{msg['register.module.consignment']} <span class="au-mod-tag">#{msg['register.module.consignment.requires']}</span></strong>
+                                        <span>#{msg['register.module.consignment.hint']}</span>
+                                    </span>
+                                    <p:toggleSwitch id="moduleConsignment" value="#{businessMb.business.moduleConsignment}"
+                                                    disabled="#{not businessMb.business.moduleSales}"/>
+                                </label>
+                            </h:panelGroup>
+                            <label class="au-mod" for="form:pointsEnabled">
+                                <span class="au-mod-ico"><i class="pi pi-star"></i></span>
+                                <span class="au-mod-txt">
+                                    <strong>#{msg['rw.business.points']}</strong>
+                                    <span>#{msg['rw.business.points.hint']}</span>
+                                </span>
                                 <p:toggleSwitch id="pointsEnabled" value="#{businessMb.business.pointsEnabled}"/>
-                                <label for="form:pointsEnabled" style="margin:0">#{msg['rw.business.points']}</label>
-                            </div>
-                            <span class="hint">#{msg['rw.business.points.hint']}</span>
+                            </label>
                         </div>
                         <div class="field">
                             <label for="form:pesosPerPoint">#{msg['rw.business.pesosPerPoint']}</label>
@@ -162,12 +215,17 @@
                             <p:spinner id="exchangeMaxDays" value="#{businessMb.business.exchangeMaxDays}" min="0" max="365"/>
                             <span class="hint">#{msg['pos.business.exchangeMaxDays.hint']}</span>
                         </div>
-                        <div class="field">
-                            <span class="hint" style="margin-top:1.6rem;display:block">#{msg['pos.business.modules.hint']}</span>
+                    </div>
+                </section>
+                <section class="card cv-sec" id="sec-hours">
+                    <div class="cv-sec-head">
+                        <i class="pi pi-clock"></i>
+                        <div>
+                            <h3>#{msg['cat.business.section.hours']}</h3>
+                            <p>#{msg['biz.sec.hours.desc']}</p>
                         </div>
-
-                        <div class="form-section">#{msg['cat.business.section.hours']}</div>
-                        <div class="field span-2">
+                    </div>
+                    <div class="form-grid">                        <div class="field span-2">
                             <ui:include src="/WEB-INF/includes/weekly-hours.xhtml">
                                 <ui:param name="week" value="#{businessMb.week}"/>
                                 <ui:param name="withBreak" value="#{true}"/>
@@ -188,9 +246,17 @@
                             <p:spinner id="bookingHorizonDays" value="#{businessMb.business.bookingHorizonDays}" min="1" max="365"/>
                             <span class="hint">#{msg['cat.business.bookingHorizon.hint']}</span>
                         </div>
-
-                        <div class="form-section">#{msg['register.section.contact']}</div>
-                        <div class="field">
+                    </div>
+                </section>
+                <section class="card cv-sec" id="sec-contact">
+                    <div class="cv-sec-head">
+                        <i class="pi pi-phone"></i>
+                        <div>
+                            <h3>#{msg['register.section.contact']}</h3>
+                            <p>#{msg['biz.sec.contact.desc']}</p>
+                        </div>
+                    </div>
+                    <div class="form-grid">                        <div class="field">
                             <label for="form:contactPhone">#{msg['register.contactPhone']}</label>
                             <p:inputText id="contactPhone" value="#{businessMb.business.contactPhone}" maxlength="20"/>
                             <span class="hint">#{msg['register.contactPhone.hint']}</span>
@@ -215,29 +281,35 @@
                                 #{businessMb.business.onlinePaymentEnabled ? msg['cat.business.onlinePayment.on'] : msg['cat.business.onlinePayment.off']}
                             </span>
                         </div>
-
-                        <div class="form-section">#{msg['cat.business.section.customers']}</div>
-                        <div class="field span-2">
-                            <label for="form:autoReply">#{msg['cat.business.autoReply']}</label>
-                            <p:inputTextarea id="autoReply" value="#{businessMb.business.autoReplyMessage}" rows="3" autoResize="false"
-                                             maxlength="500" placeholder="#{msg['cat.business.autoReply.hint']}"/>
+                    </div>
+                </section>
+                <section class="card cv-sec" id="sec-customers">
+                    <div class="cv-sec-head">
+                        <i class="pi pi-users"></i>
+                        <div>
+                            <h3>#{msg['cat.business.section.customers']}</h3>
+                            <p>#{msg['biz.sec.customers.desc']}</p>
                         </div>
+                    </div>
+                    <div class="form-grid">
                         <div class="field">
                             <label for="form:inactiveMonths">#{msg['cat.business.inactiveMonths']}</label>
                             <p:spinner id="inactiveMonths" value="#{businessMb.business.inactiveMonths}" min="1" max="36"/>
                             <span class="hint">#{msg['cat.business.inactiveMonths.hint']}</span>
                         </div>
                     </div>
-                    <div class="text-right mt-2">
-                        <p:commandButton value="#{msg['action.save']}" icon="pi pi-check" actionListener="#{businessMb.save}"
-                                         update="@form :messages" styleClass="ui-button-primary"/>
-                    </div>
+                </section>
+                <!-- Save: always within reach at the bottom of the column -->
+                <div class="cv-savebar">
+                    <span class="muted small">#{msg['pos.business.modules.hint']}</span>
+                    <p:commandButton value="#{msg['biz.save']}" icon="pi pi-check" actionListener="#{businessMb.save}"
+                                     update="@form :messages" styleClass="ui-button-primary"/>
                 </div>
-
-                <!-- Side actions -->
-                <div>
+                </div>
+                <!-- Side rail: public links and documents -->
+                <aside class="cv-biz-side">
                     <!-- Public links for social media (/b/{slug}/citas, /b/{slug}/tienda) -->
-                    <div class="card cv-links">
+                    <div class="card cv-links" id="links">
                         <h3 class="section-title"><i class="pi pi-share-alt gold"></i>&#160;#{msg['links.title']}</h3>
                         <p class="muted small" style="margin-top:0">#{msg['links.subtitle']}</p>
                         <div class="field">
@@ -256,7 +328,6 @@
                                     <a class="ui-button ui-button-secondary cv-copy" href="#{businessMb.pageLink}" target="_blank"
                                        rel="noopener" title="#{msg['links.open']}"><i class="pi pi-external-link"></i></a>
                                 </div>
-                                <a class="cv-page-edit" href="#{request.contextPath}/pages/myPage.xhtml"><i class="pi pi-palette"></i>&#160;#{msg['links.page.edit']}</a>
                             </div>
                             <h:panelGroup rendered="#{businessMb.business.moduleAppointments}" layout="block" styleClass="cv-link-row">
                                 <label>#{msg['links.citas']}</label>
@@ -299,23 +370,6 @@
                     </div>
 
                     <div class="card">
-                        <h3 class="section-title"><i class="pi pi-image gold"></i>&#160;#{msg['cat.business.logo']}</h3>
-                        <p:inputTextarea id="logoB64" value="#{businessMb.newLogoBase64}" styleClass="logoB64" style="display:none"/>
-                        <div class="file-picker">
-                            <label class="ui-button ui-button-secondary" style="cursor:pointer">
-                                <i class="pi pi-image" style="margin-right:.4rem"></i>#{msg['register.chooseLogo']}
-                                <input type="file" accept="image/*" style="display:none" onchange="cvReadLogo(this)"/>
-                            </label>
-                            <img id="logoPreview" alt="" class="logo-preview" style="display:none"/>
-                        </div>
-                        <span class="hint" style="display:block;margin:.4rem 0">#{msg['register.logo.hint']}</span>
-                        <p:commandButton value="#{msg['cat.business.changeLogo']}" icon="pi pi-upload"
-                                         actionListener="#{businessMb.uploadLogo}" process="@this logoB64"
-                                         update=":form:headerCard :messages :topbarBrand" oncomplete="cvResetLogo()"
-                                         styleClass="ui-button-primary"/>
-                    </div>
-
-                    <div class="card">
                         <h3 class="section-title"><i class="pi pi-file gold"></i>&#160;#{msg['cat.business.license']}</h3>
                         <p:outputPanel id="licenseStatus">
                             <h:panelGroup rendered="#{businessMb.business.hasLicense}" layout="block" styleClass="mb-2">
@@ -345,46 +399,29 @@
                                          update=":form:headerCard :form:licenseStatus :messages" oncomplete="cvResetLicense()"
                                          styleClass="ui-button-primary"/>
                     </div>
-                </div>
+                </aside>
             </div>
         </h:form>
 
-        <style type="text/css">
-            .cv-biz-header { display: flex; gap: 1.25rem; align-items: flex-start; }
-            .cv-biz-logo img, .cv-biz-logo-empty { width: 96px; height: 96px; object-fit: contain; border-radius: 12px; border: 1px solid var(--vip-border); background: var(--vip-ink); padding: 6px; }
-            .cv-biz-logo-empty { display: inline-flex; align-items: center; justify-content: center; color: var(--vip-gold); font-size: 2rem; box-sizing: border-box; }
-            .cv-biz-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .2rem; }
-            .cv-biz-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr); gap: 1rem; align-items: start; }
-            .cv-reject { padding: .6rem .8rem; border-radius: 8px; background: rgba(161,26,42,.10); border: 1px solid rgba(161,26,42,.25); }
-            @media (max-width: 900px) { .cv-biz-grid { grid-template-columns: 1fr; } .cv-biz-header { flex-direction: column; } }
-        </style>
+        <script type="text/javascript" src="#{request.contextPath}/resources/js/logo-crop.js?v=20261011b"></script>
         <script type="text/javascript">
         //<![CDATA[
+        // Logo: the shared cropper (resources/js/logo-crop.js) returns a 960x240 PNG data URL.
+        window.cvLogoCropTexts = {title: "#{msg['logo.crop.title']}", hint: "#{msg['logo.crop.hint']}", zoom: "#{msg['logo.crop.zoom']}",
+            fit: "#{msg['logo.crop.fit']}", fill: "#{msg['logo.crop.fill']}", cancel: "#{msg['action.cancel']}", use: "#{msg['logo.crop.use']}"};
         function cvReadLogo(input) {
-            if (!input.files || !input.files[0]) { return; }
-            var reader = new FileReader();
-            reader.onload = function (e) {
-                var img = new Image();
-                img.onload = function () {
-                    var max = 512;
-                    var scale = Math.min(1, max / Math.max(img.width, img.height));
-                    var w = Math.round(img.width * scale);
-                    var h = Math.round(img.height * scale);
-                    var canvas = document.createElement('canvas');
-                    canvas.width = w;
-                    canvas.height = h;
-                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                    var dataUrl = canvas.toDataURL('image/png');
-                    var ta = document.querySelector('textarea.logoB64');
-                    if (ta) { ta.value = dataUrl; }
-                    var preview = document.getElementById('logoPreview');
-                    if (preview) { preview.src = dataUrl; preview.style.display = 'inline-block'; }
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(input.files[0]);
+            cvLogoCrop.pick(input, function (dataUrl) {
+                var ta = document.querySelector('textarea.logoB64');
+                if (ta) { ta.value = dataUrl; }
+                var preview = document.getElementById('logoPreview');
+                if (preview) { preview.src = dataUrl; preview.style.display = 'inline-block'; }
+                var btn = document.getElementById('form:logoBtn');
+                if (btn) { btn.style.display = ''; }
+            });
         }
         function cvResetLogo() {
+            var btn = document.getElementById('form:logoBtn');
+            if (btn) { btn.style.display = 'none'; }
             var ta = document.querySelector('textarea.logoB64');
             if (ta) { ta.value = ''; }
             var preview = document.getElementById('logoPreview');

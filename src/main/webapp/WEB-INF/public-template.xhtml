@@ -13,16 +13,24 @@
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <ui:insert name="meta"/>
-    <link rel="icon" href="#{pb.hasLogo ? pb.logoUrl : request.contextPath.concat('/resources/img/favicon.png')}"/>
+    <link rel="icon" href="#{pb.hasLogo ? pb.logoUrl : request.contextPath.concat('/resources/img/favicon.png?v=20261010')}"/>
     <link rel="preconnect" href="https://fonts.googleapis.com"/>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Playfair+Display:wght@500;600;700&amp;display=swap"/>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap"/>
     <link rel="stylesheet" href="#{request.contextPath}/resources/css/clubvip.css?v=20261007b"/>
-    <link rel="stylesheet" href="#{request.contextPath}/resources/css/public.css?v=20261007b"/>
+    <link rel="stylesheet" href="#{request.contextPath}/resources/css/portal.css?v=20261015b"/>
+    <link rel="stylesheet" href="#{request.contextPath}/resources/css/public.css?v=20261016b"/>
+    <!-- Dressed like the business's published "Mi página": its template fonts and color (public.css .pub-themed) -->
+    <ui:fragment rendered="#{pb.themed}">
+        <link rel="stylesheet" href="#{pb.themeFontsUrl}"/>
+    </ui:fragment>
 </h:head>
-<h:body styleClass="theme-light pub-body">
-    <header class="pub-header">
-        <div class="pub-header-inner">
-            <h:panelGroup rendered="#{pb.found}" layout="block" styleClass="pub-brand">
+<h:body styleClass="theme-light pub-body#{pb.themeClass}" style="#{pb.themeStyle}">
+    <!-- hideBrand (ui:param of the page): the store shows the business in its own hero, so the bar
+         only stays for the Citas / Tienda tabs; the whole bar goes when there is nothing to show. -->
+    <h:panelGroup layout="block" styleClass="pub-header#{hideBrand ? ' pub-header-tabs-only' : ''}"
+                  rendered="#{pb.found and (not hideBrand or (pb.hasAppointments and pb.hasStore))}">
+        <h:panelGroup rendered="#{not hideBrand}" layout="block" styleClass="pub-header-inner">
+            <div class="pub-brand">
                 <h:panelGroup rendered="#{pb.hasLogo}">
                     <img class="pub-logo" src="#{pb.logoUrl}" alt="#{pb.business.name}"/>
                 </h:panelGroup>
@@ -31,16 +39,16 @@
                     <span class="pub-name">#{pb.business.name}</span>
                     <span class="pub-sub">#{pb.business.specialty}</span>
                 </div>
-            </h:panelGroup>
-            <h:panelGroup rendered="#{pb.found}">
+            </div>
+            <h:panelGroup rendered="#{pb.appReleased}">
                 <a class="pub-app-btn" href="#{pb.appIntent}"><i class="pi pi-mobile"></i>&#160;#{msg['pub.openApp']}</a>
             </h:panelGroup>
-        </div>
-        <h:panelGroup rendered="#{pb.found and pb.hasAppointments and pb.hasStore}" layout="block" styleClass="pub-tabs">
+        </h:panelGroup>
+        <h:panelGroup rendered="#{pb.hasAppointments and pb.hasStore}" layout="block" styleClass="pub-tabs">
             <a class="#{pb.section eq 'citas' ? 'active' : ''}" href="#{pb.citasLink}"><i class="pi pi-calendar"></i>&#160;#{msg['pub.tab.citas']}</a>
             <a class="#{pb.section eq 'tienda' ? 'active' : ''}" href="#{pb.tiendaLink}"><i class="pi pi-shopping-bag"></i>&#160;#{msg['pub.tab.tienda']}</a>
         </h:panelGroup>
-    </header>
+    </h:panelGroup>
 
     <main class="pub-main">
         <p:growl id="messages" showDetail="true" life="5000"/>
@@ -55,8 +63,11 @@
     </main>
 
     <footer class="pub-footer">
-        #{msg['pub.poweredBy']}&#160;<h:graphicImage library="img" name="logo.svg" alt="Club VIP"/>
+        #{msg['pub.poweredBy']}&#160;<a href="#{request.contextPath}/" class="pub-footer-logo"><h:graphicImage value="/resources/img/logo-clubvip.svg?v=20261014" alt="Club VIP"/></a>
     </footer>
+    <ui:include src="/WEB-INF/includes/traffic-beacon.xhtml">
+        <ui:param name="visitId" value="#{pb.visitId}"/>
+    </ui:include>
 </h:body>
 </f:view>
 </html>

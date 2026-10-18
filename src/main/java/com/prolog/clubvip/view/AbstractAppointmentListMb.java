@@ -90,6 +90,14 @@ public abstract class AbstractAppointmentListMb extends BaseMb implements Refres
         refresh();
     }
 
+    /** Shows {@code day} (where a visit was just started / charged), unless listing every upcoming one. */
+    public void showDay(LocalDate day) {
+        if (!upcoming && day != null) {
+            date = day;
+        }
+        refresh();
+    }
+
     public void previousDay() {
         upcoming = false;
         date = (date != null ? date : today()).minusDays(1);
@@ -106,6 +114,11 @@ public abstract class AbstractAppointmentListMb extends BaseMb implements Refres
         upcoming = false;
         date = today();
         refresh();
+    }
+
+    /** The list grouped by visit: one row per customer visit (services booked together). */
+    public List<VisitRow> getVisits() {
+        return VisitRow.group(appointments);
     }
 
     public int productsCount(AppointmentVo a) {

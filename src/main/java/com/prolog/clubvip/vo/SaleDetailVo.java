@@ -19,6 +19,8 @@ public class SaleDetailVo implements Serializable {
     private BigDecimal subtotal;          // sum of line totals (charged)
     private BigDecimal discount;          // sum of item discounts
     private BigDecimal commissionAmount;  // card/method commission for the whole sale
+    /** Commission earned by the seller (null when hidden). */
+    private BigDecimal staffCommission;
     private BigDecimal total;             // what the customer pays
     private BigDecimal cogs;              // cost of goods for this sale
     private BigDecimal profit;            // subtotal - cogs - commission
@@ -87,6 +89,14 @@ public class SaleDetailVo implements Serializable {
 
     public void setCommissionAmount(BigDecimal commissionAmount) {
         this.commissionAmount = commissionAmount;
+    }
+
+    public BigDecimal getStaffCommission() {
+        return staffCommission;
+    }
+
+    public void setStaffCommission(BigDecimal staffCommission) {
+        this.staffCommission = staffCommission;
     }
 
     public BigDecimal getTotal() {

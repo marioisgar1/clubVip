@@ -1,0 +1,39 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                xmlns:pt="jakarta.faces.passthrough">
+    <!-- When the visit happened: "Ahora" or "Hora de la cita", both editable (businesses that register
+         their visits at the end of the day keep the booked time). Params: titleKey, showEnd (boolean).
+         Lives inside the start / close forms of appointmentDialogs.xhtml (appointmentActionsMb). -->
+    <p:outputPanel id="whenPanel" layout="block" styleClass="vz-when">
+        <div class="vz-section-title">
+            <span><i class="pi pi-clock"></i>&#160;#{msg[titleKey]}</span>
+            <span class="vz-hint">#{appointmentActionsMb.bookedAvailable ? msg['op.when.hint'] : msg['op.when.later']}</span>
+        </div>
+        <p:selectOneButton value="#{appointmentActionsMb.timeMode}" unselectable="false" styleClass="vz-when-mode">
+            <f:selectItem itemValue="NOW" itemLabel="#{appointmentActionsMb.nowLabel}"/>
+            <f:selectItem itemValue="BOOKED" itemLabel="#{appointmentActionsMb.bookedLabel}"
+                          itemDisabled="#{not appointmentActionsMb.bookedAvailable}"/>
+            <p:ajax listener="#{appointmentActionsMb.applyTimeMode}" process="@this" update="whenPanel"/>
+        </p:selectOneButton>
+        <div class="vz-when-fields">
+            <div class="vz-when-field">
+                <span>#{msg['op.when.date']}</span>
+                <p:datePicker value="#{appointmentActionsMb.timeDate}" pattern="dd/MM/yyyy" showIcon="true" readonlyInput="true"
+                              maxdate="#{appointmentActionsMb.maxTimeDate}" locale="#{sessionMb.language}" required="true"/>
+            </div>
+            <div class="vz-when-field">
+                <span>#{msg['op.when.start']}</span>
+                <h:inputText value="#{appointmentActionsMb.timeStart}" pt:type="time" required="true"
+                             styleClass="ui-inputfield ui-inputtext ui-widget ui-state-default ui-corner-all"/>
+            </div>
+            <h:panelGroup rendered="#{showEnd}" styleClass="vz-when-field" layout="block">
+                <span>#{msg['op.when.end']}</span>
+                <h:inputText value="#{appointmentActionsMb.timeEnd}" pt:type="time" required="true"
+                             styleClass="ui-inputfield ui-inputtext ui-widget ui-state-default ui-corner-all"/>
+            </h:panelGroup>
+        </div>
+    </p:outputPanel>
+</ui:composition>

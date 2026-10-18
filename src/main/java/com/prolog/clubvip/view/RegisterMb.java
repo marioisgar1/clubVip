@@ -40,7 +40,46 @@ public class RegisterMb implements Serializable {
     private static BusinessRegistrationVo newRegistration() {
         BusinessRegistrationVo r = new BusinessRegistrationVo();
         r.setOperationMode("FIXED");
+        // Everything off: the owner switches on what she needs (the server asks for at least citas or ventas).
+        r.setModuleAppointments(Boolean.FALSE);
+        r.setModuleSales(Boolean.FALSE);
+        r.setModuleConsignment(Boolean.FALSE);
+        r.setModulePayroll(Boolean.FALSE);
+        r.setPointsEnabled(Boolean.FALSE);
         return r;
+    }
+
+    // ---- Step 1: what the business will use. The sales step only shows when sales is on. ----
+
+    public void onModulesChange() {
+        if (!isSalesOn()) {
+            registration.setModuleConsignment(Boolean.FALSE);
+        }
+    }
+
+    public boolean isSalesOn() {
+        return !Boolean.FALSE.equals(registration.getModuleSales());
+    }
+
+    public boolean isAppointmentsOn() {
+        return !Boolean.FALSE.equals(registration.getModuleAppointments());
+    }
+
+    public int getTotalSteps() {
+        return isSalesOn() ? 6 : 5;
+    }
+
+    /** Number shown on a section head: modules, business, contact, sales, files, account. */
+    public int step(String section) {
+        switch (section) {
+            case "modules": return 1;
+            case "business": return 2;
+            case "contact": return 3;
+            case "sales": return 4;
+            case "files": return isSalesOn() ? 5 : 4;
+            case "account": return isSalesOn() ? 6 : 5;
+            default: return 0;
+        }
     }
     private List<BusinessCategoryVo> categories = new ArrayList<>();
     private List<Integer> closedWeekdays = new ArrayList<>();
@@ -149,6 +188,11 @@ public class RegisterMb implements Serializable {
                     sessionMb.text("register.privacy.required"), null));
             return null;
         }
+        if (registration.getPassword() == null || registration.getPassword().length() < NewPasswordMb.MIN_LENGTH) {
+            fc.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_WARN,
+                    sessionMb.text("newpwd.tooShort"), null));
+            return null;
+        }
         if (registration.getPassword() == null || !registration.getPassword().equals(passwordConfirm)) {
             fc.addMessage(null, new FacesMessage(FacesMessage.SEVERITY_WARN,
                     sessionMb.text("register.password.mismatch"), null));
@@ -185,7 +229,8 @@ public class RegisterMb implements Serializable {
                 return null;
             }
             LoginMb.storeSession(sessionMb, user);
-            return "/pages/dashboard.xhtml?faces-redirect=true";
+            // The codes are already on their way: confirm e-mail and phones before the first screen.
+            return LoginMb.homeFor(user) + "?faces-redirect=true";
         } catch (RestException e) {
             addError(e.getMessages());
             return null;
@@ -194,6 +239,12 @@ public class RegisterMb implements Serializable {
 
     /** Copies the checked payment methods and the named locations into the request; false when one is missing. */
     private boolean fillPaymentsAndLocations(FacesContext fc) {
+        if (!isSalesOn()) {
+            // No point of sale: the server creates the default cash method and main location.
+            registration.setPaymentMethods(null);
+            registration.setSaleLocations(null);
+            return true;
+        }
         List<PaymentMethodVo> methods = new ArrayList<>();
         for (PaymentOption o : paymentOptions) {
             if (!o.isSelected()) {
@@ -294,6 +345,11 @@ public class RegisterMb implements Serializable {
 
     public void setClosedWeekdays(List<Integer> closedWeekdays) {
         this.closedWeekdays = closedWeekdays;
+    }
+
+    /** Minimum password length shown in the sign-up checklist (same rule as the new-password screen). */
+    public int getMinLength() {
+        return NewPasswordMb.MIN_LENGTH;
     }
 
     public String getPasswordConfirm() {

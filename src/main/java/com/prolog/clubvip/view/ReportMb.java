@@ -177,8 +177,8 @@ public class ReportMb implements Serializable {
             }
         }
         dataSet.setData(values);
-        dataSet.setBackgroundColor("#F0C756");
-        dataSet.setBorderColor("#B8902F");
+        dataSet.setBackgroundColor("#CEF187");
+        dataSet.setBorderColor("#5B7720");
         dataSet.setBorderWidth(1);
         data.addChartDataSet(dataSet);
         data.setLabels(labels);

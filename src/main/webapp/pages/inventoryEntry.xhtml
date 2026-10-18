@@ -16,32 +16,20 @@
             </div>
 
             <h:form id="form">
+                <!-- Igual que en el app: se escanea (o teclea) el código y un diálogo pide cantidad y costo. -->
                 <p:panel id="linePanel" styleClass="mb-2">
-                    <div class="cv-line-grid">
-                        <div class="field cv-line-product">
-                            <label for="form:product">#{msg['cat.product.name']}</label>
-                            <p:selectOneMenu id="product" value="#{inventoryEntryMb.productId}" filter="true"
-                                             filterMatchMode="contains" autoWidth="false" style="width:100%">
-                                <f:selectItem itemLabel="#{msg['lbl.select']}" itemValue="#{null}" noSelectionOption="true"/>
-                                <f:selectItems value="#{inventoryEntryMb.products}" var="pr"
-                                               itemLabel="#{pr.name}#{empty pr.brandName ? '' : ' - '.concat(pr.brandName)}" itemValue="#{pr.id}"/>
-                                <p:ajax event="itemSelect" listener="#{inventoryEntryMb.onProductChange}" process="@this" update="unitCost"/>
-                            </p:selectOneMenu>
-                        </div>
-                        <div class="field cv-line-qty">
-                            <label for="form:quantity">#{msg['lbl.quantity']}</label>
-                            <p:inputNumber id="quantity" value="#{inventoryEntryMb.quantity}" decimalPlaces="0" minValue="1"/>
-                        </div>
-                        <div class="field cv-line-cost">
-                            <label for="form:unitCost">#{msg['cat.inventory.unitCost']}</label>
-                            <p:inputNumber id="unitCost" value="#{inventoryEntryMb.unitCost}" decimalPlaces="2" minValue="0" symbol="$ "/>
-                        </div>
-                        <div class="field cv-line-btn">
-                            <label>&#160;</label>
-                            <p:commandButton value="#{msg['cat.entry.addLine']}" icon="pi pi-plus"
-                                             actionListener="#{inventoryEntryMb.addItem}" update="form :messages"
+                    <div class="field">
+                        <label for="form:barcode"><i class="pi pi-qrcode"></i>&#160;#{msg['pos.sale.scan']}</label>
+                        <div class="cv-scan-row">
+                            <p:inputText id="barcode" value="#{inventoryEntryMb.barcode}" styleClass="cv-scan-input"
+                                         placeholder="#{msg['pos.lbl.barcode']}" autocomplete="off"
+                                         onkeydown="if(event.key==='Enter'){PF('scanBtn').jq.click();return false;}"/>
+                            <p:commandButton widgetVar="scanBtn" icon="pi pi-search" title="#{msg['pos.lbl.barcode']}"
+                                             actionListener="#{inventoryEntryMb.scan}" process="@this barcode"
+                                             update=":form:barcode :form:lineBody :messages"
                                              styleClass="ui-button-primary"/>
                         </div>
+                        <span class="hint">#{msg['cat.entry.scan.hint']}</span>
                     </div>
                 </p:panel>
 
@@ -61,7 +49,7 @@
                     </p:column>
                     <p:column style="width:3rem;text-align:center">
                         <p:commandButton icon="pi pi-trash" title="#{msg['action.delete']}"
-                                         actionListener="#{inventoryEntryMb.removeItem(it)}" update=":form:form"
+                                         actionListener="#{inventoryEntryMb.removeItem(it)}" update="@form :messages"
                                          process="@this" styleClass="ui-button-rounded ui-button-text ui-button-danger"/>
                     </p:column>
                     <f:facet name="footer">
@@ -78,8 +66,8 @@
                                      placeholder="#{msg['cat.entry.notes.hint']}"/>
                 </div>
 
-                <p:commandButton value="#{msg['cat.entry.save']}" icon="pi pi-save"
-                                 actionListener="#{inventoryEntryMb.save}" update="form :messages"
+                <p:commandButton id="btnSaveEntry" value="#{msg['cat.entry.save']}" icon="pi pi-save"
+                                 actionListener="#{inventoryEntryMb.save}" update="@form :messages"
                                  disabled="#{empty inventoryEntryMb.items}"
                                  styleClass="ui-button-primary mt-2" style="font-size:1.05rem;padding:.7rem 1.8rem">
                     <p:confirm header="#{msg['action.confirm']}" message="#{msg['cat.entry.confirmSave']}"
@@ -128,6 +116,50 @@
                     </p:rowExpansion>
                 </p:dataTable>
 
+                <p:dialog id="lineDialog" widgetVar="lineDialog" modal="true" resizable="false" draggable="false"
+                          closeOnEscape="true" responsive="true" width="440" styleClass="cv-line-dialog"
+                          onShow="cvFocus('form:quantity_input')" onHide="cvFocus('form:barcode')">
+                    <p:ajax event="close" listener="#{inventoryEntryMb.cancelLine}" process="@this" update="lineBody"/>
+                    <h:panelGroup id="lineBody" layout="block">
+                        <h:panelGroup rendered="#{inventoryEntryMb.product ne null}" layout="block">
+                            <div class="cv-line-title">#{inventoryEntryMb.product.name}</div>
+                            <div class="cv-line-info">
+                                #{msg['cat.entry.retail']}: <b>#{sessionMb.fmtMoney(inventoryEntryMb.product.price)}</b>
+                            </div>
+                            <div class="cv-line-info">
+                                <h:outputText rendered="#{inventoryEntryMb.averageCostKnown}"
+                                              value="#{msg['cat.entry.avgCost']}: #{sessionMb.fmtMoney(inventoryEntryMb.product.averageCost)}"/>
+                                <h:outputFormat rendered="#{not inventoryEntryMb.averageCostKnown}" value="#{msg['cat.entry.noAvgCost']}">
+                                    <f:param value="#{inventoryEntryMb.fallbackCostPercent}"/>
+                                </h:outputFormat>
+                            </div>
+                            <div class="cv-line-grid mt-2">
+                                <div class="field cv-line-qty">
+                                    <label for="form:quantity">#{msg['lbl.quantity']}</label>
+                                    <p:inputNumber id="quantity" value="#{inventoryEntryMb.quantity}" decimalPlaces="0" minValue="1"/>
+                                </div>
+                                <div class="field cv-line-cost">
+                                    <label for="form:unitCost">#{msg['cat.inventory.unitCost']}</label>
+                                    <p:inputNumber id="unitCost" value="#{inventoryEntryMb.unitCost}" decimalPlaces="2" minValue="0" symbol="$ "
+                                                   onkeydown="if(event.key==='Enter'){PF('lineSaveBtn').jq.click();return false;}"/>
+                                </div>
+                            </div>
+                            <div class="cv-line-note">
+                                <h:outputFormat value="#{msg['cat.entry.costNote']}">
+                                    <f:param value="#{inventoryEntryMb.fallbackCostPercent}"/>
+                                </h:outputFormat>
+                            </div>
+                        </h:panelGroup>
+                    </h:panelGroup>
+                    <f:facet name="footer">
+                        <p:commandButton value="#{msg['action.cancel']}" type="button" onclick="PF('lineDialog').hide()"
+                                         styleClass="ui-button-secondary ui-button-flat"/>
+                        <p:commandButton widgetVar="lineSaveBtn" value="#{msg['cat.entry.addLine']}" icon="pi pi-plus"
+                                         actionListener="#{inventoryEntryMb.addItem}" process="@this lineBody"
+                                         update=":form:table :form:btnSaveEntry :messages" styleClass="ui-button-primary"/>
+                    </f:facet>
+                </p:dialog>
+
                 <p:confirmDialog global="true">
                     <p:commandButton value="#{msg['action.yes']}" type="button"
                                      styleClass="ui-confirmdialog-yes ui-button-primary"/>
@@ -139,13 +171,29 @@
             <style type="text/css">
                 .cv-line-grid { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; }
                 .cv-line-grid .field { margin-bottom: 0; min-width: 0; }
-                .cv-line-product { flex: 3 1 260px; }
                 .cv-line-qty { flex: 1 1 110px; }
                 .cv-line-cost { flex: 1 1 140px; }
-                .cv-line-btn { flex: 0 0 auto; }
+                .cv-scan-row { display: flex; gap: .5rem; align-items: center; }
+                .cv-scan-row .cv-scan-input { flex: 1 1 auto; min-width: 0; font-size: 1.1rem; }
+                .cv-line-title { font-weight: 700; font-size: 1.05rem; margin-bottom: .4rem; }
+                .cv-line-info { color: var(--text-color-secondary, #6c757d); font-size: .9rem; }
+                .cv-line-note { margin-top: .9rem; color: var(--text-color-secondary, #6c757d); font-size: .82rem; font-style: italic; }
                 .cv-line-grid .ui-inputnumber, .cv-line-grid .ui-inputnumber input { width: 100%; }
                 @media (max-width: 640px) { .cv-line-grid .field { flex: 1 1 100%; } }
             </style>
+            <script type="text/javascript">
+            //<![CDATA[
+            // The barcode box owns the keyboard (USB readers type the code and press Enter); the dialog
+            // takes focus on quantity and gives it back when it closes.
+            function cvFocus(id) {
+                setTimeout(function () {
+                    var el = document.getElementById(id);
+                    if (el) { el.focus(); if (el.select) { el.select(); } }
+                }, 50);
+            }
+            window.addEventListener('load', function () { cvFocus('form:barcode'); });
+            //]]>
+            </script>
         </div>
     </ui:define>
 </ui:composition>

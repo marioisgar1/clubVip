@@ -14,24 +14,51 @@
         <h:form id="form">
             <div class="kpi-grid">
                 <div class="kpi-card kpi-ink">
-                    <span class="kpi-label">#{msg['rel.network.affiliates']}</span>
+                    <span class="kpi-icon"><i class="pi pi-building"></i></span><span class="kpi-label">#{msg['rel.network.affiliates']}</span>
                     <span class="kpi-value">#{networkReportMb.affiliatesCount}</span>
                     <span class="kpi-hint">+#{networkReportMb.newThisMonth} #{msg['rel.network.newThisMonth']}</span>
                 </div>
                 <div class="kpi-card">
-                    <span class="kpi-label">#{msg['rel.network.verified']}</span>
+                    <span class="kpi-icon"><i class="pi pi-verified"></i></span><span class="kpi-label">#{msg['rel.network.verified']}</span>
                     <span class="kpi-value">#{networkReportMb.verifiedCount}</span>
                     <span class="kpi-hint">#{networkReportMb.verifiedPercent}% #{msg['rel.network.ofRegistry']}</span>
                 </div>
                 <div class="kpi-card">
-                    <span class="kpi-label">#{msg['rel.network.pending']}</span>
+                    <span class="kpi-icon"><i class="pi pi-hourglass"></i></span><span class="kpi-label">#{msg['rel.network.pending']}</span>
                     <span class="kpi-value">#{networkReportMb.pendingCount}</span>
                     <span class="kpi-hint">#{msg['rel.network.pending.hint']}</span>
                 </div>
                 <div class="kpi-card">
-                    <span class="kpi-label">#{msg['rel.network.appointments30']}</span>
+                    <span class="kpi-icon"><i class="pi pi-calendar"></i></span><span class="kpi-label">#{msg['rel.network.appointments30']}</span>
                     <span class="kpi-value">#{networkReportMb.appointmentsLast30Days}</span>
                     <span class="kpi-hint">#{msg['rel.network.appointments30.hint']}</span>
+                </div>
+            </div>
+
+            <!-- Memberships: who is on courtesy, who pays, who is about to expire -->
+            <div class="card net-mem">
+                <h3 class="section-title"><i class="pi pi-star gold"></i>&#160;#{msg['net.mem.title']}</h3>
+                <div class="net-mem-grid">
+                    <p:commandLink actionListener="#{networkReportMb.setPlanFilter('COURTESY')}" update=":form:tblAffiliates :form:planFilter" styleClass="net-mem-card #{networkReportMb.planFilter eq 'COURTESY' ? 'on' : ''}">
+                        <span class="mem-plan mem-plan-courtesy"><i class="pi pi-gift"></i>&#160;#{msg['plan.COURTESY']}</span>
+                        <strong>#{networkReportMb.courtesyCount}</strong><small>#{msg['net.mem.courtesy.hint']}</small>
+                    </p:commandLink>
+                    <p:commandLink actionListener="#{networkReportMb.setPlanFilter('MONTHLY')}" update=":form:tblAffiliates :form:planFilter" styleClass="net-mem-card #{networkReportMb.planFilter eq 'MONTHLY' ? 'on' : ''}">
+                        <span class="mem-plan mem-plan-stripe"><i class="pi pi-credit-card"></i>&#160;#{msg['plan.MONTHLY']}</span>
+                        <strong>#{networkReportMb.monthlyCount}</strong><small>#{msg['net.mem.paid.hint']}</small>
+                    </p:commandLink>
+                    <p:commandLink actionListener="#{networkReportMb.setPlanFilter('ANNUAL')}" update=":form:tblAffiliates :form:planFilter" styleClass="net-mem-card #{networkReportMb.planFilter eq 'ANNUAL' ? 'on' : ''}">
+                        <span class="mem-plan mem-plan-stripe"><i class="pi pi-credit-card"></i>&#160;#{msg['plan.ANNUAL']}</span>
+                        <strong>#{networkReportMb.annualCount}</strong><small>#{msg['net.mem.paid.hint']}</small>
+                    </p:commandLink>
+                    <p:commandLink actionListener="#{networkReportMb.setPlanFilter('EXPIRING')}" update=":form:tblAffiliates :form:planFilter" styleClass="net-mem-card net-mem-warn #{networkReportMb.planFilter eq 'EXPIRING' ? 'on' : ''}">
+                        <span class="mem-date"><i class="pi pi-clock"></i>&#160;#{msg['net.mem.expiring']}</span>
+                        <strong>#{networkReportMb.expiringCount}</strong><small>#{msg['net.mem.expiring.hint']}</small>
+                    </p:commandLink>
+                    <p:commandLink actionListener="#{networkReportMb.setPlanFilter('UNPAID')}" update=":form:tblAffiliates :form:planFilter" styleClass="net-mem-card net-mem-danger #{networkReportMb.planFilter eq 'UNPAID' ? 'on' : ''}">
+                        <span class="mem-date mem-date-expired"><i class="pi pi-exclamation-circle"></i>&#160;#{msg['substatus.PENDING']}</span>
+                        <strong>#{networkReportMb.unpaidCount}</strong><small>#{msg['net.mem.unpaid.hint']}</small>
+                    </p:commandLink>
                 </div>
             </div>
 
@@ -49,7 +76,16 @@
 
                 <div class="card">
                     <h3 class="section-title"><i class="pi pi-building gold"></i>&#160;#{msg['rel.network.affiliatesRating']}</h3>
-                    <p:dataTable id="tblAffiliates" var="b" value="#{networkReportMb.affiliates}" rows="10" paginator="true"
+                    <p:selectOneButton id="planFilter" value="#{networkReportMb.planFilter}" styleClass="mb-2" unselectable="false">
+                        <f:selectItem itemValue="ALL" itemLabel="#{msg['net.mem.all']}"/>
+                        <f:selectItem itemValue="COURTESY" itemLabel="#{msg['plan.COURTESY']}"/>
+                        <f:selectItem itemValue="MONTHLY" itemLabel="#{msg['net.mem.monthly']}"/>
+                        <f:selectItem itemValue="ANNUAL" itemLabel="#{msg['net.mem.annual']}"/>
+                        <f:selectItem itemValue="EXPIRING" itemLabel="#{msg['net.mem.expiring']}"/>
+                        <f:selectItem itemValue="UNPAID" itemLabel="#{msg['substatus.PENDING']}"/>
+                        <p:ajax update=":form:tblAffiliates"/>
+                    </p:selectOneButton>
+                    <p:dataTable id="tblAffiliates" var="b" value="#{networkReportMb.planRows}" rows="10" paginator="true"
                                  paginatorPosition="bottom" paginatorAlwaysVisible="false" reflow="true" stripedRows="true"
                                  emptyMessage="#{msg['msg.noData']}" rowKey="#{b.id}" widgetVar="netTable"
                                  filteredValue="#{networkReportMb.filtered}" globalFilterOnly="true" sortBy="#{b.ratingAverage}" sortOrder="descending">
@@ -73,11 +109,20 @@
                             </span>
                         </p:column>
                         <p:column headerText="#{msg['lbl.verified']}" width="110" sortBy="#{b.verificationStatus}">
-                            <span class="#{networkReportMb.verificationBadge(b.verificationStatus)}">#{msg['status.'.concat(b.verificationStatus)]}</span>
+                            <span class="#{networkReportMb.verificationBadge(b.verificationStatus)}">#{msg['ver.'.concat(b.verificationStatus)]}</span>
                         </p:column>
-                        <p:column headerText="#{msg['rel.affiliate.subscription']}" width="110" sortBy="#{b.subscriptionStatus}">
+                        <p:column headerText="#{msg['rel.affiliate.subscription']}" width="150" sortBy="#{b.membershipPlan}">
                             <h:outputText rendered="#{not empty b.subscriptionStatus}" styleClass="#{networkReportMb.subscriptionBadge(b.subscriptionStatus)}"
-                                          value="#{msg['status.'.concat(b.subscriptionStatus)]}"/>
+                                          value="#{msg['substatus.'.concat(b.subscriptionStatus)]}"/>
+                            <h:panelGroup rendered="#{not empty b.disputeStatus}" layout="block" styleClass="mem-dispute mem-dispute-#{b.disputeStatus}"><i class="pi pi-exclamation-triangle"></i>&#160;#{msg['dispute.'.concat(b.disputeStatus)]}</h:panelGroup>
+                            <h:panelGroup rendered="#{not empty b.membershipPlan}" layout="block" styleClass="mem-plan-wrap">
+                                <span class="mem-plan mem-plan-#{b.membershipPlan eq 'COURTESY' ? 'courtesy' : 'stripe'}"><i class="#{sessionMb.planIcon(b)}"></i>&#160;#{sessionMb.planLabel(b)}</span>
+                            </h:panelGroup>
+                        </p:column>
+                        <p:column headerText="#{msg['rel.subscription.until']}" width="150" sortBy="#{b.subscriptionUntil}">
+                            <h:panelGroup rendered="#{not empty sessionMb.untilLabel(b)}" styleClass="mem-date#{sessionMb.isMembershipExpired(b) ? ' mem-date-expired' : ''}">
+                                <i class="pi #{empty b.subscriptionUntil ? 'pi-infinity' : 'pi-calendar'}"></i>&#160;#{sessionMb.untilLabel(b)}
+                            </h:panelGroup>
                         </p:column>
                     </p:dataTable>
                 </div>

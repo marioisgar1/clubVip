@@ -156,6 +156,16 @@ public class InventoryMb implements Serializable {
 
     // ------------------------------------------------------------------ getters / setters
 
+    /** What the stock would earn sold at its price: value at sale price − value at average cost. */
+    public java.math.BigDecimal getPotentialProfit() {
+        if (summary == null) {
+            return java.math.BigDecimal.ZERO;
+        }
+        java.math.BigDecimal retail = summary.getRetailValue() != null ? summary.getRetailValue() : java.math.BigDecimal.ZERO;
+        java.math.BigDecimal cost = summary.getStockValue() != null ? summary.getStockValue() : java.math.BigDecimal.ZERO;
+        return retail.subtract(cost);
+    }
+
     public InventorySummaryVo getSummary() {
         return summary;
     }

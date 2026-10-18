@@ -42,57 +42,69 @@
     </p:toolbar>
 
     <div class="summary-bar mt-2">
-        <span class="summary-item"><b>#{owner.appointments.size()}</b> #{msg['op.day.count']}</span>
+        <span class="summary-item"><b>#{owner.visits.size()}</b> #{msg['op.day.count']}</span>
         <span class="summary-item">#{msg['op.lbl.amount']}: <b>#{sessionMb.fmtMoney(owner.totalAmount)}</b></span>
         <span class="summary-item muted">#{owner.dateLabel}</span>
     </div>
 
-    <p:dataTable id="table" var="a" value="#{owner.appointments}" rowKey="#{a.id}" emptyMessage="#{msg['msg.noData']}"
+    <!-- One row per visit: every service the customer booked together, started / charged in one step -->
+    <p:dataTable id="table" var="v" value="#{owner.visits}" rowKey="#{v.id}" emptyMessage="#{msg['msg.noData']}"
                  paginator="true" rows="20" paginatorAlwaysVisible="false" reflow="true" stripedRows="true"
-                 sortBy="#{a.date.concat(' ').concat(a.startTime)}">
+                 sortBy="#{v.date.concat(' ').concat(v.startTime)}">
         <p:column headerText="#{msg['lbl.date']}" width="110" rendered="#{owner.upcoming}">
-            <span style="font-weight:600">#{sessionMb.fmtDay(a.date)}</span>
+            <span style="font-weight:600">#{sessionMb.fmtDay(v.date)}</span>
         </p:column>
-        <p:column headerText="#{msg['lbl.time']}" width="90" sortBy="#{a.startTime}">
-            <span style="font-weight:600">#{a.startTime}</span><span class="muted"> - #{a.endTime}</span>
+        <p:column headerText="#{msg['lbl.time']}" width="110" sortBy="#{v.startTime}">
+            <span style="font-weight:600">#{v.startTime}</span><span class="muted"> - #{v.endTime}</span>
+            <h:panelGroup rendered="#{v.multi}" styleClass="muted small" layout="block">#{v.durationLabel}</h:panelGroup>
         </p:column>
-        <p:column headerText="#{msg['lbl.customer']}" sortBy="#{a.customerName}">
-            <span style="font-weight:600">#{a.customerName}</span>
-            <h:panelGroup rendered="#{not empty a.customerPhone}" styleClass="muted" layout="block">#{a.customerPhone}</h:panelGroup>
+        <p:column headerText="#{msg['lbl.customer']}" sortBy="#{v.customerName}">
+            <span style="font-weight:600">#{v.customerName}</span>
+            <h:panelGroup rendered="#{not empty v.customerPhone}" styleClass="muted" layout="block">#{v.customerPhone}</h:panelGroup>
         </p:column>
-        <p:column headerText="#{msg['lbl.service']}" sortBy="#{a.serviceName}">#{a.serviceName}</p:column>
-        <p:column headerText="#{msg['lbl.employee']}" sortBy="#{a.employeeName}" rendered="#{showEmployee}">#{a.employeeName}</p:column>
+        <p:column headerText="#{msg['lbl.service']}" sortBy="#{v.serviceNames}" styleClass="cv-col-main">
+            <h:outputText value="#{v.serviceNames}" rendered="#{not v.multi}"/>
+            <h:panelGroup rendered="#{v.multi}" styleClass="vz-svcs" layout="block">
+                <ui:repeat var="a" value="#{v.appointments}">
+                    <span class="vz-svc vz-svc-#{a.appointmentStatus}" title="#{msg['status.'.concat(a.appointmentStatus)]} · #{a.startTime}">
+                        <i class="vz-dot"></i>#{a.serviceName}</span>
+                </ui:repeat>
+            </h:panelGroup>
+        </p:column>
+        <p:column headerText="#{msg['lbl.employee']}" sortBy="#{v.employeeName}" rendered="#{showEmployee}">#{v.employeeName}</p:column>
         <p:column headerText="#{msg['op.day.products']}" width="70" styleClass="text-center">
-            <h:outputText value="#{owner.productsCount(a)}" rendered="#{owner.productsCount(a) gt 0}" styleClass="badge badge-muted"/>
+            <h:outputText value="#{v.itemsCount}" rendered="#{v.itemsCount gt 0}" styleClass="badge badge-muted"/>
         </p:column>
-        <p:column headerText="#{msg['lbl.status']}" width="120" sortBy="#{a.appointmentStatus}">
-            <span class="#{owner.statusBadge(a.appointmentStatus)}">#{msg['status.'.concat(a.appointmentStatus)]}</span>
+        <p:column headerText="#{msg['lbl.status']}" width="120" sortBy="#{v.status}">
+            <span class="#{owner.statusBadge(v.status)}">#{msg['status.'.concat(v.status)]}</span>
         </p:column>
-        <p:column headerText="#{msg['op.lbl.amount']}" width="100" styleClass="text-right" sortBy="#{a.total}">
-            #{sessionMb.fmtMoney(a.total)}
+        <p:column headerText="#{msg['op.lbl.amount']}" width="100" styleClass="text-right" sortBy="#{v.total}">
+            #{sessionMb.fmtMoney(v.total)}
         </p:column>
         <p:column headerText="#{msg['lbl.actions']}" width="250" styleClass="text-center" exportable="false">
-            <p:commandButton icon="pi pi-eye" title="#{msg['op.action.detail']}" actionListener="#{appointmentActionsMb.open(a)}"
+            <p:commandButton icon="pi pi-eye" title="#{msg['op.action.detail']}" actionListener="#{appointmentActionsMb.open(v.primary)}"
                              process="@this" update=":apptDetailForm :messages" oncomplete="PF('apptDetailDlg').show()"
                              styleClass="ui-button-secondary ui-button-flat"/>
-            <p:commandButton icon="pi pi-play" title="#{msg['op.action.start']}" actionListener="#{appointmentActionsMb.startFor(a, owner)}"
-                             process="@this" update="@form :messages" rendered="#{appointmentActionsMb.canStart(a)}"
+            <p:commandButton icon="pi pi-play" title="#{v.multi ? msg['op.visit.start'] : msg['op.action.start']}"
+                             actionListener="#{appointmentActionsMb.prepareStartFor(v.primary, owner)}"
+                             process="@this" update=":apptStartForm :messages" oncomplete="PF('apptStartDlg').show()"
+                             rendered="#{appointmentActionsMb.canStartVisit(v)}"
                              styleClass="ui-button-info ui-button-flat"/>
-            <p:commandButton icon="pi pi-check" title="#{msg['op.action.close']}" actionListener="#{appointmentActionsMb.prepareCloseFor(a)}"
+            <p:commandButton icon="pi pi-check" title="#{msg['op.visit.close']}" actionListener="#{appointmentActionsMb.prepareCloseFor(v.primary, owner)}"
                              process="@this" update=":apptCloseForm :messages" oncomplete="PF('apptCloseDlg').show()"
-                             rendered="#{appointmentActionsMb.canClose(a)}" styleClass="ui-button-success ui-button-flat"/>
-            <p:commandButton icon="pi pi-whatsapp" title="#{msg['op.action.reminder']}" actionListener="#{appointmentActionsMb.reminderFor(a, owner)}"
+                             rendered="#{appointmentActionsMb.canCloseVisit(v)}" styleClass="ui-button-success ui-button-flat"/>
+            <p:commandButton icon="pi pi-whatsapp" title="#{msg['op.action.reminder']}" actionListener="#{appointmentActionsMb.reminderFor(v.primary, owner)}"
                              process="@this" update="@form :messages"
-                             rendered="#{appointmentActionsMb.canStart(a) and not empty a.customerPhone}"
+                             rendered="#{appointmentActionsMb.canStartVisit(v) and not empty v.customerPhone}"
                              styleClass="ui-button-whatsapp"/>
-            <p:commandButton icon="pi pi-user-minus" title="#{msg['op.action.noShow']}" actionListener="#{appointmentActionsMb.noShowFor(a, owner)}"
-                             process="@this" update="@form :messages" rendered="#{appointmentActionsMb.canStart(a)}"
+            <p:commandButton icon="pi pi-user-minus" title="#{msg['op.action.noShow']}" actionListener="#{appointmentActionsMb.noShowFor(v.primary, owner)}"
+                             process="@this" update="@form :messages" rendered="#{appointmentActionsMb.canNoShowVisit(v)}"
                              styleClass="ui-button-warning ui-button-flat">
-                <p:confirm header="#{msg['action.confirm']}" message="#{msg['op.action.noShow']}: #{a.customerName}?" icon="pi pi-exclamation-triangle"/>
+                <p:confirm header="#{msg['action.confirm']}" message="#{msg['op.action.noShow']}: #{v.customerName}?" icon="pi pi-exclamation-triangle"/>
             </p:commandButton>
-            <p:commandButton icon="pi pi-times" title="#{msg['op.action.cancelAppt']}" actionListener="#{appointmentActionsMb.open(a)}"
+            <p:commandButton icon="pi pi-times" title="#{v.multi ? msg['op.visit.cancel'] : msg['op.action.cancelAppt']}" actionListener="#{appointmentActionsMb.open(v.primary)}"
                              process="@this" update=":apptCancelForm :messages" oncomplete="PF('apptCancelDlg').show()"
-                             rendered="#{appointmentActionsMb.canClose(a)}" styleClass="ui-button-danger ui-button-flat"/>
+                             rendered="#{appointmentActionsMb.canCloseVisit(v)}" styleClass="ui-button-danger ui-button-flat"/>
         </p:column>
     </p:dataTable>
 </ui:composition>

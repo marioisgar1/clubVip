@@ -3,55 +3,122 @@
       xmlns:h="jakarta.faces.html"
       xmlns:f="jakarta.faces.core"
       xmlns:ui="jakarta.faces.facelets"
-      xmlns:p="http://primefaces.org/ui">
+      xmlns:p="http://primefaces.org/ui"
+      lang="#{sessionMb.language}">
 <f:view locale="#{sessionMb.locale}">
 <h:head>
     <title>#{msg['app.title']} - #{msg['register.title']}</title>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <link rel="icon" type="image/png" href="#{request.contextPath}/resources/img/favicon.png"/>
+    <link rel="icon" type="image/png" href="#{request.contextPath}/resources/img/favicon.png?v=20261010"/>
     <link rel="preconnect" href="https://fonts.googleapis.com"/>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Playfair+Display:wght@500;600;700&amp;display=swap"/>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;display=swap"/>
     <link rel="stylesheet" href="#{request.contextPath}/resources/css/clubvip.css?v=20261007a"/>
+    <link rel="stylesheet" href="#{request.contextPath}/resources/css/homepage.css?v=20261014a"/>
+    <link rel="stylesheet" href="#{request.contextPath}/resources/css/auth.css?v=20261013a"/>
 </h:head>
-<h:body styleClass="#{sessionMb.themeClass}">
-    <div class="login-lang">
-        <h:form id="langForm">
-            <p:selectOneMenu value="#{sessionMb.language}" style="width:120px">
-                <f:selectItem itemValue="es" itemLabel="#{msg['lang.es']}"/>
-                <f:selectItem itemValue="en" itemLabel="#{msg['lang.en']}"/>
-                <p:ajax event="change" listener="#{sessionMb.changeLanguage(sessionMb.language)}"
-                        oncomplete="window.location.reload()"/>
-            </p:selectOneMenu>
-        </h:form>
-    </div>
+<h:body styleClass="hp hp-auth">
+    <ui:include src="/WEB-INF/includes/auth-header.xhtml">
+        <ui:param name="ctaHref" value="#{request.contextPath}/login.xhtml"/>
+        <ui:param name="ctaLabel" value="#{msg['lp.nav.login']}"/>
+    </ui:include>
 
-    <div class="login-wrapper">
-        <div class="login-card wide">
-            <div class="login-header">
-                <h:graphicImage library="img" name="logo.svg" alt="Club VIP"/>
-                <span class="login-caption">#{msg['app.caption']}</span>
-                <h1 class="login-title">#{msg['register.title']}</h1>
-            </div>
-            <h:form id="form" styleClass="login-body">
+    <main class="au-reg">
+        <div class="au-reg-head">
+            <span class="au-caption">#{msg['app.caption']}</span>
+            <h1 class="au-title">#{msg['register.title']}</h1>
+            <p class="au-reg-intro">#{msg['register.intro']}</p>
+        </div>
+        <div class="au-reg-body">
+            <h:form id="form" styleClass="au-form">
                 <p:growl id="messages" showDetail="true" life="6000"/>
                 <p:messages id="msgs" showDetail="true" closable="true"/>
-                <p class="muted" style="text-align:left;margin-top:0">#{msg['register.intro']}</p>
 
-                <div class="form-grid">
-                    <div class="form-section">#{msg['register.section.business']}</div>
+                <section class="au-sec" id="sec-modules">
+                    <div class="au-sec-head">
+                        <i class="pi pi-sparkles"></i>
+                        <div class="au-sec-txt">
+                            <span class="au-sec-step"><h:outputFormat value="#{msg['register.step']}"><f:param value="1"/><f:param value="#{registerMb.totalSteps}"/></h:outputFormat></span>
+                            <h2>#{msg['register.section.modules']}</h2>
+                            <p>#{msg['register.section.modules.desc']}</p>
+                        </div>
+                    </div>
+                    <!-- Each card is a module switch; the sales step and the numbering follow the choice. -->
+                    <div class="au-mod-grid">
+                        <label class="au-mod" for="form:modAppointments">
+                            <span class="au-mod-ico"><i class="pi pi-calendar"></i></span>
+                            <span class="au-mod-txt">
+                                <strong>#{msg['register.module.appointments']}</strong>
+                                <span>#{msg['register.module.appointments.hint']}</span>
+                            </span>
+                            <p:toggleSwitch id="modAppointments" value="#{registerMb.registration.moduleAppointments}">
+                                <p:ajax listener="#{registerMb.onModulesChange}" process="@this"
+                                        update=":form:salesWrap :form:step-contact :form:step-files :form:step-account :form:modConsignmentWrap"/>
+                            </p:toggleSwitch>
+                        </label>
+                        <label class="au-mod" for="form:modSales">
+                            <span class="au-mod-ico"><i class="pi pi-shopping-cart"></i></span>
+                            <span class="au-mod-txt">
+                                <strong>#{msg['register.module.sales']}</strong>
+                                <span>#{msg['register.module.sales.hint']}</span>
+                            </span>
+                            <p:toggleSwitch id="modSales" value="#{registerMb.registration.moduleSales}">
+                                <p:ajax listener="#{registerMb.onModulesChange}" process="@this"
+                                        update=":form:salesWrap :form:step-contact :form:step-files :form:step-account :form:modConsignmentWrap"/>
+                            </p:toggleSwitch>
+                        </label>
+                        <label class="au-mod" for="form:modPayroll">
+                            <span class="au-mod-ico"><i class="pi pi-money-bill"></i></span>
+                            <span class="au-mod-txt">
+                                <strong>#{msg['register.module.payroll']}</strong>
+                                <span>#{msg['register.module.payroll.hint']}</span>
+                            </span>
+                            <p:toggleSwitch id="modPayroll" value="#{registerMb.registration.modulePayroll}"/>
+                        </label>
+                        <h:panelGroup id="modConsignmentWrap" layout="block" styleClass="au-mod#{registerMb.salesOn ? '' : ' au-mod-off'}">
+                            <label for="form:modConsignment" class="au-mod-inner">
+                                <span class="au-mod-ico"><i class="pi pi-box"></i></span>
+                                <span class="au-mod-txt">
+                                    <strong>#{msg['register.module.consignment']} <span class="au-mod-tag">#{msg['register.module.consignment.requires']}</span></strong>
+                                    <span>#{msg['register.module.consignment.hint']}</span>
+                                </span>
+                                <p:toggleSwitch id="modConsignment" value="#{registerMb.registration.moduleConsignment}"
+                                                disabled="#{not registerMb.salesOn}"/>
+                            </label>
+                        </h:panelGroup>
+                        <label class="au-mod" for="form:modPoints">
+                            <span class="au-mod-ico"><i class="pi pi-star"></i></span>
+                            <span class="au-mod-txt">
+                                <strong>#{msg['rw.business.points']}</strong>
+                                <span>#{msg['rw.business.points.hint']}</span>
+                            </span>
+                            <p:toggleSwitch id="modPoints" value="#{registerMb.registration.pointsEnabled}"/>
+                        </label>
+                    </div>
+                </section>
+
+                <section class="au-sec" id="sec-business">
+                    <div class="au-sec-head">
+                        <i class="pi pi-shop"></i>
+                        <div class="au-sec-txt">
+                            <h:panelGroup id="step-business" styleClass="au-sec-step"><h:outputFormat value="#{msg['register.step']}"><f:param value="#{registerMb.step('business')}"/><f:param value="#{registerMb.totalSteps}"/></h:outputFormat></h:panelGroup>
+                            <h2>#{msg['register.section.business']}</h2>
+                            <p>#{msg['register.section.business.desc']}</p>
+                        </div>
+                    </div>
+                    <div class="form-grid">
                     <div class="field required">
-                        <label for="form:name">#{msg['register.businessName']}</label>
+                        <label for="form:name"><i class="pi pi-briefcase"></i>#{msg['register.businessName']}</label>
                         <p:inputText id="name" value="#{registerMb.registration.name}" required="true"
                                      requiredMessage="#{msg['register.businessName']}: #{msg['msg.required']}" maxlength="120"/>
                     </div>
                     <div class="field required">
-                        <label for="form:ownerName">#{msg['register.ownerName']}</label>
+                        <label for="form:ownerName"><i class="pi pi-user"></i>#{msg['register.ownerName']}</label>
                         <p:inputText id="ownerName" value="#{registerMb.registration.ownerName}" required="true"
                                      requiredMessage="#{msg['register.ownerName']}: #{msg['msg.required']}" maxlength="120"/>
                     </div>
                     <div class="field required">
-                        <label for="form:category">#{msg['register.category']}</label>
+                        <label for="form:category"><i class="pi pi-tags"></i>#{msg['register.category']}</label>
                         <p:selectOneMenu id="category" value="#{registerMb.registration.categoryId}" required="true"
                                          requiredMessage="#{msg['register.category']}: #{msg['msg.required']}">
                             <f:selectItem itemLabel="#{msg['lbl.select']}" itemValue="#{null}" noSelectionOption="true"/>
@@ -60,12 +127,12 @@
                         </p:selectOneMenu>
                     </div>
                     <div class="field">
-                        <label for="form:specialty">#{msg['register.specialty']}</label>
+                        <label for="form:specialty"><i class="pi pi-star"></i>#{msg['register.specialty']}</label>
                         <p:inputText id="specialty" value="#{registerMb.registration.specialty}" maxlength="120"
                                      placeholder="#{msg['register.specialty.hint']}"/>
                     </div>
                     <div class="field span-2 required">
-                        <label>#{msg['register.mode']}</label>
+                        <label><i class="pi pi-directions"></i>#{msg['register.mode']}</label>
                         <p:selectOneRadio id="operationMode" value="#{registerMb.registration.operationMode}" layout="responsive" columns="3">
                             <f:selectItem itemValue="FIXED"  itemLabel="#{msg['register.mode.FIXED']}"/>
                             <f:selectItem itemValue="MOBILE" itemLabel="#{msg['register.mode.MOBILE']}"/>
@@ -78,15 +145,15 @@
 
                     <h:panelGroup id="locationPanel" layout="block" styleClass="span-2 form-grid" style="margin:0;padding:0">
                         <h:panelGroup layout="block" styleClass="field span-2" rendered="#{registerMb.fixedLocation}">
-                            <label for="form:address">#{msg['register.address']} <span class="muted">#{msg['register.optional']}</span></label>
+                            <label for="form:address"><i class="pi pi-map-marker"></i>#{msg['register.address']} <span class="muted">#{msg['register.optional']}</span></label>
                             <p:inputText id="address" value="#{registerMb.registration.address}" maxlength="250"/>
                         </h:panelGroup>
                         <h:panelGroup layout="block" styleClass="field" rendered="#{!registerMb.online}">
-                            <label for="form:city">#{registerMb.fixedLocation ? msg['register.city'] : msg['register.city.area']} <span class="muted">#{msg['register.optional']}</span></label>
+                            <label for="form:city"><i class="pi pi-building"></i>#{registerMb.fixedLocation ? msg['register.city'] : msg['register.city.area']} <span class="muted">#{msg['register.optional']}</span></label>
                             <p:inputText id="city" value="#{registerMb.registration.city}" maxlength="120"/>
                         </h:panelGroup>
                         <div class="field span-2">
-                            <label>#{msg['register.hours']}</label>
+                            <label><i class="pi pi-clock"></i>#{msg['register.hours']}</label>
                             <span class="hint" style="margin-bottom:.4rem;display:block">#{msg['hours.register.hint']}</span>
                             <ui:include src="/WEB-INF/includes/weekly-hours.xhtml">
                                 <ui:param name="week" value="#{registerMb.week}"/>
@@ -95,31 +162,56 @@
                         </div>
                     </h:panelGroup>
 
-                    <div class="form-section">#{msg['register.section.contact']}</div>
+                    </div>
+                </section>
+
+                <section class="au-sec" id="sec-contact">
+                    <div class="au-sec-head">
+                        <i class="pi pi-phone"></i>
+                        <div class="au-sec-txt">
+                            <h:panelGroup id="step-contact" styleClass="au-sec-step"><h:outputFormat value="#{msg['register.step']}"><f:param value="#{registerMb.step('contact')}"/><f:param value="#{registerMb.totalSteps}"/></h:outputFormat></h:panelGroup>
+                            <h2>#{msg['register.section.contact']}</h2>
+                            <p>#{msg['register.section.contact.desc']}</p>
+                        </div>
+                    </div>
+                    <div class="form-grid">
                     <div class="field required">
-                        <label for="form:groupPhone">#{msg['register.groupPhone']}</label>
-                        <p:inputText id="groupPhone" value="#{registerMb.registration.groupPhone}" required="true"
-                                     requiredMessage="#{msg['register.groupPhone']}: #{msg['msg.required']}" maxlength="20"/>
+                        <label for="form:groupPhone"><i class="pi pi-whatsapp"></i>#{msg['register.groupPhone']}</label>
+                        <p:inputText id="groupPhone" value="#{registerMb.registration.groupPhone}" required="true" type="tel"
+                                         requiredMessage="#{msg['register.groupPhone']}: #{msg['msg.required']}" maxlength="20"/>
                         <span class="hint">#{msg['register.groupPhone.hint']}</span>
                     </div>
                     <div class="field">
-                        <label for="form:contactPhone">#{msg['register.contactPhone']}</label>
-                        <p:inputText id="contactPhone" value="#{registerMb.registration.contactPhone}" maxlength="20"/>
+                        <label for="form:contactPhone"><i class="pi pi-whatsapp"></i>#{msg['register.contactPhone']}</label>
+                        <p:inputText id="contactPhone" value="#{registerMb.registration.contactPhone}" maxlength="20" type="tel"/>
                         <span class="hint">#{msg['register.contactPhone.hint']}</span>
                     </div>
                     <div class="field">
-                        <label for="form:bankName">#{msg['register.bankName']}</label>
+                        <label for="form:bankName"><i class="pi pi-wallet"></i>#{msg['register.bankName']}</label>
                         <p:inputText id="bankName" value="#{registerMb.registration.bankName}" maxlength="80"/>
                     </div>
                     <div class="field">
-                        <label for="form:bankAccount">#{msg['register.bankAccount']}</label>
+                        <label for="form:bankAccount"><i class="pi pi-credit-card"></i>#{msg['register.bankAccount']}</label>
                         <p:inputText id="bankAccount" value="#{registerMb.registration.bankAccount}" maxlength="30"/>
                         <span class="hint">#{msg['register.bank.hint']}</span>
                     </div>
 
-                    <div class="form-section">#{msg['register.section.sales']}</div>
+                    </div>
+                </section>
+
+                <h:panelGroup id="salesWrap" layout="block">
+                <h:panelGroup rendered="#{registerMb.salesOn}" layout="block" styleClass="au-sec" id="sec-sales">
+                    <div class="au-sec-head">
+                        <i class="pi pi-credit-card"></i>
+                        <div class="au-sec-txt">
+                            <h:panelGroup id="step-sales" styleClass="au-sec-step"><h:outputFormat value="#{msg['register.step']}"><f:param value="#{registerMb.step('sales')}"/><f:param value="#{registerMb.totalSteps}"/></h:outputFormat></h:panelGroup>
+                            <h2>#{msg['register.section.sales']}</h2>
+                            <p>#{msg['register.section.sales.desc']}</p>
+                        </div>
+                    </div>
+                    <div class="form-grid">
                     <div class="field span-2 required">
-                        <label>#{msg['register.payments']}</label>
+                        <label><i class="pi pi-money-bill"></i>#{msg['register.payments']}</label>
                         <span class="hint">#{msg['register.payments.hint']}</span>
                         <div class="reg-rows">
                             <ui:repeat value="#{registerMb.paymentOptions}" var="po">
@@ -140,7 +232,7 @@
                         <span class="hint">#{msg['register.pay.commission.hint']}</span>
                     </div>
                     <h:panelGroup id="saleLocationsPanel" layout="block" styleClass="field span-2 required">
-                        <label>#{msg['register.locations']}</label>
+                        <label><i class="pi pi-shopping-bag"></i>#{msg['register.locations']}</label>
                         <span class="hint">#{msg['register.locations.hint']}</span>
                         <div class="reg-rows">
                             <ui:repeat value="#{registerMb.locationOptions}" var="lo" varStatus="st">
@@ -162,23 +254,42 @@
                                          styleClass="ui-button-secondary" style="margin-top:.4rem;align-self:flex-start"/>
                     </h:panelGroup>
 
-                    <div class="form-section">#{msg['register.section.files']}</div>
-                    <div class="field">
-                        <label>#{msg['register.logo']}</label>
+                    </div>
+                </h:panelGroup>
+                </h:panelGroup>
+
+                <section class="au-sec" id="sec-files">
+                    <div class="au-sec-head">
+                        <i class="pi pi-image"></i>
+                        <div class="au-sec-txt">
+                            <h:panelGroup id="step-files" styleClass="au-sec-step"><h:outputFormat value="#{msg['register.step']}"><f:param value="#{registerMb.step('files')}"/><f:param value="#{registerMb.totalSteps}"/></h:outputFormat></h:panelGroup>
+                            <h2>#{msg['register.section.files']}</h2>
+                            <p>#{msg['register.section.files.desc']}</p>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                    <div class="field span-2">
                         <p:inputTextarea id="logoB64" value="#{registerMb.registration.logoBase64}"
                                          styleClass="logoB64" style="display:none"/>
-                        <div class="file-picker">
-                            <label class="ui-button ui-button-secondary" style="cursor:pointer">
-                                <i class="pi pi-image" style="margin-right:.4rem"></i>#{msg['register.chooseLogo']}
-                                <input type="file" accept="image/*" style="display:none" onchange="cvReadLogo(this)"/>
-                            </label>
-                            <img id="logoPreview" alt="" class="logo-preview" style="display:none"/>
+                        <div class="au-logo-drop">
+                            <div class="au-logo-box">
+                                <img id="logoPreview" alt="" class="logo-preview" style="display:none"/>
+                                <i class="pi pi-image au-logo-ph"></i>
+                            </div>
+                            <div class="au-logo-txt">
+                                <strong>#{msg['register.logo.title']}</strong>
+                                <span class="au-muted">#{msg['register.logo.optional']}</span>
+                                <label class="ui-button ui-button-secondary" style="cursor:pointer">
+                                    <i class="pi pi-upload" style="margin-right:.4rem"></i>#{msg['register.chooseLogo']}
+                                    <input type="file" accept="image/*" style="display:none" onchange="cvReadLogo(this)"/>
+                                </label>
+                            </div>
                         </div>
                         <span class="hint">#{msg['register.logo.hint']}</span>
                     </div>
                     <h:panelGroup id="licensePanel" layout="block" styleClass="field">
                         <h:panelGroup rendered="#{registerMb.licenseRequired}">
-                            <label>#{msg['register.license']}</label>
+                            <label><i class="pi pi-file"></i>#{msg['register.license']}</label>
                             <p:inputTextarea id="licenseB64" value="#{registerMb.registration.licenseBase64}"
                                              styleClass="licenseB64" style="display:none"/>
                             <p:inputText id="licenseName" value="#{registerMb.registration.licenseFileName}"
@@ -197,22 +308,46 @@
                         </h:panelGroup>
                     </h:panelGroup>
 
-                    <div class="form-section">#{msg['register.section.account']}</div>
-                    <div class="field required">
-                        <label for="form:email">#{msg['register.email']}</label>
+                    </div>
+                </section>
+
+                <section class="au-sec" id="sec-account">
+                    <div class="au-sec-head">
+                        <i class="pi pi-user"></i>
+                        <div class="au-sec-txt">
+                            <h:panelGroup id="step-account" styleClass="au-sec-step"><h:outputFormat value="#{msg['register.step']}"><f:param value="#{registerMb.step('account')}"/><f:param value="#{registerMb.totalSteps}"/></h:outputFormat></h:panelGroup>
+                            <h2>#{msg['register.section.account']}</h2>
+                            <p>#{msg['register.section.account.desc']}</p>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                    <div class="field required span-2">
+                        <label for="form:email"><i class="pi pi-envelope"></i>#{msg['register.email']}</label>
                         <p:inputText id="email" value="#{registerMb.registration.email}" required="true" type="email"
-                                     requiredMessage="#{msg['register.email']}: #{msg['msg.required']}" maxlength="120"/>
+                                         requiredMessage="#{msg['register.email']}: #{msg['msg.required']}" maxlength="120"/>
                         <span class="hint">#{msg['register.email.isLogin']}</span>
                     </div>
                     <div class="field required">
-                        <label for="form:password">#{msg['register.password']}</label>
-                        <p:password id="password" value="#{registerMb.registration.password}" required="true" feedback="false"
-                                    requiredMessage="#{msg['register.password']}: #{msg['msg.required']}" maxlength="60"/>
+                        <label for="form:password"><i class="pi pi-lock"></i>#{msg['register.password']}</label>
+                        <p:password id="password" value="#{registerMb.registration.password}" required="true" feedback="false" toggleMask="true"
+                                    requiredMessage="#{msg['register.password']}: #{msg['msg.required']}" maxlength="60"
+                                    autocomplete="new-password" styleClass="np-new"/>
                     </div>
                     <div class="field required">
-                        <label for="form:passwordConfirm">#{msg['register.passwordConfirm']}</label>
-                        <p:password id="passwordConfirm" value="#{registerMb.passwordConfirm}" required="true" feedback="false"
-                                    requiredMessage="#{msg['register.passwordConfirm']}: #{msg['msg.required']}" maxlength="60"/>
+                        <label for="form:passwordConfirm"><i class="pi pi-lock"></i>#{msg['register.passwordConfirm']}</label>
+                        <p:password id="passwordConfirm" value="#{registerMb.passwordConfirm}" required="true" feedback="false" toggleMask="true"
+                                    requiredMessage="#{msg['register.passwordConfirm']}: #{msg['msg.required']}" maxlength="60"
+                                    autocomplete="new-password" styleClass="np-confirm"/>
+                    </div>
+                    <!-- Password rules: live checklist (script below); RegisterMb checks length and match again -->
+                    <div class="field span-2 np-rules-box">
+                        <p class="np-rules-title">#{msg['register.password.rules']}</p>
+                        <ul class="np-rules np-rules-reg" id="npRules">
+                            <li data-rule="len"><i class="pi pi-check"></i>
+                                <h:outputFormat value="#{msg['newpwd.rule.length']}"><f:param value="#{registerMb.minLength}"/></h:outputFormat></li>
+                            <li data-rule="mix"><i class="pi pi-check"></i>#{msg['newpwd.rule.mix']}</li>
+                            <li data-rule="match"><i class="pi pi-check"></i>#{msg['newpwd.rule.match']}</li>
+                        </ul>
                     </div>
                     <div class="field span-2">
                         <div class="check-inline">
@@ -222,14 +357,19 @@
                             </span>
                         </div>
                     </div>
-                </div>
+                    </div>
+                </section>
 
-                <div class="flex-between wrap gap-2 mt-3">
-                    <h:outputLink value="#{request.contextPath}/login.xhtml">
-                        <i class="pi pi-arrow-left"></i>&#160;#{msg['register.backToLogin']}
+                <div class="au-reg-price">
+                    <i class="pi pi-star"></i>
+                    <span><h:outputText value="#{msg['register.price.note']}" escape="false"/></span>
+                </div>
+                <div class="au-reg-actions">
+                    <h:outputLink value="#{request.contextPath}/login.xhtml" styleClass="au-muted">
+                        ← #{msg['register.backToLogin']}
                     </h:outputLink>
                     <p:commandButton id="btnRegister" value="#{msg['register.submit']}" action="#{registerMb.doRegister}"
-                                     update="@form" icon="pi pi-check" styleClass="ui-button-primary"/>
+                                     update="@form" styleClass="au-submit"/>
                 </div>
 
                 <p:dialog header="#{msg['register.privacy.title']}" widgetVar="dlgPrivacy" modal="true" responsive="true"
@@ -242,34 +382,21 @@
                 </p:dialog>
             </h:form>
         </div>
-    </div>
+    </main>
 
+    <script type="text/javascript" src="#{request.contextPath}/resources/js/logo-crop.js?v=20261011b"></script>
     <script type="text/javascript">
     //<![CDATA[
-    // Logo: downscale on a canvas (max 512px) and stash the data URL in the hidden textarea.
+    // Logo: the shared cropper (resources/js/logo-crop.js) returns a 960x240 PNG data URL.
+    window.cvLogoCropTexts = {title: "#{msg['logo.crop.title']}", hint: "#{msg['logo.crop.hint']}", zoom: "#{msg['logo.crop.zoom']}",
+        fit: "#{msg['logo.crop.fit']}", fill: "#{msg['logo.crop.fill']}", cancel: "#{msg['action.cancel']}", use: "#{msg['logo.crop.use']}"};
     function cvReadLogo(input) {
-        if (!input.files || !input.files[0]) { return; }
-        var reader = new FileReader();
-        reader.onload = function (e) {
-            var img = new Image();
-            img.onload = function () {
-                var max = 512;
-                var scale = Math.min(1, max / Math.max(img.width, img.height));
-                var w = Math.round(img.width * scale);
-                var h = Math.round(img.height * scale);
-                var canvas = document.createElement('canvas');
-                canvas.width = w;
-                canvas.height = h;
-                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                var dataUrl = canvas.toDataURL('image/png');
-                var ta = document.querySelector('textarea.logoB64');
-                if (ta) { ta.value = dataUrl; }
-                var preview = document.getElementById('logoPreview');
-                if (preview) { preview.src = dataUrl; preview.style.display = 'inline-block'; }
-            };
-            img.src = e.target.result;
-        };
-        reader.readAsDataURL(input.files[0]);
+        cvLogoCrop.pick(input, function (dataUrl) {
+            var ta = document.querySelector('textarea.logoB64');
+            if (ta) { ta.value = dataUrl; }
+            var preview = document.getElementById('logoPreview');
+            if (preview) { preview.src = dataUrl; preview.style.display = 'inline-block'; }
+        });
     }
     // License (PDF or image): raw data URL plus file name / content type in hidden inputs.
     function cvReadLicense(input) {
@@ -290,6 +417,30 @@
         reader.readAsDataURL(file);
     }
     //]]>
+    </script>
+    <script type="text/javascript">
+    (function () {
+        // Password checklist: purely visual; RegisterMb checks length and match again.
+        var min = #{registerMb.minLength};
+        function q(sel) { return document.querySelector(sel); }
+        function set(rule, ok) {
+            var li = q('#npRules [data-rule="' + rule + '"]');
+            if (li) { li.classList.toggle('ok', ok); }
+        }
+        function update() {
+            var a = q('input.np-new, .np-new input'), b = q('input.np-confirm, .np-confirm input');
+            if (!a || !b) { return; }
+            var v = a.value, c = b.value;
+            set('len', v.length >= min);
+            set('mix', /[A-Za-z]/.test(v) &amp;&amp; /[0-9]/.test(v));
+            set('match', v.length > 0 &amp;&amp; v === c);
+        }
+        document.addEventListener('input', function (e) {
+            if (e.target.closest &amp;&amp; e.target.closest('.np-new, .np-confirm')) { update(); }
+        });
+        document.addEventListener('DOMContentLoaded', update);
+        if (window.jQuery) { jQuery(document).on('pfAjaxComplete', update); }
+    })();
     </script>
 </h:body>
 </f:view>

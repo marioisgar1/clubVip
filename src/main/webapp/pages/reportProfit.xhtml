@@ -5,98 +5,386 @@
                 xmlns:p="http://primefaces.org/ui"
                 template="/WEB-INF/template.xhtml">
     <ui:define name="content">
-        <div class="page-header">
-            <span class="page-icon"><i class="pi pi-chart-line"></i></span>
-            <h2>#{msg['menu.report.profit']}</h2>
-            <span class="page-subtitle">#{msg['pos.report.profit.subtitle']}</span>
-        </div>
+        <h:form id="form" styleClass="pl-report">
+            <!-- Hero: what the report is and the period it covers -->
+            <div class="page-header cv-hero">
+                <span class="page-icon"><i class="pi pi-chart-line"></i></span>
+                <div class="cv-hero-text">
+                    <span class="cv-hero-kicker">#{msg['profit.hero.kicker']}</span>
+                    <h2>#{msg['menu.report.profit']}</h2>
+                    <span class="page-subtitle">#{msg['profit.hero.text']}</span>
+                </div>
+                <div class="cv-hero-actions pl-no-print">
+                    <p:commandButton value="#{msg['profit.print']}" icon="pi pi-print" type="button" onclick="window.print()"
+                                     styleClass="ui-button-secondary"/>
+                    <p:commandButton value="#{msg['profit.export']}" icon="pi pi-download" ajax="false"
+                                     styleClass="ui-button-secondary" rendered="#{not empty reportProfitMb.report}">
+                        <p:dataExporter type="csv" target=":form:tabs:ledger" fileName="estado-resultados"/>
+                    </p:commandButton>
+                </div>
+            </div>
 
-        <h:form id="form">
-            <div class="card">
-                <p:toolbar styleClass="mb-2">
-                    <p:toolbarGroup>
-                        <span class="field-inline">
-                            <label>#{msg['pos.report.from']}</label>
-                            <p:datePicker value="#{reportProfitMb.from}" pattern="dd/MM/yyyy" showIcon="true" style="width:150px"/>
-                        </span>
-                        <span class="field-inline ml-2">
-                            <label>#{msg['pos.report.to']}</label>
-                            <p:datePicker value="#{reportProfitMb.to}" pattern="dd/MM/yyyy" showIcon="true" style="width:150px"/>
-                        </span>
-                        <p:commandButton value="#{msg['pos.report.generate']}" icon="pi pi-search"
-                                         actionListener="#{reportProfitMb.generate}" update="@form :messages"
-                                         styleClass="ui-button-primary ml-2" style="margin-top:1.1rem"/>
-                    </p:toolbarGroup>
-                </p:toolbar>
+            <!-- Period: quick ranges + free range -->
+            <div class="card pl-filters pl-no-print">
+                <div class="pl-presets">
+                    <ui:repeat value="#{['today','week','month','lastMonth','year']}" var="pr">
+                        <p:commandButton value="#{msg['profit.preset.'.concat(pr)]}" actionListener="#{reportProfitMb.applyPreset(pr)}"
+                                         update="@form :messages" process="@this"
+                                         styleClass="pl-preset #{reportProfitMb.preset eq pr ? 'is-active' : ''}"/>
+                    </ui:repeat>
+                </div>
+                <div class="pl-range">
+                    <span class="field-inline">
+                        <label>#{msg['pos.report.from']}</label>
+                        <p:datePicker value="#{reportProfitMb.from}" pattern="dd/MM/yyyy" showIcon="true" style="width:150px"/>
+                    </span>
+                    <span class="field-inline">
+                        <label>#{msg['pos.report.to']}</label>
+                        <p:datePicker value="#{reportProfitMb.to}" pattern="dd/MM/yyyy" showIcon="true" style="width:150px"/>
+                    </span>
+                    <p:commandButton value="#{msg['pos.report.generate']}" icon="pi pi-search"
+                                     actionListener="#{reportProfitMb.generate}" update="@form :messages"
+                                     styleClass="ui-button-primary"/>
+                </div>
+            </div>
 
-                <h:panelGroup id="results" layout="block">
-                    <h:panelGroup rendered="#{not empty reportProfitMb.report}" layout="block">
-                        <div class="kpi-grid">
-                            <div class="kpi-card kpi-ink">
-                                <span class="kpi-label">#{msg['pos.report.netProfit']}</span>
-                                <span class="kpi-value" style="#{reportProfitMb.report.netProfit lt 0 ? 'color:#F08A96' : ''}">#{sessionMb.fmtMoney(reportProfitMb.report.netProfit)}</span>
-                                <span class="kpi-hint">#{reportProfitMb.marginPercent}% #{msg['pos.report.margin']} &#183; #{reportProfitMb.report.salesCount} #{msg['pos.report.salesCount']}</span>
+            <h:panelGroup id="results" layout="block">
+                <h:panelGroup rendered="#{not empty reportProfitMb.report}" layout="block">
+                    <ui:param name="r" value="#{reportProfitMb.report}"/>
+
+                    <!-- Headline figures -->
+                    <div class="kpi-grid pl-kpis">
+                        <div class="kpi-card">
+                            <span class="kpi-icon"><i class="pi pi-dollar"></i></span>
+                            <span class="kpi-label">#{msg['profit.kpi.income']}</span>
+                            <span class="kpi-value">#{sessionMb.fmtMoney(r.revenue)}</span>
+                            <span class="kpi-hint">#{r.salesCount} #{msg['profit.kpi.income.hint']} &#183; #{reportProfitMb.periodLabel}</span>
+                        </div>
+                        <div class="kpi-card">
+                            <span class="kpi-icon"><i class="pi pi-box"></i></span>
+                            <span class="kpi-label">#{msg['profit.kpi.gross']}</span>
+                            <span class="kpi-value">#{sessionMb.fmtMoney(r.grossProfit)}</span>
+                            <span class="kpi-hint">#{empty reportProfitMb.grossMargin ? '—' : reportProfitMb.grossMargin}% #{msg['profit.kpi.gross.hint']}</span>
+                        </div>
+                        <div class="kpi-card">
+                            <span class="kpi-icon"><i class="pi pi-wallet"></i></span>
+                            <span class="kpi-label">#{msg['profit.kpi.costs']}</span>
+                            <span class="kpi-value">#{sessionMb.fmtMoney(reportProfitMb.totalCosts)}</span>
+                            <span class="kpi-hint">#{empty reportProfitMb.percentOf(reportProfitMb.totalCosts) ? '—' : reportProfitMb.percentOf(reportProfitMb.totalCosts)}% #{msg['profit.kpi.costs.hint']}</span>
+                        </div>
+                        <div class="kpi-card kpi-ink">
+                            <span class="kpi-icon"><i class="pi pi-check-circle"></i></span>
+                            <span class="kpi-label">#{msg['profit.kpi.net']}</span>
+                            <span class="kpi-value" style="#{r.realProfit lt 0 ? 'color:var(--vip-danger)' : ''}">#{sessionMb.fmtMoney(r.realProfit)}</span>
+                            <span class="kpi-hint">#{empty reportProfitMb.netMargin ? '—' : reportProfitMb.netMargin}% #{msg['profit.kpi.net.hint']}</span>
+                        </div>
+                    </div>
+
+                    <div class="pl-grid">
+                        <!-- Income statement -->
+                        <div class="card pl-statement">
+                            <div class="pl-st-head">
+                                <div>
+                                    <h3 class="section-title"><i class="pi pi-file"></i>&#160;#{msg['profit.st.title']}</h3>
+                                    <span class="muted">#{msg['profit.period']}: #{reportProfitMb.periodLabel}</span>
+                                </div>
                             </div>
-                            <div class="kpi-card">
-                                <span class="kpi-label">#{msg['pos.report.revenue']}</span>
-                                <span class="kpi-value">#{sessionMb.fmtMoney(reportProfitMb.report.revenue)}</span>
-                                <span class="kpi-hint">#{msg['pos.report.discounts']}: #{sessionMb.fmtMoney(reportProfitMb.report.discountsGiven)}</span>
-                            </div>
-                            <div class="kpi-card">
-                                <span class="kpi-label">#{msg['pos.report.cogs']}</span>
-                                <span class="kpi-value">#{sessionMb.fmtMoney(reportProfitMb.report.cogs)}</span>
-                                <span class="kpi-hint">#{msg['pos.report.cogs.hint']}</span>
-                            </div>
-                            <div class="kpi-card">
-                                <span class="kpi-label">#{msg['pos.report.commissions']}</span>
-                                <span class="kpi-value">#{sessionMb.fmtMoney(reportProfitMb.report.cardCommissions)}</span>
-                                <span class="kpi-hint">#{msg['pos.report.commissions.hint']}</span>
-                            </div>
-                            <div class="kpi-card">
-                                <span class="kpi-label">#{msg['pos.report.venueCost']}</span>
-                                <span class="kpi-value">#{sessionMb.fmtMoney(reportProfitMb.report.venueCost)}</span>
-                                <span class="kpi-hint">#{msg['pos.report.venueCost.hint']}</span>
-                            </div>
+                            <table class="pl-table">
+                                <thead>
+                                    <tr>
+                                        <th>#{msg['profit.st.concept']}</th>
+                                        <th class="num">#{msg['profit.st.amount']}</th>
+                                        <th class="num pct">#{msg['profit.st.pct']}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <ui:repeat value="#{reportProfitMb.statement}" var="ln">
+                                        <tr class="pl-#{ln.kind}">
+                                            <td colspan="#{ln.kind eq 'section' ? 3 : 1}">
+                                                #{ln.label}
+                                                <h:outputText value="#{ln.hint}" rendered="#{not empty ln.hint}" styleClass="pl-hint"/>
+                                            </td>
+                                            <ui:fragment rendered="#{ln.kind ne 'section'}">
+                                                <td class="num #{ln.negative ? 'neg' : ''}">
+                                                    #{ln.negative ? '(' : ''}#{sessionMb.fmtMoney(ln.amount.abs())}#{ln.negative ? ')' : ''}
+                                                </td>
+                                                <td class="num pct">
+                                                    <h:outputText value="#{ln.percent.abs()}%" rendered="#{not empty ln.percent}"/>
+                                                </td>
+                                            </ui:fragment>
+                                        </tr>
+                                    </ui:repeat>
+                                </tbody>
+                            </table>
+                            <p class="pl-note"><i class="pi pi-info-circle"></i> #{msg['profit.st.note']}</p>
                         </div>
 
-                        <h3 class="section-title"><i class="pi pi-map-marker gold"></i>&#160;#{msg['pos.report.byVenue']}
-                            <span class="muted" style="font-family:var(--vip-font-body);font-size:.85rem">&#160;#{msg['pos.report.byVenue.hint']}</span></h3>
-                        <h:panelGroup rendered="#{reportProfitMb.hasVenues}" layout="block" styleClass="pos-chart-box mb-2">
-                            <p:barChart model="#{reportProfitMb.venueChart}" style="width:100%;height:100%"/>
-                        </h:panelGroup>
-                        <h:panelGroup rendered="#{not reportProfitMb.hasVenues}" layout="block" styleClass="empty-state">
-                            <i class="pi pi-chart-bar"></i>#{msg['msg.noData']}
-                        </h:panelGroup>
-                        <p:dataTable var="v" value="#{reportProfitMb.report.venues}" reflow="true" stripedRows="true"
-                                     rendered="#{reportProfitMb.hasVenues}" emptyMessage="#{msg['msg.noData']}">
-                            <p:column headerText="#{msg['pos.report.venue']}" style="min-width:14rem">
-                                <span style="font-weight:600">#{reportProfitMb.venueTitle(v)}</span>
-                                <h:outputText value="#{msg['pos.report.noVenueExpense']}" rendered="#{not v.hasExpense}"
-                                              styleClass="badge badge-muted" style="margin-left:.4rem"/>
-                                <span class="muted" style="display:block">#{reportProfitMb.venueSubtitle(v)}</span>
-                            </p:column>
-                            <p:column headerText="#{msg['pos.report.salesCount']}" sortBy="#{v.salesCount}" width="80" styleClass="text-right">#{v.salesCount}</p:column>
-                            <p:column headerText="#{msg['pos.report.revenue']}" sortBy="#{v.revenue}" width="110" styleClass="text-right">#{sessionMb.fmtMoney(v.revenue)}</p:column>
-                            <p:column headerText="#{msg['pos.report.cogs']}" sortBy="#{v.cogs}" width="110" styleClass="text-right"><span class="muted">#{sessionMb.fmtMoney(v.cogs)}</span></p:column>
-                            <p:column headerText="#{msg['pos.report.commissions']}" sortBy="#{v.commissions}" width="100" styleClass="text-right"><span class="muted">#{sessionMb.fmtMoney(v.commissions)}</span></p:column>
-                            <p:column headerText="#{msg['pos.report.discounts']}" sortBy="#{v.discounts}" width="100" styleClass="text-right"><span class="muted">#{sessionMb.fmtMoney(v.discounts)}</span></p:column>
-                            <p:column headerText="#{msg['pos.report.venueCost']}" sortBy="#{v.venueCost}" width="110" styleClass="text-right">
-                                <h:outputText value="#{sessionMb.fmtMoney(v.venueCost)}" rendered="#{v.venueCost gt 0}" styleClass="muted"/>
-                                <h:outputText value="—" rendered="#{v.venueCost le 0}" styleClass="muted"/>
-                            </p:column>
-                            <p:column headerText="#{msg['pos.report.netProfit']}" sortBy="#{v.netProfit}" width="130" styleClass="text-right">
-                                <strong style="color:#{v.netProfit ge 0 ? 'var(--vip-success)' : 'var(--vip-danger)'}">#{sessionMb.fmtMoney(v.netProfit)}</strong>
-                                <h:panelGroup rendered="#{not empty v.marginPercent}" styleClass="muted" layout="block" style="font-size:.75rem">
-                                    <h:outputText value="#{v.marginPercent}"><f:convertNumber minFractionDigits="1" maxFractionDigits="1"/></h:outputText>% #{msg['pos.report.margin']}
-                                </h:panelGroup>
-                            </p:column>
-                        </p:dataTable>
-                    </h:panelGroup>
-                    <h:panelGroup rendered="#{empty reportProfitMb.report}" layout="block" styleClass="empty-state">
-                        <i class="pi pi-chart-line"></i>#{msg['msg.noData']}
-                    </h:panelGroup>
+                        <div class="pl-side">
+                            <!-- Ratios -->
+                            <div class="card pl-ratios">
+                                <h3 class="section-title"><i class="pi pi-percentage"></i>&#160;#{msg['profit.ind.title']}</h3>
+                                <div class="pl-ratio">
+                                    <span>#{msg['profit.ind.grossMargin']}</span>
+                                    <strong>#{empty reportProfitMb.grossMargin ? '—' : reportProfitMb.grossMargin.toString().concat('%')}</strong>
+                                </div>
+                                <div class="pl-ratio">
+                                    <span>#{msg['profit.ind.contribution']}</span>
+                                    <strong>#{empty reportProfitMb.contributionPercent ? '—' : reportProfitMb.contributionPercent.toString().concat('%')}</strong>
+                                </div>
+                                <div class="pl-ratio">
+                                    <span>#{msg['profit.ind.netMargin']}</span>
+                                    <strong class="#{r.realProfit lt 0 ? 'neg' : 'pos'}">#{empty reportProfitMb.netMargin ? '—' : reportProfitMb.netMargin.toString().concat('%')}</strong>
+                                </div>
+                                <div class="pl-ratio">
+                                    <span>#{msg['profit.ind.avgTicket']}</span>
+                                    <strong>#{empty reportProfitMb.averageTicket ? '—' : sessionMb.fmtMoney(reportProfitMb.averageTicket)}</strong>
+                                </div>
+                                <div class="pl-ratio">
+                                    <span>#{msg['profit.ind.payroll']}<small>#{msg['profit.ind.payroll.hint']}</small></span>
+                                    <strong>#{sessionMb.fmtMoney(reportProfitMb.totalPayroll)}<small>#{empty reportProfitMb.payrollPercent ? '' : reportProfitMb.payrollPercent.toString().concat('%')}</small></strong>
+                                </div>
+                                <div class="pl-ratio pl-breakeven">
+                                    <span>#{msg['profit.ind.breakEven']}<small>#{msg['profit.ind.breakEven.hint']}</small></span>
+                                    <h:panelGroup rendered="#{not empty reportProfitMb.breakEven}">
+                                        <strong>#{sessionMb.fmtMoney(reportProfitMb.breakEven)}
+                                            <small class="#{reportProfitMb.breakEvenCoverage ge 0 ? 'pos' : 'neg'}">#{reportProfitMb.breakEvenCoverage.abs()}% #{reportProfitMb.breakEvenCoverage ge 0 ? msg['profit.ind.breakEven.above'] : msg['profit.ind.breakEven.below']}</small>
+                                        </strong>
+                                    </h:panelGroup>
+                                    <h:panelGroup rendered="#{empty reportProfitMb.breakEven}">
+                                        <strong><small>#{reportProfitMb.noFixedCosts ? msg['profit.ind.breakEven.noFixed'] : msg['profit.ind.breakEven.none']}</small></strong>
+                                    </h:panelGroup>
+                                </div>
+                            </div>
+
+                            <!-- Where each peso went -->
+                            <h:panelGroup rendered="#{not empty reportProfitMb.shares}" layout="block" styleClass="card pl-shares">
+                                <h3 class="section-title"><i class="pi pi-chart-pie"></i>&#160;#{msg['profit.share.title']}</h3>
+                                <ui:repeat value="#{reportProfitMb.shares}" var="s">
+                                    <div class="pl-share">
+                                        <div class="pl-share-row">
+                                            <span>#{s.label}</span>
+                                            <span><b>#{s.percent}%</b>&#160;<span class="muted">#{sessionMb.fmtMoney(s.amount)}</span></span>
+                                        </div>
+                                        <div class="pl-bar"><span class="#{s.styleClass}" style="width:#{s.width}%"></span></div>
+                                    </div>
+                                </ui:repeat>
+                            </h:panelGroup>
+                        </div>
+                    </div>
+
+                    <!-- Detail -->
+                    <p:tabView id="tabs" styleClass="pl-tabs" dynamic="true" cache="true">
+                        <p:tab title="#{msg['profit.tab.ledger']}">
+                            <p class="muted pl-tab-hint">#{msg['profit.ledger.hint']}</p>
+
+                            <h:panelGroup id="ledgerTotals" layout="block" styleClass="pl-totals">
+                                <div><span>#{msg['profit.col.income']}</span><b>#{sessionMb.fmtMoney(reportProfitMb.movementTotal('income'))}</b></div>
+                                <div><span>#{msg['profit.col.cogs']}</span><b>#{sessionMb.fmtMoney(reportProfitMb.movementTotal('cogs'))}</b></div>
+                                <div><span>#{msg['profit.col.fees']}</span><b>#{sessionMb.fmtMoney(reportProfitMb.movementTotal('fees'))}</b></div>
+                                <h:panelGroup rendered="#{reportProfitMb.hasConsignment}"><span>#{msg['profit.col.cons']}</span><b>#{sessionMb.fmtMoney(reportProfitMb.movementTotal('cons'))}</b></h:panelGroup>
+                                <div><span>#{msg['profit.col.staff']}</span><b>#{sessionMb.fmtMoney(reportProfitMb.movementTotal('staff'))}</b></div>
+                                <div><span>#{msg['profit.col.expense']}</span><b>#{sessionMb.fmtMoney(reportProfitMb.movementTotal('expense'))}</b></div>
+                                <div class="is-net"><span>#{msg['profit.col.net']}</span>
+                                    <b class="#{reportProfitMb.movementTotal('net') lt 0 ? 'neg' : 'pos'}">#{sessionMb.fmtMoney(reportProfitMb.movementTotal('net'))}</b></div>
+                            </h:panelGroup>
+
+                            <p:dataTable id="ledger" widgetVar="ledgerTable" var="m" value="#{reportProfitMb.movements}"
+                                         filteredValue="#{reportProfitMb.filteredMovements}" globalFilterOnly="true"
+                                         paginator="true" rows="50" paginatorPosition="bottom" rowsPerPageTemplate="25,50,100,500"
+                                         paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+                                         reflow="true" stripedRows="true" size="small" styleClass="pl-ledger"
+                                         emptyMessage="#{msg['msg.noData']}" rowStyleClass="pl-row-#{m.type}">
+                                <p:ajax event="filter" update=":form:tabs:ledgerTotals"/>
+                                <f:facet name="header">
+                                <div class="pl-ledger-bar pl-no-print">
+                                    <p:selectOneMenu value="#{reportProfitMb.movementType}" style="min-width:12rem">
+                                        <f:selectItem itemValue="" itemLabel="#{msg['profit.filter.all']}"/>
+                                        <f:selectItem itemValue="INCOME" itemLabel="#{msg['profit.filter.income']}"/>
+                                        <f:selectItem itemValue="OUTCOME" itemLabel="#{msg['profit.filter.outcome']}"/>
+                                        <f:selectItem itemValue="SALE" itemLabel="#{msg['profit.type.SALE']}"/>
+                                        <f:selectItem itemValue="EXCHANGE" itemLabel="#{msg['profit.type.EXCHANGE']}"/>
+                                        <f:selectItem itemValue="VISIT" itemLabel="#{msg['profit.type.VISIT']}"/>
+                                        <f:selectItem itemValue="CONSIGNMENT" itemLabel="#{msg['profit.type.CONSIGNMENT']}"/>
+                                        <f:selectItem itemValue="EXPENSE" itemLabel="#{msg['profit.type.EXPENSE']}"/>
+                                        <f:selectItem itemValue="VENUE" itemLabel="#{msg['profit.type.VENUE']}"/>
+                                        <f:selectItem itemValue="SALARY" itemLabel="#{msg['profit.type.SALARY']}"/>
+                                        <p:ajax listener="#{reportProfitMb.changeMovementType}" update=":form:tabs:ledger :form:tabs:ledgerTotals"/>
+                                    </p:selectOneMenu>
+                                    <p:inputText id="globalFilter" placeholder="#{msg['action.search']}" onkeyup="PF('ledgerTable').filter()"
+                                                 style="min-width:16rem"/>
+                                </div>
+                                </f:facet>
+                                <p:column headerText="#{msg['profit.col.date']}" sortBy="#{m.dateMillis}" width="128" exportValue="#{reportProfitMb.stamp(m)}">
+                                    <span class="pl-date">#{reportProfitMb.stamp(m)}</span>
+                                </p:column>
+                                <p:column headerText="#{msg['profit.col.type']}" sortBy="#{m.type}" width="105" filterBy="#{reportProfitMb.typeLabel(m.type)}" filterMatchMode="contains"
+                                          exportValue="#{reportProfitMb.typeLabel(m.type)}">
+                                    <span class="pl-type pl-type-#{m.type}"><i class="#{reportProfitMb.typeIcon(m.type)}"></i>#{reportProfitMb.typeLabel(m.type)}</span>
+                                </p:column>
+                                <p:column headerText="#{msg['profit.col.concept']}" styleClass="cv-col-main" filterBy="#{reportProfitMb.concept(m)} #{m.reference} #{m.person} #{m.customer} #{m.paymentMethod}" filterMatchMode="contains"
+                                          exportValue="#{reportProfitMb.concept(m)}">
+                                    <span class="pl-concept">#{reportProfitMb.concept(m)}</span>
+                                    <span class="muted pl-sub">
+                                        <h:outputText value="#{m.reference}" rendered="#{not empty m.reference and m.type ne 'VENUE'}"/>
+                                        <h:outputText value=" · #{m.customer}" rendered="#{not empty m.customer}"/>
+                                        <h:outputText value=" · #{m.paymentMethod}" rendered="#{not empty m.paymentMethod}"/>
+                                    </span>
+                                </p:column>
+                                <p:column headerText="#{msg['profit.col.reference']}" visible="false" exportable="true" exportValue="#{m.reference}">#{m.reference}</p:column>
+                                <p:column headerText="#{msg['profit.col.customer']}" visible="false" exportable="true" exportValue="#{m.customer}">#{m.customer}</p:column>
+                                <p:column headerText="#{msg['profit.col.payment']}" visible="false" exportable="true" exportValue="#{m.paymentMethod}">#{m.paymentMethod}</p:column>
+                                <p:column headerText="#{msg['profit.col.person']}" sortBy="#{m.person}" width="140" exportValue="#{m.person}">
+                                    <span class="muted">#{m.person}</span>
+                                </p:column>
+                                <p:column headerText="#{msg['profit.col.income']}" sortBy="#{m.income}" width="105" styleClass="text-right" exportValue="#{m.income}">
+                                    <h:outputText value="#{sessionMb.fmtMoney(m.income)}" rendered="#{m.income ne 0}"/>
+                                </p:column>
+                                <p:column headerText="#{msg['profit.col.cogs']}" sortBy="#{m.cogs}" width="100" styleClass="text-right" exportValue="#{m.cogs}">
+                                    <h:outputText value="#{sessionMb.fmtMoney(m.cogs)}" rendered="#{m.cogs ne 0}" styleClass="muted"/>
+                                </p:column>
+                                <p:column headerText="#{msg['profit.col.fees']}" sortBy="#{m.fees}" width="95" styleClass="text-right" exportValue="#{m.fees}">
+                                    <h:outputText value="#{sessionMb.fmtMoney(m.fees)}" rendered="#{m.fees ne 0}" styleClass="muted"/>
+                                </p:column>
+                                <p:column headerText="#{msg['profit.col.cons']}" sortBy="#{m.consignmentCommission}" width="100" styleClass="text-right"
+                                          exportValue="#{m.consignmentCommission}" rendered="#{reportProfitMb.hasConsignment}">
+                                    <h:outputText value="#{sessionMb.fmtMoney(m.consignmentCommission)}" rendered="#{m.consignmentCommission ne 0}" styleClass="muted"/>
+                                </p:column>
+                                <p:column headerText="#{msg['profit.col.staff']}" sortBy="#{m.staffCommission}" width="95" styleClass="text-right" exportValue="#{m.staffCommission}">
+                                    <h:outputText value="#{sessionMb.fmtMoney(m.staffCommission)}" rendered="#{m.staffCommission ne 0}" styleClass="muted"/>
+                                </p:column>
+                                <p:column headerText="#{msg['profit.col.expense']}" sortBy="#{m.expense}" width="100" styleClass="text-right" exportValue="#{m.expense}">
+                                    <h:outputText value="#{sessionMb.fmtMoney(m.expense)}" rendered="#{m.expense ne 0}" styleClass="neg"/>
+                                </p:column>
+                                <p:column headerText="#{msg['profit.col.net']}" sortBy="#{m.net}" width="110" styleClass="text-right" exportValue="#{m.net}">
+                                    <strong class="#{m.net lt 0 ? 'neg' : 'pos'}">#{sessionMb.fmtMoney(m.net)}</strong>
+                                </p:column>
+                            </p:dataTable>
+                        </p:tab>
+
+                        <p:tab title="#{msg['profit.tab.days']}">
+                            <p class="muted pl-tab-hint">#{msg['profit.days.hint']}</p>
+                            <h:panelGroup rendered="#{reportProfitMb.hasDays}" layout="block" styleClass="pos-chart-box mb-2">
+                                <p:barChart model="#{reportProfitMb.dayChart}" style="width:100%;height:100%"/>
+                            </h:panelGroup>
+                            <p:dataTable var="d" value="#{r.days}" reflow="true" stripedRows="true" size="small"
+                                         emptyMessage="#{msg['msg.noData']}">
+                                <p:column headerText="#{msg['profit.col.day']}" sortBy="#{d.dayMillis}" styleClass="cv-col-main">
+                                    <strong>#{reportProfitMb.weekdayLabel(d.dayMillis)}</strong>
+                                    <span class="muted">&#160;#{reportProfitMb.dayLabel(d.dayMillis)}</span>
+                                </p:column>
+                                <p:column headerText="#{msg['profit.col.ops']}" sortBy="#{d.operations}" width="70" styleClass="text-right">#{d.operations}</p:column>
+                                <p:column headerText="#{msg['profit.col.income']}" sortBy="#{d.income}" width="110" styleClass="text-right">#{sessionMb.fmtMoney(d.income)}</p:column>
+                                <p:column headerText="#{msg['profit.col.cogs']}" width="100" styleClass="text-right"><span class="muted">#{sessionMb.fmtMoney(d.cogs)}</span></p:column>
+                                <p:column headerText="#{msg['profit.col.fees']}" width="95" styleClass="text-right"><span class="muted">#{sessionMb.fmtMoney(d.fees)}</span></p:column>
+                                <p:column headerText="#{msg['profit.col.cons']}" width="100" styleClass="text-right" rendered="#{reportProfitMb.hasConsignment}"><span class="muted">#{sessionMb.fmtMoney(d.consignmentCommissions)}</span></p:column>
+                                <p:column headerText="#{msg['profit.col.staff']}" width="95" styleClass="text-right"><span class="muted">#{sessionMb.fmtMoney(d.staffCommissions)}</span></p:column>
+                                <p:column headerText="#{msg['profit.col.salaries']}" width="95" styleClass="text-right"><span class="muted">#{sessionMb.fmtMoney(d.salaries)}</span></p:column>
+                                <p:column headerText="#{msg['profit.col.venues']}" width="90" styleClass="text-right"><span class="muted">#{sessionMb.fmtMoney(d.venueCost)}</span></p:column>
+                                <p:column headerText="#{msg['profit.col.expenses']}" width="95" styleClass="text-right"><span class="muted">#{sessionMb.fmtMoney(d.expenses)}</span></p:column>
+                                <p:column headerText="#{msg['profit.col.net']}" sortBy="#{d.net}" width="115" styleClass="text-right">
+                                    <strong class="#{d.net lt 0 ? 'neg' : 'pos'}">#{sessionMb.fmtMoney(d.net)}</strong>
+                                </p:column>
+                            </p:dataTable>
+                        </p:tab>
+
+                        <p:tab title="#{msg['profit.tab.payroll']}">
+                            <p class="muted pl-tab-hint">#{msg['profit.payroll.hint']}</p>
+                            <p:dataTable var="e" value="#{r.payroll}" reflow="true" stripedRows="true" size="small"
+                                         emptyMessage="#{msg['msg.noData']}">
+                                <p:column headerText="#{msg['profit.col.employee']}" sortBy="#{e.employeeName}" styleClass="cv-col-main">
+                                    <strong>#{e.employeeName}</strong>
+                                    <span class="badge badge-info" style="margin-left:.4rem">#{reportProfitMb.schemeLabel(e.payScheme)}</span>
+                                </p:column>
+                                <p:column headerText="#{msg['profit.col.ops']}" sortBy="#{e.operations}" width="70" styleClass="text-right">#{e.operations}</p:column>
+                                <p:column headerText="#{msg['profit.col.generated']}" sortBy="#{e.revenue}" width="115" styleClass="text-right">#{sessionMb.fmtMoney(e.revenue)}</p:column>
+                                <p:column headerText="#{msg['profit.col.serviceComm']}" sortBy="#{e.serviceCommissions}" width="110" styleClass="text-right"><span class="muted">#{sessionMb.fmtMoney(e.serviceCommissions)}</span></p:column>
+                                <p:column headerText="#{msg['profit.col.saleComm']}" sortBy="#{e.saleCommissions}" width="105" styleClass="text-right"><span class="muted">#{sessionMb.fmtMoney(e.saleCommissions)}</span></p:column>
+                                <p:column headerText="#{msg['profit.col.salary']}" sortBy="#{e.salary}" width="125" styleClass="text-right">
+                                    <span class="muted">#{sessionMb.fmtMoney(e.salary)}</span>
+                                    <h:panelGroup rendered="#{e.salaryDays gt 0}" styleClass="muted pl-sub" layout="block">#{e.salaryDays} #{msg[e.salaryDays eq 1 ? 'pos.report.day' : 'pos.report.days']}</h:panelGroup>
+                                </p:column>
+                                <p:column headerText="#{msg['profit.col.cost']}" sortBy="#{e.total}" width="115" styleClass="text-right"><strong>#{sessionMb.fmtMoney(e.total)}</strong></p:column>
+                                <p:column headerText="#{msg['profit.col.costPct']}" width="110" styleClass="text-right">
+                                    <h:outputText value="#{e.total * 100 / e.revenue}" rendered="#{e.revenue gt 0}"><f:convertNumber maxFractionDigits="1" minFractionDigits="1"/></h:outputText>
+                                    <h:outputText value="%" rendered="#{e.revenue gt 0}"/>
+                                    <h:outputText value="—" rendered="#{e.revenue le 0}" styleClass="muted"/>
+                                </p:column>
+                            </p:dataTable>
+                        </p:tab>
+
+                        <p:tab title="#{msg['profit.tab.expenses']}">
+                            <p class="muted pl-tab-hint">#{msg['profit.expenses.hint']}</p>
+                            <h:panelGroup rendered="#{reportProfitMb.hasExpenses}" layout="block" styleClass="pl-exp-grid">
+                                <div class="pl-exp-cats">
+                                    <ui:repeat value="#{reportProfitMb.expenseCategories}" var="c">
+                                        <div class="pl-share">
+                                            <div class="pl-share-row">
+                                                <span>#{c.label}</span>
+                                                <span><b>#{sessionMb.fmtMoney(c.amount)}</b>&#160;<span class="muted">#{c.percent}%</span></span>
+                                            </div>
+                                            <div class="pl-bar"><span class="#{c.styleClass}" style="width:#{c.width}%"></span></div>
+                                        </div>
+                                    </ui:repeat>
+                                </div>
+                                <p:dataTable var="x" value="#{reportProfitMb.expenseMovements}" reflow="true" stripedRows="true" size="small"
+                                             emptyMessage="#{msg['msg.noData']}">
+                                    <p:column headerText="#{msg['profit.col.day']}" sortBy="#{x.dateMillis}" width="105">#{reportProfitMb.stamp(x)}</p:column>
+                                    <p:column headerText="#{msg['profit.col.type']}" sortBy="#{x.type}" width="95">
+                                        <span class="pl-type pl-type-#{x.type}"><i class="#{reportProfitMb.typeIcon(x.type)}"></i>#{reportProfitMb.typeLabel(x.type)}</span>
+                                    </p:column>
+                                    <p:column headerText="#{msg['profit.col.concept']}" styleClass="cv-col-main">
+                                        #{reportProfitMb.concept(x)}
+                                        <h:panelGroup rendered="#{not empty x.person}" styleClass="muted pl-sub" layout="block">#{x.person}</h:panelGroup>
+                                    </p:column>
+                                    <p:column headerText="#{msg['profit.col.expense']}" sortBy="#{x.expense}" width="115" styleClass="text-right">
+                                        <strong class="neg">#{sessionMb.fmtMoney(x.expense)}</strong>
+                                    </p:column>
+                                </p:dataTable>
+                            </h:panelGroup>
+                            <h:panelGroup rendered="#{not reportProfitMb.hasExpenses}" layout="block" styleClass="empty-state">
+                                <i class="pi pi-wallet"></i>#{msg['msg.noData']}
+                            </h:panelGroup>
+                        </p:tab>
+
+                        <p:tab title="#{msg['profit.tab.venues']}">
+                            <p class="muted pl-tab-hint">#{msg['pos.report.byVenue.hint']}</p>
+                            <h:panelGroup rendered="#{reportProfitMb.hasVenues}" layout="block" styleClass="pos-chart-box mb-2">
+                                <p:barChart model="#{reportProfitMb.venueChart}" style="width:100%;height:100%"/>
+                            </h:panelGroup>
+                            <h:panelGroup rendered="#{not reportProfitMb.hasVenues}" layout="block" styleClass="empty-state">
+                                <i class="pi pi-chart-bar"></i>#{msg['msg.noData']}
+                            </h:panelGroup>
+                            <p:dataTable var="v" value="#{r.venues}" reflow="true" stripedRows="true" size="small"
+                                         rendered="#{reportProfitMb.hasVenues}" emptyMessage="#{msg['msg.noData']}">
+                                <p:column headerText="#{msg['pos.report.venue']}" styleClass="cv-col-main">
+                                    <span style="font-weight:600">#{reportProfitMb.venueTitle(v)}</span>
+                                    <h:outputText value="#{msg['pos.report.noVenueExpense']}" rendered="#{not v.hasExpense}"
+                                                  styleClass="badge badge-muted" style="margin-left:.4rem"/>
+                                    <span class="muted" style="display:block">#{reportProfitMb.venueSubtitle(v)}</span>
+                                </p:column>
+                                <p:column headerText="#{msg['pos.report.col.tickets']}" sortBy="#{v.salesCount}" width="80" styleClass="text-right">#{v.salesCount}</p:column>
+                                <p:column headerText="#{msg['pos.report.revenue']}" sortBy="#{v.revenue}" width="110" styleClass="text-right">#{sessionMb.fmtMoney(v.revenue)}</p:column>
+                                <p:column headerText="#{msg['pos.report.cogs']}" sortBy="#{v.cogs}" width="110" styleClass="text-right"><span class="muted">#{sessionMb.fmtMoney(v.cogs)}</span></p:column>
+                                <p:column headerText="#{msg['pos.report.commissions']}" sortBy="#{v.commissions}" width="100" styleClass="text-right"><span class="muted">#{sessionMb.fmtMoney(v.commissions)}</span></p:column>
+                                <p:column headerText="#{msg['pos.report.discounts']}" sortBy="#{v.discounts}" width="100" styleClass="text-right"><span class="muted">#{sessionMb.fmtMoney(v.discounts)}</span></p:column>
+                                <p:column headerText="#{msg['pos.report.venueCost']}" sortBy="#{v.venueCost}" width="110" styleClass="text-right">
+                                    <h:outputText value="#{sessionMb.fmtMoney(v.venueCost)}" rendered="#{v.venueCost gt 0}" styleClass="muted"/>
+                                    <h:outputText value="—" rendered="#{v.venueCost le 0}" styleClass="muted"/>
+                                </p:column>
+                                <p:column headerText="#{msg['pos.report.netProfit']}" sortBy="#{v.netProfit}" width="130" styleClass="text-right">
+                                    <strong class="#{v.netProfit ge 0 ? 'pos' : 'neg'}">#{sessionMb.fmtMoney(v.netProfit)}</strong>
+                                    <h:panelGroup rendered="#{not empty v.marginPercent}" styleClass="muted" layout="block" style="font-size:.75rem">
+                                        <h:outputText value="#{v.marginPercent}"><f:convertNumber minFractionDigits="1" maxFractionDigits="1"/></h:outputText>% #{msg['pos.report.margin']}
+                                    </h:panelGroup>
+                                </p:column>
+                            </p:dataTable>
+                        </p:tab>
+                    </p:tabView>
                 </h:panelGroup>
-            </div>
+                <h:panelGroup rendered="#{empty reportProfitMb.report}" layout="block" styleClass="card empty-state">
+                    <i class="pi pi-chart-line"></i>#{msg['msg.noData']}
+                </h:panelGroup>
+            </h:panelGroup>
         </h:form>
     </ui:define>
 </ui:composition>

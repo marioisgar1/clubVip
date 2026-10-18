@@ -84,6 +84,9 @@ public class BusinessVo implements Serializable {
 
     private Boolean moduleConsignment;
 
+    /** Payroll and commissions module (sueldos y comisiones del personal). */
+    private Boolean modulePayroll;
+
     /** Rewards: points on purchases, and pesos per point. */
     private Boolean pointsEnabled;
 
@@ -92,6 +95,12 @@ public class BusinessVo implements Serializable {
     private Integer exchangeMaxDays;
 
     private String verificationStatus;
+
+    /** Operator view: the owner's login e-mail and when it/the phones were confirmed (null = not yet). */
+    private String ownerEmail;
+    private java.util.Date ownerEmailVerifiedAt;
+    private java.util.Date ownerPhoneVerifiedAt;
+    private java.util.Date contactPhoneVerifiedAt;
 
     private String licenseFileName;
 
@@ -104,6 +113,10 @@ public class BusinessVo implements Serializable {
     private String subscriptionStatus;
 
     private String subscriptionUntil;
+    /** MONTHLY | ANNUAL (paid on Stripe) | COURTESY (granted by the operator). */
+    private String membershipPlan;
+    /** OPEN | WON | LOST | REFUNDED when a chargeback or refund touched the membership. */
+    private String disputeStatus;
 
     private BigDecimal ratingAverage;
 
@@ -505,5 +518,61 @@ public class BusinessVo implements Serializable {
 
     public void setPointsPesosPerPoint(BigDecimal pointsPesosPerPoint) {
         this.pointsPesosPerPoint = pointsPesosPerPoint;
+    }
+
+    public Boolean getModulePayroll() {
+        return modulePayroll;
+    }
+
+    public void setModulePayroll(Boolean modulePayroll) {
+        this.modulePayroll = modulePayroll;
+    }
+
+    public String getOwnerEmail() {
+        return ownerEmail;
+    }
+
+    public void setOwnerEmail(String ownerEmail) {
+        this.ownerEmail = ownerEmail;
+    }
+
+    public java.util.Date getOwnerEmailVerifiedAt() {
+        return ownerEmailVerifiedAt;
+    }
+
+    public void setOwnerEmailVerifiedAt(java.util.Date ownerEmailVerifiedAt) {
+        this.ownerEmailVerifiedAt = ownerEmailVerifiedAt;
+    }
+
+    public java.util.Date getOwnerPhoneVerifiedAt() {
+        return ownerPhoneVerifiedAt;
+    }
+
+    public void setOwnerPhoneVerifiedAt(java.util.Date ownerPhoneVerifiedAt) {
+        this.ownerPhoneVerifiedAt = ownerPhoneVerifiedAt;
+    }
+
+    public java.util.Date getContactPhoneVerifiedAt() {
+        return contactPhoneVerifiedAt;
+    }
+
+    public void setContactPhoneVerifiedAt(java.util.Date contactPhoneVerifiedAt) {
+        this.contactPhoneVerifiedAt = contactPhoneVerifiedAt;
+    }
+
+    public String getMembershipPlan() {
+        return membershipPlan;
+    }
+
+    public void setMembershipPlan(String membershipPlan) {
+        this.membershipPlan = membershipPlan;
+    }
+
+    public String getDisputeStatus() {
+        return disputeStatus;
+    }
+
+    public void setDisputeStatus(String disputeStatus) {
+        this.disputeStatus = disputeStatus;
     }
 }

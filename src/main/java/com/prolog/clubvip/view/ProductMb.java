@@ -52,6 +52,10 @@ public class ProductMb implements Serializable {
     private List<BrandVo> brands = new ArrayList<>();
     private List<ProductModelVo> models = new ArrayList<>();
 
+    /** Quick add from the product dialog: FAMILY | BRAND | MODEL being typed (null = none open). */
+    private String quickType;
+    private String quickName;
+
     @PostConstruct
     public void init() {
         loadCatalogs();
@@ -97,6 +101,7 @@ public class ProductMb implements Serializable {
     }
 
     public void prepareNew() {
+        cancelQuick();
         selected = new ProductVo();
         selected.setAvailableForBooking(Boolean.TRUE);
         selected.setAvailableInStore(Boolean.TRUE);
@@ -108,6 +113,7 @@ public class ProductMb implements Serializable {
 
     /** Loads the full product (with photos) before editing. */
     public void prepareEdit(ProductVo vo) {
+        cancelQuick();
         newPhotoBase64 = null;
         try {
             ProductVo full = RestClient.get("product/getProduct/" + vo.getId(), ProductVo.class,
@@ -186,6 +192,148 @@ public class ProductMb implements Serializable {
             return value.substring(comma + 1);
         }
         return value;
+    }
+
+    // ------------------------------------------------------------------ quick add (family / brand / model)
+
+    /** Opens (or closes, when it was already open) the inline "new ..." field under a select. */
+    public void toggleQuick(String type) {
+        quickType = type.equals(quickType) ? null : type;
+        quickName = null;
+    }
+
+    public void cancelQuick() {
+        quickType = null;
+        quickName = null;
+    }
+
+    /**
+     * Saves the typed category / brand / model with the same endpoint as its catalog screen,
+     * reloads that list and leaves the new entry selected in the product (the save returns no id,
+     * so it is found again by name).
+     */
+    public void saveQuick() {
+        String name = quickName != null ? quickName.trim() : "";
+        if (name.isEmpty()) {
+            errors(java.util.Collections.singletonList(sessionMb.text("cat.quick.empty")));
+            return;
+        }
+        // Already in the list (same name, any case): just select it instead of a "duplicated" error.
+        if (selectByName(name)) {
+            cancelQuick();
+            return;
+        }
+        String path;
+        Object body;
+        if ("FAMILY".equals(quickType)) {
+            FamilyVo vo = new FamilyVo();
+            vo.setName(name);
+            path = "family/saveUpdateFamily";
+            body = vo;
+        } else if ("BRAND".equals(quickType)) {
+            BrandVo vo = new BrandVo();
+            vo.setName(name);
+            path = "brand/saveUpdateBrand";
+            body = vo;
+        } else if ("MODEL".equals(quickType)) {
+            ProductModelVo vo = new ProductModelVo();
+            vo.setName(name);
+            path = "productModel/saveUpdateProductModel";
+            body = vo;
+        } else {
+            return;
+        }
+        RestResponse r = RestClient.post(path, body, userId(), sessionMb.getLocale());
+        if (!r.isOk()) {
+            errors(RestClient.extractErrors(r.getBody()));
+            return;
+        }
+        loadCatalogs();
+        selectByName(name);
+        info(java.text.MessageFormat.format(sessionMb.text("cat.quick.added"), name));
+        cancelQuick();
+    }
+
+    /** Selects in the product the entry of the open list with this name; false when there is none. */
+    private boolean selectByName(String name) {
+        Integer id = null;
+        if ("FAMILY".equals(quickType)) {
+            for (FamilyVo v : families) {
+                if (name.equalsIgnoreCase(v.getName() != null ? v.getName().trim() : null)) {
+                    id = v.getId();
+                }
+            }
+            if (id != null) {
+                selected.setFamilyId(id);
+            }
+        } else if ("BRAND".equals(quickType)) {
+            for (BrandVo v : brands) {
+                if (name.equalsIgnoreCase(v.getName() != null ? v.getName().trim() : null)) {
+                    id = v.getId();
+                }
+            }
+            if (id != null) {
+                selected.setBrandId(id);
+            }
+        } else if ("MODEL".equals(quickType)) {
+            for (ProductModelVo v : models) {
+                if (name.equalsIgnoreCase(v.getName() != null ? v.getName().trim() : null)) {
+                    id = v.getId();
+                }
+            }
+            if (id != null) {
+                selected.setModelId(id);
+            }
+        }
+        return id != null;
+    }
+
+    // ------------------------------------------------------------------ characteristics (by category)
+
+    /** Category of the product being edited (null = none: Talla / Color, as before). */
+    private FamilyVo selectedFamily() {
+        if (selected == null || selected.getFamilyId() == null) return null;
+        for (FamilyVo f : families) {
+            if (selected.getFamilyId().equals(f.getId())) return f;
+        }
+        return null;
+    }
+
+    /** Name of characteristic n (1..4) for the product's category; null when it is not used. */
+    public String attrLabel(int n) {
+        FamilyVo f = selectedFamily();
+        if (f == null) {
+            return n == 1 ? sessionMb.text("pos.family.attr.default1") : n == 2 ? sessionMb.text("pos.family.attr.default2") : null;
+        }
+        String label;
+        Boolean on;
+        switch (n) {
+            case 1: label = f.getAttribute1Label(); on = f.getAttribute1Enabled(); break;
+            case 2: label = f.getAttribute2Label(); on = f.getAttribute2Enabled(); break;
+            case 3: label = f.getAttribute3Label(); on = f.getAttribute3Enabled(); break;
+            default: label = f.getAttribute4Label(); on = f.getAttribute4Enabled(); break;
+        }
+        return Boolean.TRUE.equals(on) && label != null && !label.trim().isEmpty() ? label.trim() : null;
+    }
+
+    public boolean attrOn(int n) {
+        return attrLabel(n) != null;
+    }
+
+    public boolean isAnyAttr() {
+        return attrOn(1) || attrOn(2) || attrOn(3) || attrOn(4);
+    }
+
+    public String getQuickType() {
+        return quickType;
+    }
+
+    public String getQuickName() {
+        return quickName;
+    }
+
+    public void setQuickName(String quickName) {
+        this.quickName = quickName;
     }
 
     public void save() {

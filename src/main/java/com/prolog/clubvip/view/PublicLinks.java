@@ -36,6 +36,12 @@ public final class PublicLinks {
     }
 
     /**
+     * The Club VIP app is not in the stores yet: while false, public pages hide every "open / get
+     * the app" button. Switch to true when it is released.
+     */
+    public static final boolean APP_RELEASED = false;
+
+    /**
      * {@code intent://host/path#Intent;scheme=https;package=...;S.browser_fallback_url=...;end}:
      * Chrome on Android opens the app on that section, or the Play Store when it is not installed.
      */

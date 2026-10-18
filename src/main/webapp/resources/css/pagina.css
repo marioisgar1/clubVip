@@ -29,13 +29,17 @@ body.pg{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);
 .pg-nav{position:relative;z-index:5}
 .pg-nav-in{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:16px}
 .pg-brand{display:flex;align-items:center;gap:10px;text-decoration:none;min-width:0}
-.pg-logo{height:40px;width:auto;max-width:140px;object-fit:contain;border-radius:8px}
+.pg-logo{height:120px;width:auto;max-width:420px;object-fit:contain;border-radius:22px;margin:8px 10px 8px 6px;box-shadow:0 20px 40px rgba(11,11,12,.26),0 0 0 5px rgba(255,255,255,.92);transform:rotate(-3deg);transition:transform .3s ease,box-shadow .3s ease;animation:pg-logo-in .7s cubic-bezier(.2,.9,.3,1.2) both}
+/* Tilted like the store's logo (public.css .st-front-logo): straightens on hover */
+.pg-brand:hover .pg-logo{transform:rotate(0deg) scale(1.04);box-shadow:0 26px 48px rgba(11,11,12,.3),0 0 0 5px rgba(255,255,255,.95)}
+@keyframes pg-logo-in{from{opacity:0;transform:translateY(12px) rotate(-8deg) scale(.92)}to{opacity:1;transform:rotate(-3deg)}}
+@media (prefers-reduced-motion:reduce){.pg-logo{animation:none;transition:none}}
 /* A light logo on a light page (or dark on dark) sits on a contrasting badge (set by the page script). */
-.pg-logo.pg-logo-chip{height:44px;padding:6px 10px;border-radius:12px;background:#16171A}
-.pg-logo.pg-logo-chip-light{height:44px;padding:6px 10px;border-radius:12px;background:#FFFFFF}
+.pg-logo.pg-logo-chip{height:132px;padding:14px 22px;border-radius:20px;background:#16171A}
+.pg-logo.pg-logo-chip-light{height:132px;padding:14px 22px;border-radius:20px;background:#FFFFFF}
 .pg-mono{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:var(--on-accent);font-weight:700;font-size:14px;flex:none}
 .pg-brand-name{font-family:var(--f-display);font-weight:var(--display-weight);font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-@media (max-width:520px){.pg-brand:has(.pg-logo) .pg-brand-name{display:none}}
+@media (max-width:520px){.pg-brand:has(.pg-logo) .pg-brand-name{display:none}.pg-logo{max-width:230px}}
 .pg-nav-cta{flex:none;text-decoration:none;font-weight:600;font-size:14px;padding:9px 16px;border-radius:var(--btn-radius);border:1.5px solid var(--accent-text);color:var(--accent-text)}
 
 /* ---------- hero (default: stacked text + photo; split on desktop) ---------- */
@@ -70,7 +74,8 @@ body.pg{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);
 
 /* ---------- sections ---------- */
 .pg-sec{padding-block:clamp(48px,7vw,88px)}
-.pg-h2{font-size:clamp(28px,3.6vw,42px);margin-bottom:28px}
+/* .pg h2 resets every heading margin: this one needs the same weight to keep its space */
+.pg .pg-h2{font-size:clamp(28px,3.6vw,42px);margin-bottom:clamp(20px,3vw,32px)}
 .pg-eyebrow{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-text);margin-bottom:10px}
 .pg-about{background:var(--bg-2)}
 .pg-about-text{font-family:var(--f-display);font-size:clamp(20px,2.4vw,27px);line-height:1.45;white-space:pre-line}
@@ -114,12 +119,23 @@ body.pg{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);
 .pg-info-card p:not(.pg-eyebrow){font-size:16px}
 .pg-maps{display:inline-block;margin-top:12px;font-weight:700;color:var(--accent-text);text-decoration:none;border-bottom:1.5px solid var(--accent-line)}
 .pg-social{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
-.pg-social a{text-decoration:none;font-weight:600;font-size:14px;padding:9px 16px;border-radius:999px;border:1px solid var(--line);background:var(--card)}
+.pg-social a{text-decoration:none;font-weight:600;font-size:14px;padding:9px 16px;border-radius:999px;border:1px solid var(--line);background:var(--card);display:inline-flex;align-items:center;gap:8px}
+/* logo de cada red dentro de la píldora (mismos colores de marca que el editor) */
+.pg-social a{padding-left:9px}
+.pg-sn{width:22px;height:22px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.pg-sn svg{width:14px;height:14px;display:block}
+.pg-sn-ig{background:radial-gradient(circle at 30% 107%,#fdf497 0%,#fdf497 5%,#fd5949 45%,#d6249f 60%,#285AEB 90%)}
+.pg-sn-fb{background:#1877F2}
+.pg-sn-tt{background:#000}
 
 .pg-footer{border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
-.pg-footer-in{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;padding-block:22px 90px}
+.pg-footer-in{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;padding-block:22px 90px}
 .pg-footer a{text-decoration:none}
 .pg-footer b{color:var(--accent-text)}
+/* "Powered by" + Club VIP logo, same as the store footer (.pub-footer) */
+.pg-powered{display:inline-flex;align-items:center;gap:.45rem;font-size:12px;color:var(--muted)}
+.pg-powered-logo img{height:30px;width:auto;display:block}
+.pg-dark .pg-powered-logo img{filter:brightness(0) invert(1);opacity:.85}
 .pg-wa-float{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:40;width:56px;height:56px;border-radius:50%;background:#1FA855;color:#fff;display:grid;place-items:center;box-shadow:0 8px 24px rgba(0,0,0,.25)}
 .pg-wa-float .pg-ico{width:28px;height:28px}
 .pg-missing{min-height:80vh;display:grid;place-content:center;text-align:center;padding:24px;gap:8px}
@@ -214,7 +230,7 @@ body.pg{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);
 .pg-noche .pg-hero{display:grid;grid-template-columns:minmax(0,1fr);place-items:center;text-align:center;min-height:clamp(560px,86vh,800px);padding:0;max-width:none}
 .pg-noche .pg-hero-media{position:absolute;inset:0;margin:0;border-radius:0;aspect-ratio:auto;max-height:none}
 .pg-noche .pg-hero-media::after{content:"";position:absolute;inset:0;background:radial-gradient(70% 60% at 50% 45%,rgba(15,18,32,.35),rgba(15,18,32,.85)),linear-gradient(180deg,transparent 60%,#0F1220)}
-.pg-noche .pg-hero-body{max-width:860px;padding-block:120px 60px}
+.pg-noche .pg-hero-body{max-width:860px;padding-block:170px 60px}
 .pg-noche .pg-kicker,.pg-noche .pg-ctas{justify-content:center}
 .pg-noche .pg-sub{margin-inline:auto}
 .pg-noche .pg-title{font-size:clamp(40px,7vw,78px);font-weight:600;letter-spacing:-.02em}

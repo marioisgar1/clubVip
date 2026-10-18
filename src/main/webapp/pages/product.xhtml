@@ -28,7 +28,7 @@
                 <p:dataTable id="table" var="pd" value="#{productMb.products}" paginator="true" rows="10"
                              emptyMessage="#{msg['msg.noData']}" styleClass="mt-2" widgetVar="productTable"
                              filteredValue="#{productMb.filtered}" globalFilterOnly="true" reflow="true"
-                             paginatorAlwaysVisible="false" rowKey="#{pd.id}" stripedRows="true">
+                             paginatorAlwaysVisible="false" rowKey="#{pd.id}" stripedRows="true" tableStyleClass="cv-prod-table">
                     <f:facet name="header">
                         <div class="flex-between wrap gap-2">
                             <span class="muted">#{productMb.products.size()} #{msg['cat.product.count']}</span>
@@ -36,7 +36,7 @@
                                          placeholder="#{msg['action.search']}"/>
                         </div>
                     </f:facet>
-                    <p:column headerText="" style="width:4.5rem;text-align:center">
+                    <p:column headerText="" style="width:3.75rem;text-align:center">
                         <!-- The list comes without images; each visible row loads its photo from
                              /productPhoto (cached by the browser). No photo (404) -> placeholder. -->
                         <img alt="" class="cv-thumb" loading="lazy"
@@ -44,66 +44,53 @@
                              onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex'"/>
                         <span class="cv-thumb cv-thumb-empty" style="display:none"><i class="pi pi-image"></i></span>
                     </p:column>
-                    <p:column headerText="#{msg['pos.lbl.barcode']}" sortBy="#{pd.barcode}" width="130"
-                              filterBy="#{pd.barcode}" filterMatchMode="contains">
-                        <h:outputText value="#{pd.barcode}" styleClass="muted" rendered="#{not empty pd.barcode}"/>
-                        <h:outputText value="—" styleClass="muted" rendered="#{empty pd.barcode}"/>
-                    </p:column>
+                    <!-- Compact layout (no horizontal scroll): codes go under the name, category/brand and
+                         stock/minimum are stacked, and the three store flags share one column. The global
+                         search still covers name, barcode and reference through the column's filterBy. -->
                     <p:column headerText="#{msg['cat.product.name']}" sortBy="#{pd.name}"
-                              filterBy="#{pd.name}" filterMatchMode="contains">
+                              filterBy="#{pd.name} #{pd.barcode} #{pd.referenceCode}" filterMatchMode="contains" styleClass="cv-col-main">
                         <span style="font-weight:600">#{pd.name}</span>
                         <h:panelGroup rendered="#{not empty pd.consignmentAgreementId}" styleClass="badge badge-warning" style="margin-left:.4rem"
                                       title="#{msg['cons.product.readonlyHint']}">#{msg['cons.product.badge']} · #{pd.consignmentSupplierName}</h:panelGroup>
                         <h:panelGroup rendered="#{not empty pd.shortDescription}" styleClass="muted" layout="block">#{pd.shortDescription}</h:panelGroup>
-                        <h:panelGroup rendered="#{not empty pd.size or not empty pd.color or not empty pd.modelName}" styleClass="muted" layout="block" style="font-size:.75rem">
+                        <h:panelGroup rendered="#{not empty pd.attributesText or not empty pd.modelName}" styleClass="muted" layout="block" style="font-size:.75rem">
                             <h:outputText value="#{pd.modelName}" rendered="#{not empty pd.modelName}"/>
-                            <h:outputText value=" &#183; #{msg['pos.lbl.size']} #{pd.size}" rendered="#{not empty pd.size}"/>
-                            <h:outputText value=" &#183; #{pd.color}" rendered="#{not empty pd.color}"/>
+                            <h:outputText value="#{not empty pd.modelName and not empty pd.attributesText ? ' · ' : ''}#{pd.attributesText}"/>
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{not empty pd.referenceCode or not empty pd.barcode}" styleClass="muted cv-prod-codes" layout="block">
+                            <h:outputText value="#{msg['cat.product.refShort']} #{pd.referenceCode}" rendered="#{not empty pd.referenceCode}"/>
+                            <h:outputText value=" &#183; " rendered="#{not empty pd.referenceCode and not empty pd.barcode}"/>
+                            <h:panelGroup rendered="#{not empty pd.barcode}"><i class="pi pi-barcode"></i> #{pd.barcode}</h:panelGroup>
                         </h:panelGroup>
                     </p:column>
-                    <p:column headerText="#{msg['pos.lbl.family']}" sortBy="#{pd.familyName}"
-                              filterBy="#{pd.familyName}" filterMatchMode="contains">
-                        <h:outputText value="#{pd.familyName}"/>
+                    <p:column headerText="#{msg['cat.product.col.classification']}" sortBy="#{pd.familyName}"
+                              filterBy="#{pd.familyName} #{pd.brandName}" filterMatchMode="contains">
+                        <h:outputText value="#{empty pd.familyName ? '—' : pd.familyName}"/>
+                        <h:panelGroup rendered="#{not empty pd.brandName}" styleClass="muted" layout="block" style="font-size:.78rem">#{pd.brandName}</h:panelGroup>
                     </p:column>
-                    <p:column headerText="#{msg['cat.product.brand']}" sortBy="#{pd.brandName}"
-                              filterBy="#{pd.brandName}" filterMatchMode="contains">
-                        <h:outputText value="#{pd.brandName}"/>
-                    </p:column>
-                    <p:column headerText="#{msg['cat.product.onHand']}" sortBy="#{pd.quantityOnHand}" width="100"
+                    <p:column headerText="#{msg['cat.product.onHand']}" sortBy="#{pd.quantityOnHand}" width="95"
                               styleClass="text-right">
                         <h:outputText value="#{pd.quantityOnHand != null ? pd.quantityOnHand : 0}"
                                       style="font-weight:600;#{productMb.isLowStock(pd) ? 'color:var(--vip-danger)' : ''}"/>
                         <h:panelGroup rendered="#{productMb.isLowStock(pd)}" title="#{msg['cat.product.lowStock']}">
                             &#160;<i class="pi pi-exclamation-triangle" style="color:var(--vip-danger)"></i>
                         </h:panelGroup>
+                        <div class="muted" style="font-size:.74rem">#{msg['cat.product.minShort']} #{pd.minStock != null ? pd.minStock : 0}</div>
                     </p:column>
-                    <p:column headerText="#{msg['cat.product.minStock']}" sortBy="#{pd.minStock}" width="90"
-                              styleClass="text-right">
-                        <h:outputText value="#{pd.minStock != null ? pd.minStock : 0}"/>
-                    </p:column>
-                    <p:column headerText="#{msg['lbl.price']}" sortBy="#{pd.price}" width="110" styleClass="text-right">
+                    <p:column headerText="#{msg['lbl.price']}" sortBy="#{pd.price}" width="100" styleClass="text-right">
                         <h:outputText value="#{sessionMb.fmtMoney(pd.price)}" style="font-weight:600"/>
                     </p:column>
-                    <p:column headerText="#{msg['cat.product.availableForBooking']}" width="120"
-                              sortBy="#{pd.availableForBooking}" styleClass="text-center">
-                        <span class="badge #{pd.availableForBooking ? 'badge-success' : 'badge-muted'}">
-                            #{pd.availableForBooking ? msg['action.yes'] : msg['action.no']}
-                        </span>
+                    <!-- null availableInStore (backend without the flag) counts as shown, like the store has always done -->
+                    <p:column headerText="#{msg['cat.product.col.visibility']}" width="190">
+                        <div class="cv-prod-flags">
+                            <span class="badge #{pd.availableForBooking ? 'badge-success' : 'badge-muted'}"
+                                  title="#{msg['cat.product.availableForBooking']}: #{pd.availableForBooking ? msg['action.yes'] : msg['action.no']}">#{msg['cat.product.booking.short']}</span>
+                            <span class="badge #{pd.availableInStore ne false ? 'badge-success' : 'badge-muted'}"
+                                  title="#{msg['cat.product.availableInStore.short']}: #{pd.availableInStore ne false ? msg['action.yes'] : msg['action.no']}">#{msg['cat.product.store.short']}</span>
+                            <span class="badge #{pd.outlet ? 'badge-warning' : 'badge-muted'}">#{pd.outlet ? msg['pub.store.outlet'] : msg['pub.store.line']}</span>
+                        </div>
                     </p:column>
-                    <!-- null (backend without the flag) counts as shown, like the store has always done -->
-                    <p:column headerText="#{msg['cat.product.availableInStore.short']}" width="110"
-                              sortBy="#{pd.availableInStore ne false}" styleClass="text-center">
-                        <span class="badge #{pd.availableInStore ne false ? 'badge-success' : 'badge-muted'}">
-                            #{pd.availableInStore ne false ? msg['action.yes'] : msg['action.no']}
-                        </span>
-                    </p:column>
-                    <p:column headerText="#{msg['cat.product.outlet.short']}" width="100"
-                              sortBy="#{pd.outlet}" styleClass="text-center">
-                        <span class="badge #{pd.outlet ? 'badge-warning' : 'badge-muted'}">
-                            #{pd.outlet ? msg['pub.store.outlet'] : msg['pub.store.line']}
-                        </span>
-                    </p:column>
-                    <p:column headerText="" style="width:7rem;text-align:center" rendered="#{sessionMb.admin}">
+                    <p:column headerText="" style="width:5.5rem;text-align:center" rendered="#{sessionMb.admin}">
                         <p:commandButton icon="pi pi-pencil" title="#{msg['action.edit']}" rendered="#{empty pd.consignmentAgreementId}"
                                          process="@this" actionListener="#{productMb.prepareEdit(pd)}"
                                          update=":form:dialog :messages"
@@ -150,11 +137,12 @@
                                     <i class="pi pi-camera" style="margin-right:.4rem"></i>#{msg['cat.product.choosePhoto']}
                                     <input type="file" accept="image/*" style="display:none" onchange="cvCompressPhoto(this)"/>
                                 </label>
-                                <img id="photoPreview" alt="" class="cv-thumb" style="display:none"/>
-                                <p:commandButton value="#{msg['cat.product.addPhoto']}" icon="pi pi-plus"
+                                <span id="photoUploading" class="muted small" style="display:none"><i class="pi pi-spin pi-spinner"></i>&#160;#{msg['cat.product.photo.uploading']}</span>
+                                <!-- Hidden: the picker's JS clicks it as soon as the photo is compressed -->
+                                <p:commandButton widgetVar="addPhotoBtn" value="#{msg['cat.product.addPhoto']}" icon="pi pi-plus"
                                                  actionListener="#{productMb.addPhoto}"
                                                  process="@this newPhotoB64" update="photosPanel"
-                                                 oncomplete="cvResetPhotoPicker()" styleClass="ui-button-secondary"/>
+                                                 oncomplete="cvResetPhotoPicker()" styleClass="ui-button-secondary" style="display:none"/>
                             </div>
                         </div>
                     </p:outputPanel>
@@ -177,39 +165,126 @@
                                          onkeydown="if(event.key==='Enter'){event.preventDefault();return false;}"/>
                             <span class="hint">#{msg['pos.product.barcode.hint']}</span>
                         </div>
-                        <div class="field">
+                        <div class="field span-2">
+                            <label for="form:prdReference"><i class="pi pi-tags gold"></i>&#160;#{msg['cat.product.reference']} <span class="muted">(#{msg['lbl.optional']})</span></label>
+                            <p:inputText id="prdReference" value="#{productMb.selected.referenceCode}" maxlength="40" autocomplete="off"
+                                         placeholder="#{msg['cat.product.reference.placeholder']}"/>
+                            <span class="hint">#{msg['cat.product.reference.hint']}</span>
+                        </div>
+                        <p:outputPanel id="prdFamilyBox" styleClass="field" layout="block">
                             <label for="form:prdFamily">#{msg['pos.lbl.family']}</label>
-                            <p:selectOneMenu id="prdFamily" value="#{productMb.selected.familyId}" filter="#{productMb.families.size() gt 8}" filterMatchMode="contains">
-                                <f:selectItem itemLabel="#{msg['lbl.select']}" itemValue="#{null}" noSelectionOption="true"/>
-                                <f:selectItems value="#{productMb.families}" var="fa" itemLabel="#{fa.name}" itemValue="#{fa.id}"/>
-                            </p:selectOneMenu>
-                        </div>
-                        <div class="field">
-                            <label for="form:prdBrand">#{msg['cat.product.brand']}</label>
-                            <p:selectOneMenu id="prdBrand" value="#{productMb.selected.brandId}" filter="#{productMb.brands.size() gt 8}" filterMatchMode="contains">
-                                <f:selectItem itemLabel="#{msg['lbl.select']}" itemValue="#{null}" noSelectionOption="true"/>
-                                <f:selectItems value="#{productMb.brands}" var="br" itemLabel="#{br.name}" itemValue="#{br.id}"/>
-                            </p:selectOneMenu>
-                        </div>
-                        <div class="field">
-                            <label for="form:prdModel">#{msg['pos.lbl.model']}</label>
-                            <p:selectOneMenu id="prdModel" value="#{productMb.selected.modelId}" filter="#{productMb.models.size() gt 8}" filterMatchMode="contains">
-                                <f:selectItem itemLabel="#{msg['lbl.select']}" itemValue="#{null}" noSelectionOption="true"/>
-                                <f:selectItems value="#{productMb.models}" var="mo" itemLabel="#{mo.name}" itemValue="#{mo.id}"/>
-                            </p:selectOneMenu>
-                        </div>
-                        <div class="field">
-                            <div class="flex gap-2">
-                                <span style="flex:1">
-                                    <label for="form:prdSize">#{msg['pos.lbl.size']}</label>
-                                    <p:inputText id="prdSize" value="#{productMb.selected.size}" maxlength="20" style="width:100%"/>
-                                </span>
-                                <span style="flex:1">
-                                    <label for="form:prdColor">#{msg['pos.lbl.color']}</label>
-                                    <p:inputText id="prdColor" value="#{productMb.selected.color}" maxlength="40" style="width:100%"/>
-                                </span>
+                            <!-- Pick it from the list, or "+" to add a new one right here (it stays selected) -->
+                            <div class="cv-quick-row">
+                                <p:selectOneMenu id="prdFamily" value="#{productMb.selected.familyId}" filter="#{productMb.families.size() gt 8}" filterMatchMode="contains" styleClass="cv-quick-select">
+                                    <p:ajax event="change" process="@this" update="prdAttrs"/>
+                                    <f:selectItem itemLabel="#{msg['lbl.select']}" itemValue="#{null}" noSelectionOption="true"/>
+                                    <f:selectItems value="#{productMb.families}" var="fa" itemLabel="#{fa.name}" itemValue="#{fa.id}"/>
+                                </p:selectOneMenu>
+                                <p:commandButton icon="#{productMb.quickType eq 'FAMILY' ? 'pi pi-times' : 'pi pi-plus'}"
+                                                 title="#{msg['cat.quick.new.FAMILY']}" ariaLabel="#{msg['cat.quick.new.FAMILY']}"
+                                                 actionListener="#{productMb.toggleQuick('FAMILY')}" process="@this prdFamily" update="prdFamilyBox"
+                                                 styleClass="cv-quick-btn ui-button-outlined"/>
                             </div>
-                        </div>
+                            <h:panelGroup rendered="#{productMb.quickType eq 'FAMILY'}" layout="block" styleClass="cv-quick-add">
+                                <span class="cv-quick-title"><i class="pi pi-plus-circle"></i>&#160;#{msg['cat.quick.new.FAMILY']}</span>
+                                <div class="cv-quick-row">
+                                    <p:inputText id="prdFamilyNew" value="#{productMb.quickName}" maxlength="80" autocomplete="off"
+                                                 placeholder="#{msg['cat.quick.ph.FAMILY']}" styleClass="cv-quick-input"
+                                                 onkeydown="if(event.key==='Enter'){PF('prdFamilySaveBtn').jq.click();return false;}if(event.key==='Escape'){PF('prdFamilyCancelBtn').jq.click();return false;}"/>
+                                    <p:commandButton widgetVar="prdFamilySaveBtn" value="#{msg['cat.quick.add']}" icon="pi pi-check"
+                                                     actionListener="#{productMb.saveQuick}" process="@this prdFamilyNew" update="prdFamilyBox prdAttrs :messages"
+                                                     styleClass="ui-button-primary"/>
+                                    <p:commandButton widgetVar="prdFamilyCancelBtn" icon="pi pi-times" title="#{msg['action.cancel']}"
+                                                     actionListener="#{productMb.cancelQuick}" process="@this" update="prdFamilyBox"
+                                                     styleClass="ui-button-text ui-button-secondary"/>
+                                </div>
+                                <span class="hint">#{msg['cat.quick.hint']}</span>
+                            </h:panelGroup>
+                            <h:outputScript rendered="#{productMb.quickType eq 'FAMILY'}">setTimeout(function(){var i=document.getElementById('form:prdFamilyNew');if(i)i.focus();},50);</h:outputScript>
+                        </p:outputPanel>
+                        <p:outputPanel id="prdBrandBox" styleClass="field" layout="block">
+                            <label for="form:prdBrand">#{msg['cat.product.brand']}</label>
+                            <!-- Pick it from the list, or "+" to add a new one right here (it stays selected) -->
+                            <div class="cv-quick-row">
+                                <p:selectOneMenu id="prdBrand" value="#{productMb.selected.brandId}" filter="#{productMb.brands.size() gt 8}" filterMatchMode="contains" styleClass="cv-quick-select">
+                                    <f:selectItem itemLabel="#{msg['lbl.select']}" itemValue="#{null}" noSelectionOption="true"/>
+                                    <f:selectItems value="#{productMb.brands}" var="br" itemLabel="#{br.name}" itemValue="#{br.id}"/>
+                                </p:selectOneMenu>
+                                <p:commandButton icon="#{productMb.quickType eq 'BRAND' ? 'pi pi-times' : 'pi pi-plus'}"
+                                                 title="#{msg['cat.quick.new.BRAND']}" ariaLabel="#{msg['cat.quick.new.BRAND']}"
+                                                 actionListener="#{productMb.toggleQuick('BRAND')}" process="@this prdBrand" update="prdBrandBox"
+                                                 styleClass="cv-quick-btn ui-button-outlined"/>
+                            </div>
+                            <h:panelGroup rendered="#{productMb.quickType eq 'BRAND'}" layout="block" styleClass="cv-quick-add">
+                                <span class="cv-quick-title"><i class="pi pi-plus-circle"></i>&#160;#{msg['cat.quick.new.BRAND']}</span>
+                                <div class="cv-quick-row">
+                                    <p:inputText id="prdBrandNew" value="#{productMb.quickName}" maxlength="80" autocomplete="off"
+                                                 placeholder="#{msg['cat.quick.ph.BRAND']}" styleClass="cv-quick-input"
+                                                 onkeydown="if(event.key==='Enter'){PF('prdBrandSaveBtn').jq.click();return false;}if(event.key==='Escape'){PF('prdBrandCancelBtn').jq.click();return false;}"/>
+                                    <p:commandButton widgetVar="prdBrandSaveBtn" value="#{msg['cat.quick.add']}" icon="pi pi-check"
+                                                     actionListener="#{productMb.saveQuick}" process="@this prdBrandNew" update="prdBrandBox :messages"
+                                                     styleClass="ui-button-primary"/>
+                                    <p:commandButton widgetVar="prdBrandCancelBtn" icon="pi pi-times" title="#{msg['action.cancel']}"
+                                                     actionListener="#{productMb.cancelQuick}" process="@this" update="prdBrandBox"
+                                                     styleClass="ui-button-text ui-button-secondary"/>
+                                </div>
+                                <span class="hint">#{msg['cat.quick.hint']}</span>
+                            </h:panelGroup>
+                            <h:outputScript rendered="#{productMb.quickType eq 'BRAND'}">setTimeout(function(){var i=document.getElementById('form:prdBrandNew');if(i)i.focus();},50);</h:outputScript>
+                        </p:outputPanel>
+                        <p:outputPanel id="prdModelBox" styleClass="field" layout="block">
+                            <label for="form:prdModel">#{msg['pos.lbl.model']}</label>
+                            <!-- Pick it from the list, or "+" to add a new one right here (it stays selected) -->
+                            <div class="cv-quick-row">
+                                <p:selectOneMenu id="prdModel" value="#{productMb.selected.modelId}" filter="#{productMb.models.size() gt 8}" filterMatchMode="contains" styleClass="cv-quick-select">
+                                    <f:selectItem itemLabel="#{msg['lbl.select']}" itemValue="#{null}" noSelectionOption="true"/>
+                                    <f:selectItems value="#{productMb.models}" var="mo" itemLabel="#{mo.name}" itemValue="#{mo.id}"/>
+                                </p:selectOneMenu>
+                                <p:commandButton icon="#{productMb.quickType eq 'MODEL' ? 'pi pi-times' : 'pi pi-plus'}"
+                                                 title="#{msg['cat.quick.new.MODEL']}" ariaLabel="#{msg['cat.quick.new.MODEL']}"
+                                                 actionListener="#{productMb.toggleQuick('MODEL')}" process="@this prdModel" update="prdModelBox"
+                                                 styleClass="cv-quick-btn ui-button-outlined"/>
+                            </div>
+                            <h:panelGroup rendered="#{productMb.quickType eq 'MODEL'}" layout="block" styleClass="cv-quick-add">
+                                <span class="cv-quick-title"><i class="pi pi-plus-circle"></i>&#160;#{msg['cat.quick.new.MODEL']}</span>
+                                <div class="cv-quick-row">
+                                    <p:inputText id="prdModelNew" value="#{productMb.quickName}" maxlength="80" autocomplete="off"
+                                                 placeholder="#{msg['cat.quick.ph.MODEL']}" styleClass="cv-quick-input"
+                                                 onkeydown="if(event.key==='Enter'){PF('prdModelSaveBtn').jq.click();return false;}if(event.key==='Escape'){PF('prdModelCancelBtn').jq.click();return false;}"/>
+                                    <p:commandButton widgetVar="prdModelSaveBtn" value="#{msg['cat.quick.add']}" icon="pi pi-check"
+                                                     actionListener="#{productMb.saveQuick}" process="@this prdModelNew" update="prdModelBox :messages"
+                                                     styleClass="ui-button-primary"/>
+                                    <p:commandButton widgetVar="prdModelCancelBtn" icon="pi pi-times" title="#{msg['action.cancel']}"
+                                                     actionListener="#{productMb.cancelQuick}" process="@this" update="prdModelBox"
+                                                     styleClass="ui-button-text ui-button-secondary"/>
+                                </div>
+                                <span class="hint">#{msg['cat.quick.hint']}</span>
+                            </h:panelGroup>
+                            <h:outputScript rendered="#{productMb.quickType eq 'MODEL'}">setTimeout(function(){var i=document.getElementById('form:prdModelNew');if(i)i.focus();},50);</h:outputScript>
+                            <span class="hint">#{msg['cat.product.model.hint']}</span>
+                        </p:outputPanel>
+                        <!-- Characteristics of the product: named and switched on by its category (Talla, Color, Sabor…) -->
+                        <p:outputPanel id="prdAttrs" styleClass="field" layout="block">
+                            <div class="cv-attr-grid">
+                                <h:panelGroup rendered="#{productMb.attrOn(1)}" styleClass="cv-attr-cell" layout="block">
+                                    <label for="form:prdAttr1">#{productMb.attrLabel(1)}</label>
+                                    <p:inputText id="prdAttr1" value="#{productMb.selected.attribute1}" maxlength="50" style="width:100%"/>
+                                </h:panelGroup>
+                                <h:panelGroup rendered="#{productMb.attrOn(2)}" styleClass="cv-attr-cell" layout="block">
+                                    <label for="form:prdAttr2">#{productMb.attrLabel(2)}</label>
+                                    <p:inputText id="prdAttr2" value="#{productMb.selected.attribute2}" maxlength="50" style="width:100%"/>
+                                </h:panelGroup>
+                                <h:panelGroup rendered="#{productMb.attrOn(3)}" styleClass="cv-attr-cell" layout="block">
+                                    <label for="form:prdAttr3">#{productMb.attrLabel(3)}</label>
+                                    <p:inputText id="prdAttr3" value="#{productMb.selected.attribute3}" maxlength="50" style="width:100%"/>
+                                </h:panelGroup>
+                                <h:panelGroup rendered="#{productMb.attrOn(4)}" styleClass="cv-attr-cell" layout="block">
+                                    <label for="form:prdAttr4">#{productMb.attrLabel(4)}</label>
+                                    <p:inputText id="prdAttr4" value="#{productMb.selected.attribute4}" maxlength="50" style="width:100%"/>
+                                </h:panelGroup>
+                            </div>
+                            <h:panelGroup rendered="#{not productMb.anyAttr}" styleClass="hint" layout="block">#{msg['cat.product.attrs.none']}</h:panelGroup>
+                        </p:outputPanel>
                         <div class="field required">
                             <label for="form:prdPrice">#{msg['lbl.price']}</label>
                             <p:inputNumber id="prdPrice" value="#{productMb.selected.price}" symbol="$ " decimalPlaces="2"
@@ -271,6 +346,17 @@
             </h:form>
 
             <style type="text/css">
+                /* Quick add of category / brand / model under its select */
+                .cv-attr-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; }
+                .cv-attr-cell label { display: block; }
+                .cv-quick-row { display: flex; gap: .5rem; align-items: center; }
+                .cv-quick-select { flex: 1; min-width: 0; }
+                .cv-quick-select.ui-selectonemenu { width: 100% !important; }
+                .cv-quick-btn.ui-button { flex: none; width: 2.6rem; height: 2.6rem; border-radius: 12px; }
+                .cv-quick-add { margin-top: .55rem; padding: .7rem .75rem .6rem; border-radius: 14px; background: #F4FBE3; border: 1px dashed #B9D98A; }
+                .cv-quick-title { display: block; font-size: .78rem; font-weight: 600; color: #5B7720; margin-bottom: .45rem; }
+                .cv-quick-input { flex: 1; min-width: 0; }
+                .cv-quick-add .hint { display: block; margin-top: .35rem; }
                 .cv-thumb { width: 56px; height: 56px; object-fit: cover; border-radius: 8px; border: 1px solid var(--vip-border); background: var(--vip-surface-2); }
                 .cv-photo-grid { display: flex; flex-wrap: wrap; gap: .6rem; margin: .3rem 0 .2rem; }
                 .cv-photo-card { position: relative; width: 104px; height: 104px; border-radius: 10px; overflow: hidden; border: 2px solid var(--vip-border); background: var(--vip-surface-2); }
@@ -305,8 +391,10 @@
                         var dataUrl = canvas.toDataURL('image/jpeg', 0.8);
                         var ta = document.querySelector('textarea.photoB64');
                         if (ta) { ta.value = dataUrl; }
-                        var preview = document.getElementById('photoPreview');
-                        if (preview) { preview.src = dataUrl; preview.style.display = 'inline-block'; }
+                        var busy = document.getElementById('photoUploading');
+                        if (busy) { busy.style.display = 'inline-flex'; }
+                        // Straight to the server: no extra "Add" click.
+                        if (window.PF && PF('addPhotoBtn')) { PF('addPhotoBtn').jq.click(); }
                     };
                     img.src = e.target.result;
                 };
@@ -315,8 +403,10 @@
             function cvResetPhotoPicker() {
                 var ta = document.querySelector('textarea.photoB64');
                 if (ta) { ta.value = ''; }
-                var preview = document.getElementById('photoPreview');
-                if (preview) { preview.removeAttribute('src'); preview.style.display = 'none'; }
+                var busy = document.getElementById('photoUploading');
+                if (busy) { busy.style.display = 'none'; }
+                var inp = document.querySelector('.file-picker input[type=file]');
+                if (inp) { inp.value = ''; }
             }
             //]]>
             </script>

@@ -59,16 +59,16 @@
                         <p class="cons-invite-text">#{msg['cons.invite.wants']}</p>
                         <div class="kpi-grid cons-terms">
                             <div class="kpi-card">
-                                <div class="kpi-label">#{msg['cons.lbl.storeCommission']}</div>
+                                <span class="kpi-icon"><i class="pi pi-percentage"></i></span><div class="kpi-label">#{msg['cons.lbl.storeCommission']}</div>
                                 <div class="kpi-value">#{consignmentMb.pct(a.commissionPercent)}</div>
                             </div>
                             <div class="kpi-card kpi-ink">
-                                <div class="kpi-label">#{msg['cons.lbl.youReceive']}</div>
+                                <span class="kpi-icon"><i class="pi pi-wallet"></i></span><div class="kpi-label">#{msg['cons.lbl.youReceive']}</div>
                                 <div class="kpi-value">#{consignmentMb.pct(a.supplierPercent)}</div>
                                 <div class="kpi-hint">#{msg['cons.lbl.perSale']}</div>
                             </div>
                             <div class="kpi-card">
-                                <div class="kpi-label">#{msg['cons.lbl.paysYou']}</div>
+                                <span class="kpi-icon"><i class="pi pi-calendar"></i></span><div class="kpi-label">#{msg['cons.lbl.paysYou']}</div>
                                 <div class="kpi-value cons-kpi-text">#{consignmentMb.frequencyLabel(a.paymentFrequency)}</div>
                             </div>
                         </div>
@@ -253,6 +253,108 @@
             </h:form>
         </p:dialog>
 
+        <!-- Consignación · la tienda paga lo pendiente con comprobante -->
+        <p:dialog header="#{msg['cons.pay.title']}" widgetVar="consPayDlg" modal="true" width="520" resizable="false"
+                  fitViewport="true" responsive="true" closeOnEscape="true">
+            <h:form id="payForm">
+                <p class="muted" style="margin-top:0">#{msg['cons.pay.to']} <b>#{consignmentFileMb.detail.agreement.partner.name}</b></p>
+                <div class="cons-pay-total">
+                    <span>#{consignmentFileMb.selectedCount} #{msg['cons.pay.sales']}</span>
+                    <b>#{sessionMb.fmtMoney(consignmentFileMb.selectedTotal)}</b>
+                </div>
+                <div class="field">
+                    <label>#{msg['cons.pay.receipt']} *</label>
+                    <p:inputTextarea id="receiptB64" value="#{consignmentFileMb.receiptBase64}" styleClass="consReceiptB64" style="display:none"/>
+                    <p:inputText id="receiptName" value="#{consignmentFileMb.receiptName}" styleClass="consReceiptName" style="display:none"/>
+                    <p:inputText id="receiptType" value="#{consignmentFileMb.receiptContentType}" styleClass="consReceiptType" style="display:none"/>
+                    <div class="file-picker">
+                        <label class="ui-button ui-button-secondary" style="cursor:pointer;padding:.5rem .9rem">
+                            <i class="pi pi-paperclip" style="margin-right:.4rem"></i>#{msg['cons.pay.attach']}
+                            <input type="file" accept="image/*,application/pdf" style="display:none" onchange="cvReadReceipt(this)"/>
+                        </label>
+                        <span id="consReceiptLabel" class="file-name muted">#{msg['cons.pay.noFile']}</span>
+                    </div>
+                    <img id="consReceiptPreview" alt="" style="display:none;max-width:100%;max-height:220px;margin-top:.6rem;border-radius:10px;border:1px solid var(--vip-border)"/>
+                </div>
+                <div class="field">
+                    <label for="payForm:payNotes">#{msg['cons.pay.notes']}</label>
+                    <p:inputText id="payNotes" value="#{consignmentFileMb.payNotes}" maxlength="255" placeholder="#{msg['cons.pay.notesPh']}" style="width:100%"/>
+                </div>
+                <div class="cons-actions">
+                    <p:commandButton value="#{msg['action.cancel']}" type="button" onclick="PF('consPayDlg').hide()" styleClass="ui-button-secondary"/>
+                    <p:commandButton id="payBtn" value="#{msg['cons.pay.payButton']} #{sessionMb.fmtMoney(consignmentFileMb.selectedTotal)}" icon="pi pi-check"
+                                     actionListener="#{consignmentFileMb.reportPayment}" process="@form" update=":form :messages"
+                                     styleClass="ui-button-primary ml-2"/>
+                </div>
+            </h:form>
+            <script type="text/javascript">
+            //<![CDATA[
+            function cvReadReceipt(input) {
+                if (!input.files || !input.files[0]) { return; }
+                var file = input.files[0];
+                if (file.size > 8 * 1024 * 1024) { alert('Max 8 MB'); input.value = ''; return; }
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    document.querySelector('textarea.consReceiptB64').value = e.target.result;
+                    document.querySelector('input.consReceiptName').value = file.name;
+                    document.querySelector('input.consReceiptType').value = file.type || 'application/octet-stream';
+                    document.getElementById('consReceiptLabel').textContent = file.name;
+                    var img = document.getElementById('consReceiptPreview');
+                    if (file.type && file.type.indexOf('image/') === 0) { img.src = e.target.result; img.style.display = 'block'; }
+                    else { img.removeAttribute('src'); img.style.display = 'none'; }
+                };
+                reader.readAsDataURL(file);
+            }
+            //]]>
+            </script>
+        </p:dialog>
+
+        <!-- Consignación · el proveedor no recibió el pago -->
+        <p:dialog header="#{msg['cons.payments.reject']}" widgetVar="consRejectPayDlg" modal="true" width="460" resizable="false"
+                  fitViewport="true" responsive="true" closeOnEscape="true">
+            <h:form id="rejectPayForm">
+                <p class="muted" style="margin-top:0">#{msg['cons.payments.rejectText']} <b>#{sessionMb.fmtMoney(consignmentFileMb.rejectingPayment.amount)}</b></p>
+                <div class="field">
+                    <label for="rejectPayForm:reason">#{msg['cons.lbl.reason']}</label>
+                    <p:inputTextarea id="reason" value="#{consignmentFileMb.rejectPaymentReason}" rows="3" maxlength="255" autoResize="false"
+                                     placeholder="#{msg['cons.payments.rejectPh']}" style="width:100%"/>
+                </div>
+                <div class="cons-actions">
+                    <p:commandButton value="#{msg['action.cancel']}" type="button" onclick="PF('consRejectPayDlg').hide()" styleClass="ui-button-secondary"/>
+                    <p:commandButton value="#{msg['cons.payments.reject']}" icon="pi pi-times" actionListener="#{consignmentFileMb.rejectPayment}"
+                                     process="@form" update=":form :messages" styleClass="ui-button-danger ml-2"/>
+                </div>
+            </h:form>
+        </p:dialog>
+
+        <!-- Consignación · comprobante de un pago -->
+        <p:dialog header="#{msg['cons.payments.receiptTitle']}" widgetVar="consReceiptDlg" modal="true" width="640" resizable="false"
+                  fitViewport="true" responsive="true" closeOnEscape="true">
+            <h:form id="receiptForm">
+                <h:panelGroup rendered="#{not empty consignmentFileMb.receipt}" layout="block">
+                    <p class="muted" style="margin-top:0">#{sessionMb.fmtMoney(consignmentFileMb.viewingPayment.amount)} · #{consignmentFileMb.stamp(consignmentFileMb.viewingPayment.reportedAt)}
+                        <h:outputText value=" · #{consignmentFileMb.viewingPayment.notes}" rendered="#{not empty consignmentFileMb.viewingPayment.notes}"/></p>
+                    <h:panelGroup rendered="#{consignmentFileMb.receiptImage}" layout="block" style="text-align:center">
+                        <img src="#{consignmentFileMb.receiptDataUrl}" alt="#{consignmentFileMb.receipt.name}" style="max-width:100%;max-height:65vh;border-radius:10px"/>
+                    </h:panelGroup>
+                    <h:panelGroup rendered="#{not consignmentFileMb.receiptImage}" layout="block" styleClass="empty-state">
+                        <i class="pi pi-file-pdf"></i>#{consignmentFileMb.receipt.name}
+                    </h:panelGroup>
+                    <div class="cons-actions">
+                        <p:commandButton value="#{msg['cons.payments.download']}" icon="pi pi-download" ajax="false" styleClass="ui-button-secondary">
+                            <p:fileDownload value="#{consignmentFileMb.receiptFile}"/>
+                        </p:commandButton>
+                        <p:commandButton value="#{msg['action.close']}" type="button" onclick="PF('consReceiptDlg').hide()" styleClass="ui-button-primary ml-2"/>
+                    </div>
+                </h:panelGroup>
+            </h:form>
+        </p:dialog>
+
+        <style type="text/css">
+            .cons-pay-total { display: flex; justify-content: space-between; align-items: baseline; padding: .8rem 1rem; margin-bottom: 1rem; border-radius: 12px; background: #F7FBEA; border: 1px solid #DDEBB8; }
+            .cons-pay-total b { font-size: 1.6rem; }
+        </style>
+
         <!-- Reject an invitation -->
         <p:dialog header="#{msg['cons.action.reject']}" widgetVar="consRejectDlg" modal="true" width="460" resizable="false"
                   fitViewport="true" responsive="true" closeOnEscape="true">
@@ -292,7 +394,7 @@
                                 <p:commandLink process="@this" actionListener="#{consignmentFileMb.add(p)}" update=":sendForm:cart :messages" styleClass="cons-result">
                                     <span style="flex:1;min-width:0">
                                         <b class="cons-ellipsis">#{p.name}</b>
-                                        <span class="muted" style="display:block">#{p.barcode} · #{consignmentFileMb.variant(p.size, p.color)}</span>
+                                        <span class="muted" style="display:block">#{p.barcode} · #{p.attributesText}</span>
                                     </span>
                                     <span class="muted" style="text-align:right;white-space:nowrap">#{sessionMb.fmtMoney(p.price)}<br/>#{msg['cons.send.available']} #{p.available}</span>
                                     <i class="pi pi-plus-circle cons-chevron" style="color:var(--vip-gold-deep)"></i>
@@ -311,7 +413,7 @@
                                          tableStyle="table-layout:fixed;width:100%">
                                 <p:column headerText="#{msg['cons.lbl.product']}">
                                     <b class="cons-ellipsis">#{l.product.name}</b>
-                                    <span class="muted" style="display:block">#{consignmentFileMb.variant(l.product.size, l.product.color)}</span>
+                                    <span class="muted" style="display:block">#{l.product.attributesText}</span>
                                 </p:column>
                                 <p:column headerText="#{msg['cons.lbl.pieces']}" width="120">
                                     <p:spinner value="#{l.quantity}" min="1" max="#{l.product.available}" size="2" styleClass="cons-qty">
@@ -364,7 +466,7 @@
                     <p:dataTable id="items" var="i" value="#{consignmentFileMb.shipment.items}" rowKey="#{i.id}" reflow="true" stripedRows="true">
                         <p:column headerText="#{msg['cons.lbl.product']}">
                             <b class="cons-ellipsis">#{i.name}</b>
-                            <span class="muted" style="display:block">#{i.barcode} · #{consignmentFileMb.variant(i.size, i.color)}</span>
+                            <span class="muted" style="display:block">#{i.barcode} · #{i.attributesText}</span>
                         </p:column>
                         <p:column headerText="#{msg['cons.lbl.sent']}" width="90" styleClass="text-center"><b>#{i.quantitySent}</b></p:column>
                         <p:column headerText="#{msg['cons.lbl.received']}" width="120" styleClass="text-center">

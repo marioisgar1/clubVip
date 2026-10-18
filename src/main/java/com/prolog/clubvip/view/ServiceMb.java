@@ -11,7 +11,6 @@ import com.google.gson.reflect.TypeToken;
 import com.prolog.clubvip.rest.RestClient;
 import com.prolog.clubvip.rest.RestException;
 import com.prolog.clubvip.rest.RestResponse;
-import com.prolog.clubvip.vo.EmployeeVo;
 import com.prolog.clubvip.vo.ServiceVo;
 
 import jakarta.annotation.PostConstruct;
@@ -31,14 +30,12 @@ public class ServiceMb implements Serializable {
 
     private static final long serialVersionUID = 1L;
     private static final Type SERVICE_LIST = new TypeToken<List<ServiceVo>>() { }.getType();
-    private static final Type EMPLOYEE_LIST = new TypeToken<List<EmployeeVo>>() { }.getType();
 
     @Inject
     private SessionMb sessionMb;
 
     private List<ServiceVo> services = new ArrayList<>();
     private List<ServiceVo> filtered;
-    private List<EmployeeVo> employees = new ArrayList<>();
     private ServiceVo selected = new ServiceVo();
 
     @PostConstruct
@@ -54,30 +51,29 @@ public class ServiceMb implements Serializable {
             services = new ArrayList<>();
             errors(e.getMessages());
         }
-        try {
-            List<EmployeeVo> list = RestClient.get("employee/getEmployees", EMPLOYEE_LIST, userId(), sessionMb.getLocale());
-            employees = list != null ? list : new ArrayList<>();
-        } catch (RestException e) {
-            employees = new ArrayList<>();
-        }
     }
 
     public void prepareNew() {
         selected = new ServiceVo();
         selected.setActiveForBooking(Boolean.TRUE);
         selected.setDurationMinutes(30);
-        selected.setEmployeeIds(new ArrayList<>());
     }
 
     public void prepareEdit(ServiceVo vo) {
         selected = vo;
-        if (selected.getEmployeeIds() == null) {
-            selected.setEmployeeIds(new ArrayList<>());
-        }
     }
 
     public void save() {
-        RestResponse r = RestClient.post("service/saveUpdateService", selected, userId(), sessionMb.getLocale());
+        // Who gives the service is chosen in the employee form; null tells the backend to leave it as it is
+        // (sending the list loaded with this page could undo changes made there meanwhile).
+        List<Integer> employeeIds = selected.getEmployeeIds();
+        selected.setEmployeeIds(null);
+        RestResponse r;
+        try {
+            r = RestClient.post("service/saveUpdateService", selected, userId(), sessionMb.getLocale());
+        } finally {
+            selected.setEmployeeIds(employeeIds);
+        }
         if (r.isOk()) {
             refresh();
             info(sessionMb.text("msg.saved"));
@@ -146,10 +142,6 @@ public class ServiceMb implements Serializable {
 
     public void setFiltered(List<ServiceVo> filtered) {
         this.filtered = filtered;
-    }
-
-    public List<EmployeeVo> getEmployees() {
-        return employees;
     }
 
     public ServiceVo getSelected() {

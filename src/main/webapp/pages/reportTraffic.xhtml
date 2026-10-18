@@ -1,0 +1,215 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <div class="page-header">
+            <span class="page-icon"><i class="pi pi-eye"></i></span>
+            <h2>#{msg['menu.report.traffic']}</h2>
+            <span class="page-subtitle">#{msg['traffic.subtitle']}</span>
+        </div>
+
+        <h:form id="form">
+            <div class="card">
+                <p:toolbar styleClass="mb-2">
+                    <p:toolbarGroup>
+                        <span class="field-inline">
+                            <label>#{msg['pos.report.from']}</label>
+                            <p:datePicker value="#{reportTrafficMb.from}" pattern="dd/MM/yyyy" showIcon="true" style="width:150px"/>
+                        </span>
+                        <span class="field-inline ml-2">
+                            <label>#{msg['pos.report.to']}</label>
+                            <p:datePicker value="#{reportTrafficMb.to}" pattern="dd/MM/yyyy" showIcon="true" style="width:150px"/>
+                        </span>
+                        <span class="field-inline ml-2">
+                            <label>#{msg['traffic.filter.section']}</label>
+                            <p:selectOneMenu value="#{reportTrafficMb.section}" style="width:160px">
+                                <f:selectItem itemLabel="#{msg['pos.report.all']}" itemValue="#{null}" noSelectionOption="true"/>
+                                <f:selectItem itemLabel="#{msg['traffic.section.PAGE']}" itemValue="PAGE"/>
+                                <f:selectItem itemLabel="#{msg['traffic.section.STORE']}" itemValue="STORE"/>
+                                <f:selectItem itemLabel="#{msg['traffic.section.BOOKING']}" itemValue="BOOKING"/>
+                            </p:selectOneMenu>
+                        </span>
+                        <span class="field-inline ml-2">
+                            <label>#{msg['traffic.filter.source']}</label>
+                            <p:selectOneMenu value="#{reportTrafficMb.source}" style="width:160px">
+                                <f:selectItem itemLabel="#{msg['pos.report.all']}" itemValue="#{null}" noSelectionOption="true"/>
+                                <f:selectItem itemLabel="#{msg['traffic.source.WEB']}" itemValue="WEB"/>
+                                <f:selectItem itemLabel="#{msg['traffic.source.APP']}" itemValue="APP"/>
+                                <f:selectItem itemLabel="#{msg['traffic.source.REWARDS']}" itemValue="REWARDS"/>
+                            </p:selectOneMenu>
+                        </span>
+                        <p:commandButton value="#{msg['pos.report.generate']}" icon="pi pi-search"
+                                         actionListener="#{reportTrafficMb.generate}" update="@form :messages"
+                                         styleClass="ui-button-primary ml-2" style="margin-top:1.1rem"/>
+                    </p:toolbarGroup>
+                    <p:toolbarGroup align="right">
+                        <span class="traffic-ranges">
+                            <p:commandLink action="#{reportTrafficMb.range(7)}" update="@form :messages" styleClass="cv-pill cv-pill-ghost">7 #{msg['pos.report.days']}</p:commandLink>
+                            <p:commandLink action="#{reportTrafficMb.range(30)}" update="@form :messages" styleClass="cv-pill cv-pill-ghost">30 #{msg['pos.report.days']}</p:commandLink>
+                            <p:commandLink action="#{reportTrafficMb.range(90)}" update="@form :messages" styleClass="cv-pill cv-pill-ghost">90 #{msg['pos.report.days']}</p:commandLink>
+                        </span>
+                    </p:toolbarGroup>
+                </p:toolbar>
+
+                <!-- KPIs -->
+                <div class="kpi-grid traffic-kpis">
+                    <div class="kpi-card kpi-ink">
+                        <span class="kpi-icon"><i class="pi pi-eye"></i></span>
+                        <span class="kpi-label">#{msg['traffic.kpi.visits']}</span>
+                        <span class="kpi-value">#{reportTrafficMb.report.visits}</span>
+                        <span class="kpi-hint">
+                            <span class="#{reportTrafficMb.variationBadge}">#{reportTrafficMb.variationText}</span>
+                            &#160;#{msg['traffic.kpi.vsPrevious']} (#{reportTrafficMb.report.previousVisits})
+                        </span>
+                    </div>
+                    <div class="kpi-card">
+                        <span class="kpi-icon"><i class="pi pi-users"></i></span>
+                        <span class="kpi-label">#{msg['traffic.kpi.visitors']}</span>
+                        <span class="kpi-value">#{reportTrafficMb.report.visitors}</span>
+                        <span class="kpi-hint">#{reportTrafficMb.report.newVisitors} #{msg['traffic.kpi.new']} &#183; #{reportTrafficMb.report.returningVisitors} #{msg['traffic.kpi.returning']}</span>
+                    </div>
+                    <div class="kpi-card">
+                        <span class="kpi-icon"><i class="pi pi-clock"></i></span>
+                        <span class="kpi-label">#{msg['traffic.kpi.avgDuration']}</span>
+                        <span class="kpi-value">#{reportTrafficMb.fmtDuration(reportTrafficMb.report.avgDurationSeconds)}</span>
+                        <span class="kpi-hint">#{reportTrafficMb.visitsPerDay} #{msg['traffic.kpi.perDay']}</span>
+                    </div>
+                    <div class="kpi-card">
+                        <span class="kpi-icon"><i class="pi pi-shopping-bag"></i></span>
+                        <span class="kpi-label">#{msg['traffic.kpi.productViews']}</span>
+                        <span class="kpi-value">#{reportTrafficMb.report.productViews}</span>
+                        <span class="kpi-hint">#{reportTrafficMb.report.avgProductsPerVisit} #{msg['traffic.kpi.perVisit']} &#183; #{reportTrafficMb.report.visitsWithProducts} #{msg['traffic.kpi.visitsWithProducts']}</span>
+                    </div>
+                    <div class="kpi-card">
+                        <span class="kpi-icon"><i class="pi pi-whatsapp"></i></span>
+                        <span class="kpi-label">#{msg['traffic.kpi.contacts']}</span>
+                        <span class="kpi-value">#{reportTrafficMb.report.waClicks + reportTrafficMb.report.bookings}</span>
+                        <span class="kpi-hint">#{reportTrafficMb.report.waClicks} WhatsApp &#183; #{reportTrafficMb.report.bookings} #{msg['traffic.kpi.bookings']} &#183; #{reportTrafficMb.report.conversionPercent}% #{msg['traffic.kpi.conversion']}</span>
+                    </div>
+                </div>
+
+                <h:panelGroup rendered="#{not reportTrafficMb.hasData}" layout="block" styleClass="empty-state">
+                    <i class="pi pi-eye"></i>#{msg['traffic.empty']}
+                    <span class="muted" style="display:block;margin-top:.4rem">#{msg['traffic.empty.hint']}</span>
+                </h:panelGroup>
+
+                <h:panelGroup rendered="#{reportTrafficMb.hasData}" layout="block">
+                    <!-- Visits per day -->
+                    <h3 class="section-title"><i class="pi pi-chart-line"></i>&#160;#{msg['traffic.chart.byDay']}
+                        <span class="muted traffic-hint">&#160;#{msg['traffic.chart.byDay.hint']}</span></h3>
+                    <div class="traffic-chart traffic-chart-wide mb-2">
+                        <p:lineChart model="#{reportTrafficMb.dayChart}" style="width:100%;height:100%"/>
+                    </div>
+
+                    <!-- Hours + weekdays -->
+                    <div class="traffic-two">
+                        <div>
+                            <h3 class="section-title"><i class="pi pi-clock"></i>&#160;#{msg['traffic.chart.byHour']}</h3>
+                            <div class="traffic-chart mb-2">
+                                <p:barChart model="#{reportTrafficMb.hourChart}" style="width:100%;height:100%"/>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="section-title"><i class="pi pi-calendar"></i>&#160;#{msg['traffic.chart.byWeekday']}</h3>
+                            <div class="traffic-chart mb-2">
+                                <p:barChart model="#{reportTrafficMb.weekdayChart}" style="width:100%;height:100%"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Shares -->
+                    <div class="traffic-three">
+                        <div>
+                            <h3 class="section-title"><i class="pi pi-sitemap"></i>&#160;#{msg['traffic.chart.bySection']}</h3>
+                            <div class="traffic-chart traffic-donut"><p:donutChart model="#{reportTrafficMb.sectionChart}" style="width:100%;height:100%"/></div>
+                        </div>
+                        <div>
+                            <h3 class="section-title"><i class="pi pi-share-alt"></i>&#160;#{msg['traffic.chart.bySource']}</h3>
+                            <div class="traffic-chart traffic-donut"><p:donutChart model="#{reportTrafficMb.sourceChart}" style="width:100%;height:100%"/></div>
+                        </div>
+                        <div>
+                            <h3 class="section-title"><i class="pi pi-mobile"></i>&#160;#{msg['traffic.chart.byDevice']}</h3>
+                            <div class="traffic-chart traffic-donut"><p:donutChart model="#{reportTrafficMb.deviceChart}" style="width:100%;height:100%"/></div>
+                        </div>
+                    </div>
+
+                    <!-- Origins + products -->
+                    <div class="traffic-two mt-2">
+                        <div>
+                            <h3 class="section-title"><i class="pi pi-compass"></i>&#160;#{msg['traffic.table.origins']}
+                                <span class="muted traffic-hint">&#160;#{msg['traffic.table.origins.hint']}</span></h3>
+                            <p:dataTable var="o" value="#{reportTrafficMb.report.byReferrer}" reflow="true" stripedRows="true"
+                                         emptyMessage="#{msg['msg.noData']}" styleClass="traffic-table">
+                                <p:column headerText="#{msg['traffic.col.origin']}">
+                                    <span style="font-weight:600">#{reportTrafficMb.originLabel(o.key)}</span>
+                                </p:column>
+                                <p:column headerText="#{msg['traffic.kpi.visits']}" width="90" styleClass="text-right"><strong>#{o.visits}</strong></p:column>
+                                <p:column headerText="%" width="140">
+                                    <div class="traffic-bar"><span style="width:#{o.percent}%"></span></div>
+                                    <span class="muted small">#{o.percent}%</span>
+                                </p:column>
+                            </p:dataTable>
+                        </div>
+                        <div>
+                            <h3 class="section-title"><i class="pi pi-star"></i>&#160;#{msg['traffic.table.products']}
+                                <span class="muted traffic-hint">&#160;#{msg['traffic.table.products.hint']}</span></h3>
+                            <p:dataTable var="tp" value="#{reportTrafficMb.report.topProducts}" rowIndexVar="i" reflow="true" stripedRows="true"
+                                         emptyMessage="#{msg['msg.noData']}" styleClass="traffic-table" paginator="true" rows="10" paginatorAlwaysVisible="false">
+                                <p:column headerText="#" width="40" styleClass="text-right">#{i + 1}</p:column>
+                                <p:column headerText="#{msg['cat.product.name']}">
+                                    <span style="font-weight:600">#{tp.name}</span>
+                                    <span class="muted" style="display:block;font-size:.76rem">
+                                        <h:outputText value="#{msg['cat.product.refShort']} #{tp.referenceCode}" rendered="#{not empty tp.referenceCode}"/>
+                                        <h:outputText value=" &#183; #{tp.size}" rendered="#{not empty tp.size}"/>
+                                        <h:outputText value=" &#183; #{tp.color}" rendered="#{not empty tp.color}"/>
+                                        <h:outputText value=" &#183; #{tp.barcode}" rendered="#{not empty tp.barcode}"/>
+                                    </span>
+                                </p:column>
+                                <p:column headerText="#{msg['traffic.col.views']}" width="90" styleClass="text-right"><strong>#{tp.views}</strong></p:column>
+                                <p:column headerText="#{msg['traffic.kpi.visits']}" width="90" styleClass="text-right">#{tp.visits}</p:column>
+                            </p:dataTable>
+                        </div>
+                    </div>
+
+                    <!-- Latest visits -->
+                    <h3 class="section-title mt-2"><i class="pi pi-list"></i>&#160;#{msg['traffic.table.latest']}
+                        <span class="muted traffic-hint">&#160;#{msg['traffic.table.latest.hint']}</span></h3>
+                    <p:dataTable var="v" value="#{reportTrafficMb.report.latestVisits}" reflow="true" stripedRows="true"
+                                 emptyMessage="#{msg['msg.noData']}" styleClass="traffic-table" paginator="true" rows="15" paginatorAlwaysVisible="false">
+                        <p:column headerText="#{msg['lbl.date']}" width="150" sortBy="#{v.startedAt}">
+                            <span class="cv-nowrap">#{reportTrafficMb.fmtStamp(v.startedAt)}</span>
+                        </p:column>
+                        <p:column headerText="#{msg['traffic.filter.section']}" sortBy="#{v.section}">
+                            #{msg['traffic.section.'.concat(v.section)]}
+                            <span class="muted" style="display:block;font-size:.76rem">#{msg['traffic.source.'.concat(v.source)]}
+                                <h:outputText value=" &#183; #{msg['traffic.device.'.concat(v.device)]}" rendered="#{not empty v.device}"/></span>
+                        </p:column>
+                        <p:column headerText="#{msg['traffic.col.origin']}" sortBy="#{v.referrer}">
+                            #{reportTrafficMb.originLabel(v.referrer)}
+                            <h:outputText value="#{v.customerName}" styleClass="muted" style="display:block;font-size:.76rem" rendered="#{not empty v.customerName}"/>
+                        </p:column>
+                        <p:column headerText="#{msg['traffic.col.visitor']}" width="110" styleClass="text-center">
+                            <span class="badge #{v.newVisitor ? 'badge-success' : 'badge-muted'}">#{v.newVisitor ? msg['traffic.visitor.new'] : msg['traffic.visitor.returning']}</span>
+                        </p:column>
+                        <p:column headerText="#{msg['traffic.col.duration']}" width="110" styleClass="text-right" sortBy="#{v.durationSeconds}">
+                            #{reportTrafficMb.fmtDuration(v.durationSeconds)}
+                        </p:column>
+                        <p:column headerText="#{msg['traffic.col.products']}" width="100" styleClass="text-right" sortBy="#{v.productViews}">
+                            <strong>#{v.productViews}</strong>
+                        </p:column>
+                        <p:column headerText="#{msg['traffic.col.result']}" width="150" styleClass="text-center">
+                            <span class="#{reportTrafficMb.rowBadge(v)}">
+                                <h:outputText value="#{v.bookings} #{msg['traffic.kpi.bookings']}" rendered="#{v.bookings gt 0}"/>
+                                <h:outputText value="#{v.waClicks} WhatsApp" rendered="#{v.bookings eq 0 and v.waClicks gt 0}"/>
+                                <h:outputText value="#{msg['traffic.result.none']}" rendered="#{v.bookings eq 0 and v.waClicks eq 0}"/>
+                            </span>
+                        </p:column>
+                    </p:dataTable>
+                </h:panelGroup>
+            </div>
+        </h:form>
+    </ui:define>
+</ui:composition>

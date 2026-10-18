@@ -1,0 +1,132 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <h:form id="form" styleClass="vc-page">
+            <!-- Hero -->
+            <div class="page-header cv-hero">
+                <span class="page-icon"><i class="pi pi-calendar"></i></span>
+                <div class="cv-hero-text">
+                    <span class="cv-hero-kicker">#{msg['vcal.kicker']}</span>
+                    <h2>#{msg['menu.sale.calendar']}</h2>
+                    <span class="page-subtitle">#{msg['vcal.subtitle']}</span>
+                </div>
+                <div class="cv-hero-actions">
+                    <h:outputLink value="#{request.contextPath}/pages/locationExpense.xhtml" styleClass="cv-pill">
+                        <i class="pi pi-plus"></i>#{msg['vcal.add']}
+                    </h:outputLink>
+                </div>
+            </div>
+
+            <h:panelGroup id="body" layout="block">
+                <!-- Month at a glance -->
+                <div class="kpi-grid vc-kpis">
+                    <div class="kpi-card">
+                        <span class="kpi-icon"><i class="pi pi-map-marker"></i></span>
+                        <span class="kpi-label">#{msg['vcal.kpi.bookings']}</span>
+                        <span class="kpi-value">#{venueCalendarMb.monthBookings.size()}</span>
+                        <span class="kpi-hint">#{venueCalendarMb.monthTitle}</span>
+                    </div>
+                    <div class="kpi-card">
+                        <span class="kpi-icon"><i class="pi pi-briefcase"></i></span>
+                        <span class="kpi-label">#{msg['vcal.kpi.days']}</span>
+                        <span class="kpi-value">#{venueCalendarMb.workingDays}</span>
+                        <span class="kpi-hint">#{msg['vcal.kpi.days.of']} #{venueCalendarMb.monthDays}</span>
+                    </div>
+                    <div class="kpi-card kpi-ink">
+                        <span class="kpi-icon"><i class="pi pi-sun"></i></span>
+                        <span class="kpi-label">#{msg['vcal.kpi.today']}</span>
+                        <h:panelGroup rendered="#{not empty venueCalendarMb.todayBookings}">
+                            <span class="kpi-value vc-kpi-text">#{venueCalendarMb.todayBookings[0].title}</span>
+                            <span class="kpi-hint">#{venueCalendarMb.todayBookings[0].location} &#183; #{venueCalendarMb.status(venueCalendarMb.todayBookings[0])}</span>
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{empty venueCalendarMb.todayBookings}">
+                            <span class="kpi-value vc-kpi-text">#{msg['vcal.kpi.today.none']}</span>
+                            <span class="kpi-hint">#{msg['vcal.kpi.today.noneHint']}</span>
+                        </h:panelGroup>
+                    </div>
+                    <div class="kpi-card">
+                        <span class="kpi-icon"><i class="pi pi-forward"></i></span>
+                        <span class="kpi-label">#{msg['vcal.kpi.next']}</span>
+                        <h:panelGroup rendered="#{not empty venueCalendarMb.nextBooking}">
+                            <span class="kpi-value vc-kpi-text">#{venueCalendarMb.nextBooking.title}</span>
+                            <span class="kpi-hint">#{venueCalendarMb.range(venueCalendarMb.nextBooking)} &#183; #{venueCalendarMb.status(venueCalendarMb.nextBooking)}</span>
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{empty venueCalendarMb.nextBooking}">
+                            <span class="kpi-value vc-kpi-text">—</span>
+                            <span class="kpi-hint">#{msg['vcal.kpi.next.none']}</span>
+                        </h:panelGroup>
+                    </div>
+                </div>
+
+                <div class="vc-layout">
+                    <!-- Month grid -->
+                    <div class="card vc-calendar">
+                        <div class="vc-head">
+                            <p:commandButton icon="pi pi-chevron-left" title="#{msg['vcal.prev']}" actionListener="#{venueCalendarMb.prevMonth}"
+                                             update=":form:body" process="@this" styleClass="ui-button-secondary rounded-button vc-nav"/>
+                            <h3 class="vc-month">#{venueCalendarMb.monthTitle}</h3>
+                            <p:commandButton icon="pi pi-chevron-right" title="#{msg['vcal.next']}" actionListener="#{venueCalendarMb.nextMonth}"
+                                             update=":form:body" process="@this" styleClass="ui-button-secondary rounded-button vc-nav"/>
+                            <p:commandButton value="#{msg['vcal.today']}" actionListener="#{venueCalendarMb.goToday}"
+                                             update=":form:body" process="@this" styleClass="ui-button-secondary vc-today-btn"/>
+                        </div>
+                        <div class="vc-grid vc-weekdays">
+                            <ui:repeat value="#{venueCalendarMb.weekdays}" var="wd"><span>#{wd}</span></ui:repeat>
+                        </div>
+                        <div class="vc-grid">
+                            <ui:repeat value="#{venueCalendarMb.weeks}" var="week">
+                                <ui:repeat value="#{week}" var="c">
+                                    <p:commandLink actionListener="#{venueCalendarMb.selectDay(c.date)}" update=":form:body" process="@this"
+                                                   styleClass="vc-cell #{c.inMonth ? '' : 'is-out'} #{c.today ? 'is-today' : ''} #{c.selected ? 'is-selected' : ''} #{c.busy ? 'is-busy' : ''}">
+                                        <span class="vc-day">#{c.day}</span>
+                                        <span class="vc-chips">
+                                            <ui:repeat value="#{c.shown}" var="b">
+                                                <span class="vc-chip" style="--c:#{b.color}" title="#{b.title} · #{b.location}">#{b.title}</span>
+                                            </ui:repeat>
+                                            <h:outputText value="+#{c.more}" rendered="#{c.more gt 0}" styleClass="vc-more"/>
+                                        </span>
+                                        <span class="vc-dots">
+                                            <ui:repeat value="#{c.bookings}" var="b"><i style="background:#{b.color}"></i></ui:repeat>
+                                        </span>
+                                    </p:commandLink>
+                                </ui:repeat>
+                            </ui:repeat>
+                        </div>
+                    </div>
+
+                    <!-- Bookings of the month / of the selected day -->
+                    <div class="card vc-list">
+                        <div class="vc-list-head">
+                            <h3 class="section-title"><i class="pi pi-map-marker"></i>&#160;#{venueCalendarMb.selectionTitle}</h3>
+                            <p:commandButton value="#{msg['vcal.wholeMonth']}" rendered="#{venueCalendarMb.daySelected}"
+                                             actionListener="#{venueCalendarMb.wholeMonth}" update=":form:body" process="@this"
+                                             styleClass="ui-button-secondary ui-button-sm"/>
+                        </div>
+                        <h:panelGroup rendered="#{not venueCalendarMb.daySelected}" styleClass="muted vc-summary" layout="block">
+                            #{venueCalendarMb.monthBookings.size()} #{msg['vcal.summary.bookings']} &#183; #{venueCalendarMb.workingDays} #{msg['vcal.summary.days']}
+                        </h:panelGroup>
+                        <ui:repeat value="#{venueCalendarMb.visible}" var="b">
+                            <div class="vc-booking vc-#{venueCalendarMb.statusClass(b)}" style="--c:#{b.color}">
+                                <div class="vc-booking-main">
+                                    <strong>#{b.title}</strong>
+                                    <h:panelGroup rendered="#{not empty b.description and b.description.trim() ne b.location}" styleClass="vc-loc">
+                                        <i class="pi pi-map-marker"></i>#{b.location}
+                                    </h:panelGroup>
+                                    <span class="vc-range"><i class="pi pi-calendar"></i>#{venueCalendarMb.range(b)} &#183; #{venueCalendarMb.daysText(b.days)}</span>
+                                </div>
+                                <span class="vc-status">#{venueCalendarMb.status(b)}</span>
+                            </div>
+                        </ui:repeat>
+                        <h:panelGroup rendered="#{empty venueCalendarMb.visible}" layout="block" styleClass="empty-state">
+                            <i class="pi pi-calendar-times"></i>#{venueCalendarMb.daySelected ? msg['vcal.empty.day'] : msg['vcal.empty.month']}
+                        </h:panelGroup>
+                    </div>
+                </div>
+            </h:panelGroup>
+        </h:form>
+    </ui:define>
+</ui:composition>

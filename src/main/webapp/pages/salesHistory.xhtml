@@ -8,44 +8,65 @@
         <div class="page-header">
             <span class="page-icon"><i class="pi pi-receipt"></i></span>
             <h2>#{msg['menu.sale.history']}</h2>
-            <span class="page-subtitle">#{sessionMb.seller ? msg['pos.history.subtitle.seller'] : msg['pos.history.subtitle']}</span>
+            <span class="page-subtitle">#{sessionMb.admin ? msg['pos.history.subtitle'] : msg['pos.history.subtitle.seller']}</span>
         </div>
 
         <h:form id="form">
-            <div class="card">
-                <p:toolbar styleClass="mb-2">
-                    <p:toolbarGroup>
-                        <span class="field-inline">
-                            <label>#{msg['pos.report.from']}</label>
-                            <p:datePicker value="#{salesHistoryMb.from}" pattern="dd/MM/yyyy" showIcon="true" style="width:150px"/>
-                        </span>
-                        <span class="field-inline ml-2">
-                            <label>#{msg['pos.report.to']}</label>
-                            <p:datePicker value="#{salesHistoryMb.to}" pattern="dd/MM/yyyy" showIcon="true" style="width:150px"/>
-                        </span>
-                        <p:commandButton value="#{msg['action.search']}" icon="pi pi-search"
-                                         actionListener="#{salesHistoryMb.refresh}" update="@form :messages"
-                                         styleClass="ui-button-primary ml-2" style="margin-top:1.1rem"/>
-                    </p:toolbarGroup>
-                </p:toolbar>
+            <!-- Period: quick ranges + free range, same as reportProfit.xhtml -->
+            <div class="card pl-filters cv-period">
+                <div class="pl-presets">
+                    <ui:repeat value="#{['today','week','month','lastMonth','year']}" var="pr">
+                        <p:commandButton value="#{msg['profit.preset.'.concat(pr)]}" actionListener="#{salesHistoryMb.applyPreset(pr)}"
+                                         update="@form :messages" process="@this"
+                                         styleClass="pl-preset #{salesHistoryMb.preset eq pr ? 'is-active' : ''}"/>
+                    </ui:repeat>
+                </div>
+                <div class="pl-range">
+                    <span class="field-inline">
+                        <label>#{msg['pos.report.from']}</label>
+                        <p:datePicker value="#{salesHistoryMb.from}" pattern="dd/MM/yyyy" showIcon="true" style="width:150px"/>
+                    </span>
+                    <span class="field-inline">
+                        <label>#{msg['pos.report.to']}</label>
+                        <p:datePicker value="#{salesHistoryMb.to}" pattern="dd/MM/yyyy" showIcon="true" style="width:150px"/>
+                    </span>
+                    <p:commandButton value="#{msg['pos.report.generate']}" icon="pi pi-search"
+                                     actionListener="#{salesHistoryMb.generate}" update="@form :messages"
+                                     styleClass="ui-button-primary"/>
+                </div>
+            </div>
 
-                <div class="kpi-grid">
+            <div class="card">
+
+                <div class="kpi-grid cv-kpi-even cv-kpi-2">
                     <div class="kpi-card kpi-ink">
-                        <span class="kpi-label">#{msg['pos.history.kpi.sales']}</span>
+                        <span class="kpi-icon"><i class="pi pi-shopping-bag"></i></span><span class="kpi-label">#{msg['pos.history.kpi.sales']}</span>
                         <span class="kpi-value">#{salesHistoryMb.completedCount}</span>
                         <span class="kpi-hint">#{msg['pos.history.kpi.cancelled']}: #{salesHistoryMb.cancelledCount}</span>
                     </div>
                     <div class="kpi-card">
-                        <span class="kpi-label">#{msg['pos.history.kpi.total']}</span>
+                        <span class="kpi-icon"><i class="pi pi-dollar"></i></span><span class="kpi-label">#{msg['pos.history.kpi.total']}</span>
                         <span class="kpi-value">#{sessionMb.fmtMoney(salesHistoryMb.totalAmount)}</span>
                         <span class="kpi-hint">#{msg['pos.history.kpi.total.hint']}</span>
                     </div>
-                    <h:panelGroup layout="block" styleClass="kpi-card" rendered="#{sessionMb.admin}">
-                        <span class="kpi-label">#{msg['pos.report.commissions']}</span>
-                        <span class="kpi-value">#{sessionMb.fmtMoney(salesHistoryMb.totalCommission)}</span>
-                        <span class="kpi-hint">#{msg['pos.history.kpi.commission.hint']}</span>
-                    </h:panelGroup>
                 </div>
+
+                <!-- Administrator: who sold what, without detail (sales, amount, costs, profit) -->
+                <h:panelGroup layout="block" styleClass="cv-sellers" rendered="#{salesHistoryMb.showSellers}">
+                    <div class="cv-sellers-head">
+                        <span class="cv-sellers-title"><i class="pi pi-users"></i>&#160;#{msg['pos.history.sellers.title']}</span>
+                        <span class="muted">#{msg['pos.history.sellers.hint.sales']}</span>
+                    </div>
+                    <p:dataTable var="se" value="#{salesHistoryMb.sellers}" styleClass="cv-sellers-table" reflow="true" stripedRows="true">
+                        <p:column headerText="#{msg['pos.history.seller']}"><strong>#{empty se.name ? msg['pos.history.seller.unknown'] : se.name}</strong></p:column>
+                        <p:column headerText="#{msg['pos.history.business']}">
+                            #{se.businessName}
+                            <h:outputText styleClass="badge cv-badge-cons" style="margin-left:.35rem" rendered="#{se.consignment}" value="#{msg['pos.history.consignment']}"/>
+                        </p:column>
+                        <p:column headerText="#{msg['pos.history.kpi.sales']}" width="90" styleClass="text-right">#{se.salesCount}</p:column>
+                        <p:column headerText="#{msg['pos.history.kpi.total']}" width="130" styleClass="text-right">#{sessionMb.fmtMoney(se.revenue)}</p:column>
+                    </p:dataTable>
+                </h:panelGroup>
 
                 <p:dataTable id="table" var="s" value="#{salesHistoryMb.sales}" paginator="true" rows="15" widgetVar="historyTable"
                              filteredValue="#{salesHistoryMb.filtered}" globalFilterOnly="true"
@@ -57,11 +78,18 @@
                             <p:inputText id="globalFilter" onkeyup="PF('historyTable').filter()" placeholder="#{msg['action.search']}"/>
                         </div>
                     </f:facet>
-                    <p:column headerText="#{msg['pos.lbl.folio']}" sortBy="#{s.folio}" filterBy="#{s.folio}" filterMatchMode="contains" width="120">
+                    <p:column headerText="#{msg['pos.lbl.folio']}" sortBy="#{s.folio}" filterBy="#{s.folioSearch}" filterMatchMode="contains" width="120">
                         <strong>#{s.folio}</strong>
                         <h:outputText styleClass="badge badge-info" style="margin-left:.3rem" rendered="#{s.saleType eq 'EXCHANGE'}" value="#{salesHistoryMb.typeLabel(s.saleType)}"/>
+                        <h:outputText styleClass="badge cv-badge-visit" style="margin-left:.3rem" rendered="#{s.saleType eq 'APPOINTMENT'}" value="#{salesHistoryMb.typeLabel(s.saleType)}"/>
+                        <h:outputText styleClass="badge cv-badge-cons" style="margin-left:.3rem" rendered="#{s.consignment}" value="#{msg['pos.history.consignment']}"/>
                     </p:column>
                     <p:column headerText="#{msg['lbl.date']}" sortBy="#{s.saleDate}" width="140">#{salesHistoryMb.fmtStamp(s.saleDate)}</p:column>
+                    <p:column headerText="#{msg['pos.history.seller']}" filterBy="#{s.sellerName}" filterMatchMode="contains" rendered="#{sessionMb.admin}">
+                        <h:outputText value="#{s.sellerName}" rendered="#{not empty s.sellerName}"/>
+                        <h:outputText value="—" styleClass="muted" rendered="#{empty s.sellerName}"/>
+                    </p:column>
+                    <p:column headerText="#{msg['pos.history.business']}" filterBy="#{s.businessName}" filterMatchMode="contains" rendered="#{sessionMb.admin}">#{s.businessName}</p:column>
                     <p:column headerText="#{msg['lbl.customer']}" filterBy="#{s.customerName}" filterMatchMode="contains">
                         <h:outputText value="#{s.customerName}" rendered="#{not empty s.customerName}"/>
                         <h:outputText value="—" styleClass="muted" rendered="#{empty s.customerName}"/>
@@ -69,6 +97,11 @@
                     <p:column headerText="#{msg['pos.lbl.saleLocation']}" filterBy="#{s.saleLocationName}" filterMatchMode="contains">#{s.saleLocationName}</p:column>
                     <p:column headerText="#{msg['pos.lbl.paymentMethod']}" filterBy="#{s.paymentMethodName}" filterMatchMode="contains">#{s.paymentMethodName}</p:column>
                     <p:column headerText="#{msg['lbl.total']}" sortBy="#{s.total}" width="110" styleClass="text-right"><strong>#{sessionMb.fmtMoney(s.total)}</strong></p:column>
+                    <!-- Tip: for the seller / staff, apart from the total (not business income) -->
+                    <p:column headerText="#{msg['rel.payroll.tips']}" sortBy="#{s.tipAmount}" width="100" styleClass="text-right">
+                        <h:outputText value="#{sessionMb.fmtMoney(s.tipAmount)}" rendered="#{s.tipAmount gt 0}"/>
+                        <h:outputText value="—" styleClass="muted" rendered="#{empty s.tipAmount or s.tipAmount le 0}"/>
+                    </p:column>
                     <p:column headerText="#{msg['lbl.status']}" width="120">
                         <span class="#{salesHistoryMb.saleBadge(s.saleStatus)}">#{salesHistoryMb.statusLabel(s.saleStatus)}</span>
                     </p:column>
@@ -87,10 +120,13 @@
                 <h:panelGroup rendered="#{not empty salesHistoryMb.detail}" layout="block">
                     <div class="flex-between wrap gap-2">
                         <div>
-                            <div class="pos-result-folio">#{salesHistoryMb.detail.folio}</div>
+                            <div class="pos-result-folio">#{salesHistoryMb.detail.folio}
+                                <h:outputText styleClass="badge cv-badge-visit" style="margin-left:.4rem;vertical-align:middle" rendered="#{salesHistoryMb.isVisit(salesHistoryMb.detail)}" value="#{msg['pos.history.visit']}"/>
+                                <h:outputText styleClass="badge cv-badge-cons" style="margin-left:.4rem;vertical-align:middle" rendered="#{salesHistoryMb.detail.consignment}" value="#{msg['pos.history.consignment']} · #{salesHistoryMb.detail.businessName}"/></div>
                             <span class="muted">#{salesHistoryMb.fmtStamp(salesHistoryMb.detail.saleDate)}
                                 &#183; #{salesHistoryMb.detail.paymentMethodName}
                                 <h:outputText value=" &#183; #{salesHistoryMb.detail.saleLocationName}" rendered="#{not empty salesHistoryMb.detail.saleLocationName}"/>
+                                <h:outputText value=" &#183; #{salesHistoryMb.detail.sellerName}" rendered="#{salesHistoryMb.detail.consignment and not empty salesHistoryMb.detail.sellerName}"/>
                                 <h:outputText value=" &#183; #{salesHistoryMb.detail.customerName} (#{salesHistoryMb.detail.customerPhone})" rendered="#{not empty salesHistoryMb.detail.customerName}"/>
                             </span>
                             <h:panelGroup rendered="#{not empty salesHistoryMb.detail.originFolio}" styleClass="muted" layout="block">
@@ -101,8 +137,18 @@
                         <span class="#{salesHistoryMb.saleBadge(salesHistoryMb.detail.saleStatus)}">#{salesHistoryMb.statusLabel(salesHistoryMb.detail.saleStatus)}</span>
                     </div>
                     <p:dataTable var="it" value="#{salesHistoryMb.detail.items}" styleClass="mt-2" reflow="true" emptyMessage="#{msg['msg.noData']}">
+                        <p:column headerText="" style="width:4rem;text-align:center">
+                            <!-- Product photo, same as the product list (no photo or a service -> placeholder). -->
+                            <h:panelGroup rendered="#{not empty it.productId}">
+                                <img alt="" class="cv-thumb" loading="lazy"
+                                     src="#{request.contextPath}/productPhoto?id=#{it.productId}&amp;v=#{sessionMb.productPhotoVersion}"
+                                     onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex'"/>
+                                <span class="cv-thumb cv-thumb-empty" style="display:none"><i class="pi pi-image"></i></span>
+                            </h:panelGroup>
+                            <h:panelGroup rendered="#{empty it.productId}" styleClass="cv-thumb cv-thumb-empty"><i class="pi pi-star"></i></h:panelGroup>
+                        </p:column>
                         <p:column headerText="#{msg['lbl.description']}">
-                            #{it.description}<span class="muted" style="display:block">#{it.barcode}</span>
+                            #{it.description}<span class="muted" style="display:block">#{empty it.productId and salesHistoryMb.isVisit(salesHistoryMb.detail) ? msg['pos.history.visit.service'] : it.barcode}</span>
                         </p:column>
                         <p:column headerText="#{msg['lbl.quantity']}" width="70" styleClass="text-right">#{it.quantity}</p:column>
                         <p:column headerText="#{msg['pos.lbl.listPrice']}" width="100" styleClass="text-right"><span class="muted">#{sessionMb.fmtMoney(it.listPrice)}</span></p:column>
@@ -119,6 +165,16 @@
                             <span class="muted">#{sessionMb.fmtMoney(salesHistoryMb.detail.commissionAmount)}</span>
                         </h:panelGroup>
                         <div class="totals-row grand-total"><span>#{msg['lbl.total']}</span><span>#{sessionMb.fmtMoney(salesHistoryMb.detail.total)}</span></div>
+                        <h:panelGroup rendered="#{salesHistoryMb.detail.tipAmount gt 0}" layout="block" styleClass="totals-row vz-tip-row">
+                            <span>#{msg['op.tip.title']} <span class="muted small">(#{msg['op.tip.notIncome']})</span></span>
+                            <span>+#{sessionMb.fmtMoney(salesHistoryMb.detail.tipAmount)}</span></h:panelGroup>
+                        <h:panelGroup layout="block" styleClass="totals-row" rendered="#{salesHistoryMb.detail.consignment}">
+                            <span>#{msg['pos.history.cons.commission']} (#{salesHistoryMb.detail.commissionPercent}%)</span>
+                            <span class="muted">−#{sessionMb.fmtMoney(salesHistoryMb.detail.consignmentCommission)}</span>
+                        </h:panelGroup>
+                        <h:panelGroup layout="block" styleClass="totals-row grand-total" rendered="#{salesHistoryMb.detail.consignment}">
+                            <span>#{msg['pos.history.cons.net']}</span><span>#{sessionMb.fmtMoney(salesHistoryMb.detail.consignmentNet)}</span>
+                        </h:panelGroup>
                     </div>
 
                     <h:panelGroup rendered="#{not empty salesHistoryMb.detailCredit}" layout="block" styleClass="mt-2">
@@ -150,5 +206,23 @@
                 </f:facet>
             </p:dialog>
         </h:form>
+        <style type="text/css">
+            .cv-thumb { width: 48px; height: 48px; object-fit: cover; border-radius: 8px; border: 1px solid var(--vip-border); background: var(--vip-surface-2); vertical-align: middle; }
+            .cv-thumb-empty { display: inline-flex; align-items: center; justify-content: center; color: var(--vip-text-muted); }
+            .cv-badge-visit { background: var(--vip-gold); color: var(--vip-ink); border-color: var(--vip-gold); }
+            .cv-badge-cons { background: #FFF3B1; color: #6B5600; border-color: #F2E29E; }
+            /* KPI cards of equal width: 4 in a row on a computer, 2 x 2 (50% each) on a phone */
+            .kpi-grid.cv-kpi-even { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 1fr; }
+            .kpi-grid.cv-kpi-even .kpi-card { min-width: 0; }
+            .kpi-grid.cv-kpi-even .kpi-value { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            @media (max-width: 900px) {
+                .kpi-grid.cv-kpi-even { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; }
+                .kpi-grid.cv-kpi-even .kpi-card { padding: .9rem .85rem; }
+                .kpi-grid.cv-kpi-even .kpi-value { font-size: clamp(1.15rem, 5.2vw, 1.6rem); }
+                .kpi-grid.cv-kpi-even .kpi-label { font-size: .62rem; letter-spacing: .08em; padding-right: 2.2rem; }
+                .kpi-grid.cv-kpi-even .kpi-hint { font-size: .7rem; line-height: 1.3; }
+                .kpi-grid.cv-kpi-even .kpi-icon { width: 30px; height: 30px; font-size: .8rem; }
+            }
+        </style>
     </ui:define>
 </ui:composition>

@@ -1,0 +1,20 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui">
+    <!-- Header of the public login / register pages, same look as index.xhtml.
+         Params: ctaHref, ctaLabel (green button on the right). -->
+    <header class="hp-nav au-nav">
+        <div class="hp-nav-in">
+            <a class="hp-logo" href="#{request.contextPath}/index.xhtml"><img src="#{request.contextPath}/resources/img/logo-clubvip.svg?v=20261014" alt="Club VIP"/></a>
+            <h:form id="langForm" styleClass="hp-lang">
+                <p:commandLink styleClass="#{sessionMb.language eq 'es' ? 'on' : ''}" process="@this" update="@none"
+                               action="#{sessionMb.changeLanguage('es')}" oncomplete="window.location.reload()">#{msg['hm.lang.es']}</p:commandLink>
+                <p:commandLink styleClass="#{sessionMb.language eq 'en' ? 'on' : ''}" process="@this" update="@none"
+                               action="#{sessionMb.changeLanguage('en')}" oncomplete="window.location.reload()">#{msg['hm.lang.en']}</p:commandLink>
+            </h:form>
+            <a class="hp-btn hp-btn-sm" href="#{ctaHref}">#{ctaLabel}</a>
+        </div>
+    </header>
+</ui:composition>

@@ -4,24 +4,44 @@
                 xmlns:ui="jakarta.faces.facelets"
                 xmlns:p="http://primefaces.org/ui">
     <!-- Shared appointment dialogs. Expects <ui:param name="owner" value="#{pageBean}"/> (a Refreshable)
-         and the owner page's main form to have id="form". -->
+         and the owner page's main form to have id="form". They work on the VISIT: every service the
+         customer booked together is started, cancelled and charged in one step (appointmentActionsMb.visit). -->
 
     <!-- ============================ DETAIL ============================ -->
     <p:dialog header="#{msg['op.appointment.detail']}" widgetVar="apptDetailDlg" modal="true" responsive="true"
-              width="820" appendTo="@(body)" closeOnEscape="true" fitViewport="true">
+              width="860" appendTo="@(body)" closeOnEscape="true" fitViewport="true">
         <h:form id="apptDetailForm">
             <p:outputPanel id="detailPanel">
                 <h:panelGroup rendered="#{not empty appointmentActionsMb.selected}">
                     <div class="flex-between wrap gap-2 mb-2">
                         <div>
-                            <span style="font-size:1.15rem;font-weight:600">#{appointmentActionsMb.selected.serviceName}</span>
-                            <span class="muted"> &#183; #{sessionMb.fmtDay(appointmentActionsMb.selected.date)}
-                                #{appointmentActionsMb.selected.startTime} - #{appointmentActionsMb.selected.endTime}
-                                &#183; #{appointmentActionsMb.selected.employeeName}</span>
+                            <span style="font-size:1.15rem;font-weight:600">#{appointmentActionsMb.visit.serviceNames}</span>
+                            <h:panelGroup rendered="#{appointmentActionsMb.multiVisit}" styleClass="vz-count ml-2">
+                                <i class="pi pi-list"></i>&#160;<h:outputFormat value="#{msg['op.visit.services']}"><f:param value="#{appointmentActionsMb.visit.count}"/></h:outputFormat>
+                            </h:panelGroup>
+                            <span class="muted" style="display:block"> #{sessionMb.fmtDay(appointmentActionsMb.visit.date)}
+                                &#183; #{appointmentActionsMb.visit.startTime} &#8211; #{appointmentActionsMb.visit.endTime}
+                                &#183; #{appointmentActionsMb.visit.durationLabel}
+                                &#183; #{appointmentActionsMb.visit.employeeName}</span>
                         </div>
-                        <span class="#{appointmentActionsMb.statusBadge(appointmentActionsMb.selected.appointmentStatus)}">
-                            #{msg['status.'.concat(appointmentActionsMb.selected.appointmentStatus)]}</span>
+                        <span class="#{appointmentActionsMb.statusBadge(appointmentActionsMb.visit.status)}">
+                            #{msg['status.'.concat(appointmentActionsMb.visit.status)]}</span>
                     </div>
+
+                    <!-- services of the visit -->
+                    <h:panelGroup rendered="#{appointmentActionsMb.multiVisit}" layout="block" styleClass="vz-lines mb-2">
+                        <ui:repeat var="a" value="#{appointmentActionsMb.visit.appointments}">
+                            <div class="vz-line vz-line-ro">
+                                <span class="vz-line-time">#{a.startTime}</span>
+                                <span class="vz-line-name">#{a.serviceName}
+                                    <span class="vz-line-meta">#{a.durationMinutes} min &#183; #{a.employeeName}</span></span>
+                                <span class="#{appointmentActionsMb.statusBadge(a.appointmentStatus)} vz-line-badge">#{msg['status.'.concat(a.appointmentStatus)]}</span>
+                                <span class="vz-line-price">#{sessionMb.fmtMoney(a.servicePrice)}
+                                    <h:panelGroup rendered="#{a.tipAmount gt 0}" styleClass="vz-line-meta" layout="block"
+                                                  title="#{msg['op.tip.notIncome']}">+ #{msg['op.tip.title']} #{sessionMb.fmtMoney(a.tipAmount)}</h:panelGroup></span>
+                            </div>
+                        </ui:repeat>
+                    </h:panelGroup>
 
                     <div class="form-grid">
                         <!-- customer summary -->
@@ -58,11 +78,13 @@
                             </div>
                             <div class="field">
                                 <label>#{msg['op.lbl.reservedProducts']} (#{appointmentActionsMb.productsCount})</label>
-                                <h:panelGroup rendered="#{empty appointmentActionsMb.selected.items}" styleClass="muted">-</h:panelGroup>
+                                <h:panelGroup rendered="#{appointmentActionsMb.productsCount eq 0}" styleClass="muted">-</h:panelGroup>
                                 <ul style="margin:0;padding-left:1.1rem">
-                                    <ui:repeat var="it" value="#{appointmentActionsMb.selected.items}">
-                                        <li>#{it.quantity} &#215; #{it.productName}
-                                            <span class="muted">#{sessionMb.fmtMoney(it.lineTotal)}</span></li>
+                                    <ui:repeat var="va" value="#{appointmentActionsMb.visit.appointments}">
+                                        <ui:repeat var="it" value="#{va.items}">
+                                            <li>#{it.quantity} &#215; #{it.productName}
+                                                <span class="muted">#{sessionMb.fmtMoney(it.lineTotal)}</span></li>
+                                        </ui:repeat>
                                     </ui:repeat>
                                 </ul>
                             </div>
@@ -74,8 +96,11 @@
                             <p:inputTextarea value="#{appointmentActionsMb.selected.preNotes}" rows="2" autoResize="false"
                                              disabled="#{not appointmentActionsMb.canClose}"/>
                             <div class="flex-between mt-2">
-                                <span class="muted">#{msg['lbl.total']}: <b>#{sessionMb.fmtMoney(appointmentActionsMb.selected.total)}</b>
-                                    <h:outputText value=" &#183; #{msg['op.lbl.alreadyPaid']}" rendered="#{appointmentActionsMb.alreadyPaid}"/></span>
+                                <span class="muted">#{msg['lbl.total']}: <b>#{sessionMb.fmtMoney(appointmentActionsMb.visit.total)}</b>
+                                    <h:outputText value=" &#183; #{msg['op.lbl.alreadyPaid']}" rendered="#{appointmentActionsMb.alreadyPaid}"/>
+                                    <!-- Tip apart: it goes to the staff, it is not part of the visit total -->
+                                    <h:outputText value=" &#183; #{msg['op.tip.title']}: #{sessionMb.fmtMoney(appointmentActionsMb.visit.tipTotal)} (#{msg['op.tip.notIncome']})"
+                                                  rendered="#{appointmentActionsMb.visit.hasTip}"/></span>
                                 <p:commandButton value="#{msg['op.action.savePreNotes']}" icon="pi pi-save"
                                                  actionListener="#{appointmentActionsMb.savePreNotes}" update=":messages"
                                                  rendered="#{sessionMb.admin and appointmentActionsMb.canClose}"
@@ -94,14 +119,14 @@
                         </h:panelGroup>
                     </div>
 
-                    <!-- actions -->
+                    <!-- actions: one tap for the whole visit -->
                     <div class="flex wrap gap-2 mt-2">
-                        <p:commandButton value="#{msg['op.action.start']}" icon="pi pi-play"
-                                         actionListener="#{appointmentActionsMb.start(owner)}"
-                                         update=":apptDetailForm :form :messages" rendered="#{appointmentActionsMb.canStart}"
+                        <p:commandButton value="#{appointmentActionsMb.multiVisit ? msg['op.visit.start'] : msg['op.action.start']}" icon="pi pi-play"
+                                         actionListener="#{appointmentActionsMb.prepareStart(owner)}" process="@this"
+                                         update=":apptStartForm" oncomplete="PF('apptStartDlg').show()" rendered="#{appointmentActionsMb.canStart}"
                                          styleClass="ui-button-info"/>
-                        <p:commandButton value="#{msg['op.action.close']}" icon="pi pi-check"
-                                         actionListener="#{appointmentActionsMb.prepareClose}" process="@this"
+                        <p:commandButton value="#{msg['op.visit.close']}" icon="pi pi-check"
+                                         actionListener="#{appointmentActionsMb.prepareClose(owner)}" process="@this"
                                          update=":apptCloseForm" oncomplete="PF('apptCloseDlg').show()"
                                          rendered="#{appointmentActionsMb.canClose}" styleClass="ui-button-success"/>
                         <p:commandButton value="#{msg['op.action.reminder']}" icon="pi pi-whatsapp"
@@ -118,7 +143,7 @@
                                          styleClass="ui-button-warning">
                             <p:confirm header="#{msg['action.confirm']}" message="#{msg['op.action.noShow']}?" icon="pi pi-exclamation-triangle"/>
                         </p:commandButton>
-                        <p:commandButton value="#{msg['op.action.cancelAppt']}" icon="pi pi-times"
+                        <p:commandButton value="#{appointmentActionsMb.multiVisit ? msg['op.visit.cancel'] : msg['op.action.cancelAppt']}" icon="pi pi-times"
                                          onclick="PF('apptCancelDlg').show()" type="button"
                                          rendered="#{appointmentActionsMb.canCancel}" styleClass="ui-button-danger"/>
                     </div>
@@ -135,6 +160,8 @@
     <p:dialog header="#{msg['op.cancel.title']}" widgetVar="apptCancelDlg" modal="true" responsive="true"
               width="420" appendTo="@(body)" closeOnEscape="true">
         <h:form id="apptCancelForm">
+            <h:panelGroup rendered="#{appointmentActionsMb.multiVisit}" layout="block" styleClass="vz-hint mb-2">
+                <i class="pi pi-info-circle"></i>&#160;#{msg['op.visit.cancelHint']}</h:panelGroup>
             <div class="field">
                 <label>#{msg['op.cancel.reason']}</label>
                 <p:inputTextarea value="#{appointmentActionsMb.cancelReason}" rows="3" autoResize="false"/>
@@ -142,7 +169,7 @@
             <div class="flex gap-2" style="justify-content:flex-end">
                 <p:commandButton value="#{msg['action.back']}" type="button" onclick="PF('apptCancelDlg').hide()"
                                  styleClass="ui-button-secondary"/>
-                <p:commandButton value="#{msg['op.action.cancelAppt']}" icon="pi pi-times"
+                <p:commandButton value="#{appointmentActionsMb.multiVisit ? msg['op.visit.cancel'] : msg['op.action.cancelAppt']}" icon="pi pi-times"
                                  actionListener="#{appointmentActionsMb.cancel(owner)}"
                                  update=":apptDetailForm :form :messages" styleClass="ui-button-danger"/>
             </div>
@@ -170,122 +197,262 @@
         </h:form>
     </p:dialog>
 
-    <!-- ============================ CLOSE ============================ -->
-    <p:dialog header="#{msg['op.close.title']}" widgetVar="apptCloseDlg" modal="true" responsive="true"
-              width="860" appendTo="@(body)" closeOnEscape="true" fitViewport="true">
+    <!-- ============================ START: when did the visit start ============================ -->
+    <p:dialog header="#{msg['op.action.start']}" widgetVar="apptStartDlg"
+              modal="true" responsive="true" width="480" appendTo="@(body)" closeOnEscape="true" styleClass="vz-dialog">
+        <h:form id="apptStartForm">
+            <h:panelGroup rendered="#{not empty appointmentActionsMb.selected}">
+                <div class="vz-head">
+                    <span class="avatar">#{sessionMb.initialsOf(appointmentActionsMb.selected.customerName)}</span>
+                    <span class="vz-head-text">
+                        <b>#{appointmentActionsMb.selected.customerName}</b>
+                        <span class="muted">#{appointmentActionsMb.visit.serviceNames}
+                            &#183; #{msg['op.visit.with']} #{appointmentActionsMb.visit.employeeName}</span>
+                    </span>
+                </div>
+                <ui:include src="/WEB-INF/includes/visitTime.xhtml">
+                    <ui:param name="titleKey" value="op.when.startTitle"/>
+                    <ui:param name="showEnd" value="#{false}"/>
+                </ui:include>
+                <p:commandButton value="#{appointmentActionsMb.multiVisit ? msg['op.visit.start'] : msg['op.action.start']}" icon="pi pi-play"
+                                 actionListener="#{appointmentActionsMb.start(owner)}"
+                                 update=":apptStartForm :apptDetailForm :form :messages"
+                                 styleClass="ui-button-info vz-charge"/>
+                <p:commandButton value="#{msg['action.back']}" type="button" onclick="PF('apptStartDlg').hide()"
+                                 styleClass="ui-button-secondary ui-button-flat vz-back"/>
+            </h:panelGroup>
+        </h:form>
+    </p:dialog>
+
+    <!-- ============================ CLOSE: finish the visit and charge once ============================ -->
+    <p:dialog header="#{msg['op.visit.closeTitle']}" widgetVar="apptCloseDlg" modal="true" responsive="true"
+              width="920" appendTo="@(body)" closeOnEscape="true" fitViewport="true" styleClass="vz-dialog">
         <h:form id="apptCloseForm">
             <h:panelGroup rendered="#{not empty appointmentActionsMb.selected}">
-                <div class="mb-2">
-                    <b>#{appointmentActionsMb.selected.customerName}</b>
-                    <span class="muted"> &#183; #{appointmentActionsMb.selected.serviceName} &#183;
-                        #{sessionMb.fmtDay(appointmentActionsMb.selected.date)} #{appointmentActionsMb.selected.startTime}</span>
+                <div class="vz-head">
+                    <span class="avatar">#{sessionMb.initialsOf(appointmentActionsMb.selected.customerName)}</span>
+                    <span class="vz-head-text">
+                        <b>#{appointmentActionsMb.selected.customerName}</b>
+                        <span class="muted">#{sessionMb.fmtDay(appointmentActionsMb.visit.date)}
+                            &#183; #{appointmentActionsMb.visit.startTime} &#8211; #{appointmentActionsMb.visit.endTime}
+                            &#183; #{msg['op.visit.with']} #{appointmentActionsMb.visit.employeeName}</span>
+                    </span>
                 </div>
-                <div class="form-grid">
+
+                <ui:include src="/WEB-INF/includes/visitTime.xhtml">
+                    <ui:param name="titleKey" value="op.when.closeTitle"/>
+                    <ui:param name="showEnd" value="#{true}"/>
+                </ui:include>
+
+                <div class="vz-grid">
+                    <!-- LEFT: what was done and what was delivered -->
                     <div>
-                        <div class="field">
-                            <label>#{msg['op.lbl.postNotes']}</label>
-                            <p:inputTextarea value="#{appointmentActionsMb.closeForm.postNotes}" rows="4" autoResize="false"/>
-                        </div>
-                        <div class="field">
-                            <label>#{msg['op.lbl.recommendation']}</label>
-                            <p:inputTextarea value="#{appointmentActionsMb.closeForm.recommendation}" rows="2" autoResize="false"/>
-                        </div>
+                        <p:outputPanel id="svcPanel">
+                            <div class="vz-section-title">
+                                <span><i class="pi pi-check-square"></i>&#160;#{msg['op.visit.servicesDone']}</span>
+                                <span class="vz-hint">#{msg['op.visit.notDone']}</span>
+                            </div>
+                            <div class="vz-lines">
+                                <ui:repeat var="l" value="#{appointmentActionsMb.closeServices}">
+                                    <div class="vz-line #{l.done ? '' : 'vz-line-off'}">
+                                        <p:selectBooleanCheckbox value="#{l.done}" styleClass="vz-check">
+                                            <p:ajax update=":apptCloseForm:svcPanel :apptCloseForm:totals"/>
+                                        </p:selectBooleanCheckbox>
+                                        <span class="vz-line-name">#{l.name}
+                                            <h:panelGroup rendered="#{l.extra}" styleClass="vz-extra">#{msg['op.visit.extra']}</h:panelGroup>
+                                            <span class="vz-line-meta">#{l.durationMinutes} min<h:outputText value=" &#183; #{l.employeeName}" rendered="#{not empty l.employeeName}"/></span></span>
+                                        <span class="vz-line-price">#{sessionMb.fmtMoney(l.price)}</span>
+                                        <p:commandButton icon="pi pi-times" title="#{msg['action.delete']}" rendered="#{l.extra}"
+                                                         actionListener="#{appointmentActionsMb.removeService(l)}" process="@this"
+                                                         update=":apptCloseForm:svcPanel :apptCloseForm:totals"
+                                                         styleClass="ui-button-rounded ui-button-text ui-button-danger vz-remove"/>
+                                    </div>
+                                </ui:repeat>
+                            </div>
+                            <div class="vz-add">
+                                <i class="pi pi-plus-circle"></i>
+                                <p:selectOneMenu id="addSvc" value="#{appointmentActionsMb.addServiceId}" filter="true" filterMatchMode="contains"
+                                                 filterPlaceholder="#{msg['action.search']}" styleClass="vz-add-menu">
+                                    <f:selectItem itemLabel="#{msg['op.visit.addService']}" itemValue="#{null}" noSelectionOption="true"/>
+                                    <f:selectItems value="#{appointmentActionsMb.serviceOptions}" var="s"
+                                                   itemLabel="#{s.name} · #{sessionMb.fmtMoney(s.price)}" itemValue="#{s.id}"/>
+                                    <p:ajax listener="#{appointmentActionsMb.addService}" update=":apptCloseForm:svcPanel :apptCloseForm:totals"/>
+                                </p:selectOneMenu>
+                            </div>
+                        </p:outputPanel>
 
-                        <div class="field">
-                            <label>#{msg['op.lbl.reservedProducts']}</label>
-                            <h:panelGroup rendered="#{empty appointmentActionsMb.closeItems}" styleClass="muted">-</h:panelGroup>
-                            <p:dataTable id="closeItems" var="it" value="#{appointmentActionsMb.closeItems}"
-                                         rendered="#{not empty appointmentActionsMb.closeItems}" styleClass="small">
-                                <p:column headerText="#{msg['op.lbl.deliver']}" width="80" styleClass="text-center">
-                                    <p:selectBooleanCheckbox value="#{it.delivered}">
-                                        <p:ajax update=":apptCloseForm:totals"/>
-                                    </p:selectBooleanCheckbox>
-                                </p:column>
-                                <p:column headerText="#{msg['lbl.name']}">#{it.productName}
-                                    <span class="muted">#{sessionMb.fmtMoney(it.unitPrice)}</span></p:column>
-                                <p:column headerText="#{msg['lbl.quantity']}" width="110">
-                                    <p:spinner value="#{it.quantity}" min="1" max="99" size="3">
-                                        <p:ajax update=":apptCloseForm:totals"/>
-                                    </p:spinner>
-                                </p:column>
-                            </p:dataTable>
-                        </div>
+                        <p:outputPanel id="prodPanel" styleClass="mt-3">
+                            <div class="vz-section-title">
+                                <span><i class="pi pi-shopping-bag"></i>&#160;#{msg['op.visit.products']}</span>
+                            </div>
+                            <div class="vz-lines">
+                                <h:panelGroup rendered="#{empty appointmentActionsMb.closeItems}" styleClass="vz-empty">-</h:panelGroup>
+                                <ui:repeat var="it" value="#{appointmentActionsMb.closeItems}">
+                                    <div class="vz-line #{it.delivered ? '' : 'vz-line-off'}">
+                                        <p:selectBooleanCheckbox value="#{it.delivered}" styleClass="vz-check" title="#{msg['op.lbl.deliver']}">
+                                            <p:ajax update=":apptCloseForm:prodPanel :apptCloseForm:totals"/>
+                                        </p:selectBooleanCheckbox>
+                                        <span class="vz-line-name">#{it.productName}
+                                            <h:panelGroup rendered="#{empty it.id}" styleClass="vz-extra">#{msg['op.visit.extra']}</h:panelGroup>
+                                            <span class="vz-line-meta">#{sessionMb.fmtMoney(it.unitPrice)} c/u</span></span>
+                                        <p:spinner value="#{it.quantity}" min="1" max="99" size="2" styleClass="vz-qty">
+                                            <p:ajax update=":apptCloseForm:prodPanel :apptCloseForm:totals"/>
+                                        </p:spinner>
+                                        <span class="vz-line-price">#{sessionMb.fmtMoney(it.unitPrice * it.quantity)}</span>
+                                        <p:commandButton icon="pi pi-times" title="#{msg['action.delete']}" rendered="#{empty it.id}"
+                                                         actionListener="#{appointmentActionsMb.removeItem(it)}" process="@this"
+                                                         update=":apptCloseForm:prodPanel :apptCloseForm:totals"
+                                                         styleClass="ui-button-rounded ui-button-text ui-button-danger vz-remove"/>
+                                    </div>
+                                </ui:repeat>
+                            </div>
+                            <div class="vz-add">
+                                <i class="pi pi-plus-circle"></i>
+                                <p:autoComplete id="addProd" value="#{appointmentActionsMb.addProductId}" completeMethod="#{appointmentActionsMb.completeProduct}"
+                                                var="pr" itemLabel="#{pr.name}" itemValue="#{pr.id}" minQueryLength="2" forceSelection="true"
+                                                placeholder="#{msg['op.visit.addProduct']}: #{msg['op.visit.productSearch']}" styleClass="vz-add-input"
+                                                scrollHeight="240">
+                                    <p:column><span style="font-weight:600">#{pr.name}</span>
+                                        <span class="muted small" style="display:block">#{pr.referenceCode} #{pr.barcode} &#183; #{sessionMb.fmtMoney(pr.price)}</span></p:column>
+                                    <p:ajax event="itemSelect" listener="#{appointmentActionsMb.addProduct}"
+                                            update=":apptCloseForm:prodPanel :apptCloseForm:totals"/>
+                                </p:autoComplete>
+                            </div>
+                        </p:outputPanel>
 
-                        <h:panelGroup rendered="#{appointmentActionsMb.selected.rewardAvailable}" styleClass="field" layout="block">
-                            <p:selectBooleanCheckbox value="#{appointmentActionsMb.closeForm.applyReward}"
-                                                     itemLabel="#{msg['op.lbl.applyReward']}">
-                                <p:ajax update=":apptCloseForm:totals"/>
-                            </p:selectBooleanCheckbox>
-                        </h:panelGroup>
-
-                        <div class="field">
-                            <label>#{msg['op.lbl.paymentMethod']}</label>
-                            <p:selectOneButton value="#{appointmentActionsMb.closeForm.paymentMethod}"
-                                               rendered="#{not appointmentActionsMb.alreadyPaid}">
-                                <f:selectItem itemValue="CASH" itemLabel="#{msg['op.pay.CASH']}"/>
-                                <f:selectItem itemValue="CARD" itemLabel="#{msg['op.pay.CARD']}"/>
-                                <f:selectItem itemValue="TRANSFER" itemLabel="#{msg['op.pay.TRANSFER']}"/>
-                            </p:selectOneButton>
-                            <h:panelGroup rendered="#{appointmentActionsMb.alreadyPaid}" styleClass="badge badge-success">
-                                #{msg['op.lbl.alreadyPaid']}</h:panelGroup>
-                        </div>
+                        <p:fieldset legend="#{msg['op.visit.notes']}" toggleable="true" collapsed="true" styleClass="vz-notes mt-3">
+                            <div class="field">
+                                <label>#{msg['op.lbl.postNotes']}</label>
+                                <p:inputTextarea value="#{appointmentActionsMb.closeForm.postNotes}" rows="3" autoResize="false"/>
+                            </div>
+                            <div class="field">
+                                <label>#{msg['op.lbl.recommendation']}</label>
+                                <p:inputTextarea value="#{appointmentActionsMb.closeForm.recommendation}" rows="2" autoResize="false"/>
+                            </div>
+                        </p:fieldset>
                     </div>
 
-                    <div>
-                        <p:outputPanel id="totals" styleClass="totals-box">
-                            <div class="totals-row"><span>#{msg['op.totals.service']}</span>
+                    <!-- RIGHT: the ticket -->
+                    <div class="vz-ticket">
+                        <p:outputPanel id="totals" styleClass="totals-box vz-totals">
+                            <div class="totals-row"><span>#{msg['op.visit.totals.services']}
+                                <span class="muted">(#{appointmentActionsMb.servicesDone})</span></span>
                                 <span>#{sessionMb.fmtMoney(appointmentActionsMb.serviceTotal)}</span></div>
                             <div class="totals-row"><span>#{msg['op.totals.products']}
                                 <span class="muted">(#{appointmentActionsMb.deliveredUnits})</span></span>
                                 <span>#{sessionMb.fmtMoney(appointmentActionsMb.productsTotal)}</span></div>
-                            <div class="totals-row"><span>#{msg['op.totals.reward']}</span>
+                            <h:panelGroup rendered="#{appointmentActionsMb.selected.rewardAvailable}" layout="block" styleClass="totals-row">
+                                <span><p:selectBooleanCheckbox value="#{appointmentActionsMb.closeForm.applyReward}" itemLabel="#{msg['op.totals.reward']}">
+                                    <p:ajax update=":apptCloseForm:totals"/>
+                                </p:selectBooleanCheckbox></span>
                                 <span class="discount">
                                     <h:outputText value="-#{sessionMb.fmtMoney(appointmentActionsMb.rewardTotal)}"
                                                   rendered="#{not appointmentActionsMb.rewardPendingCalculation}"/>
-                                    <h:outputText value="#{msg['op.totals.rewardOnClose']}" styleClass="muted"
+                                    <h:outputText value="#{msg['op.totals.rewardOnClose']}" styleClass="muted small"
                                                   rendered="#{appointmentActionsMb.rewardPendingCalculation}"/>
-                                </span></div>
-                            <div class="totals-row grand-total"><span>#{msg['op.totals.total']}</span>
+                                </span></h:panelGroup>
+                            <div class="totals-row #{appointmentActionsMb.hasTip ? '' : 'grand-total'}"><span>#{msg['op.totals.total']}</span>
                                 <span>#{sessionMb.fmtMoney(appointmentActionsMb.grandTotal)}</span></div>
+
+                            <!-- Tip: 100 % for whoever attended; not business income (kept out of the visit total) -->
+                            <div class="vz-tip">
+                                <div class="vz-tip-h">
+                                    <span><i class="pi pi-heart"></i>&#160;#{msg['op.tip.title']}</span>
+                                    <span class="muted small">#{appointmentActionsMb.tipSplit ? msg['op.tip.forStaffSplit'] : msg['op.tip.forStaff']}</span>
+                                </div>
+                                <p:selectOneButton value="#{appointmentActionsMb.tipChoice}" styleClass="vz-tip-opts">
+                                    <f:selectItem itemValue="0" itemLabel="#{msg['op.tip.none']}"/>
+                                    <f:selectItem itemValue="10" itemLabel="10 %"/>
+                                    <f:selectItem itemValue="15" itemLabel="15 %"/>
+                                    <f:selectItem itemValue="20" itemLabel="20 %"/>
+                                    <f:selectItem itemValue="OTHER" itemLabel="#{msg['op.tip.other']}"/>
+                                    <p:ajax process="@this" update=":apptCloseForm:totals"/>
+                                </p:selectOneButton>
+                                <h:panelGroup rendered="#{appointmentActionsMb.tipChoice eq 'OTHER'}" layout="block" styleClass="vz-tip-other">
+                                    <p:inputNumber value="#{appointmentActionsMb.tipCustomValue}" decimalPlaces="2" minValue="0"
+                                                   maxValue="#{appointmentActionsMb.tipCustomMode eq 'PERCENT' ? 100 : 999999}"
+                                                   placeholder="0" styleClass="vz-tip-input">
+                                        <p:ajax event="keyup" delay="400" process="@this" update=":apptCloseForm:tipAmountRow :apptCloseForm:chargeRow"/>
+                                    </p:inputNumber>
+                                    <p:selectOneButton value="#{appointmentActionsMb.tipCustomMode}" styleClass="vz-tip-mode">
+                                        <f:selectItem itemValue="PERCENT" itemLabel="%"/>
+                                        <f:selectItem itemValue="AMOUNT" itemLabel="$"/>
+                                        <p:ajax process="@this" update=":apptCloseForm:totals"/>
+                                    </p:selectOneButton>
+                                </h:panelGroup>
+                            </div>
+                            <p:outputPanel id="tipAmountRow" layout="block">
+                                <h:panelGroup rendered="#{appointmentActionsMb.hasTip}" layout="block" styleClass="totals-row vz-tip-row">
+                                    <span>#{msg['op.tip.title']}</span>
+                                    <span>+#{sessionMb.fmtMoney(appointmentActionsMb.tipAmount)}</span></h:panelGroup>
+                                <h:panelGroup rendered="#{appointmentActionsMb.hasTip}" layout="block" styleClass="totals-row grand-total">
+                                    <span>#{msg['op.tip.toCharge']}</span>
+                                    <span>#{sessionMb.fmtMoney(appointmentActionsMb.amountToCharge)}</span></h:panelGroup>
+                            </p:outputPanel>
+
+                            <div class="field mt-2" style="margin-bottom:.4rem">
+                                <label>#{msg['op.lbl.paymentMethod']}</label>
+                                <p:selectOneButton value="#{appointmentActionsMb.closeForm.paymentMethod}"
+                                                   rendered="#{not appointmentActionsMb.alreadyPaid}" styleClass="vz-pay">
+                                    <f:selectItem itemValue="CASH" itemLabel="#{msg['op.pay.CASH']}"/>
+                                    <f:selectItem itemValue="CARD" itemLabel="#{msg['op.pay.CARD']}"/>
+                                    <f:selectItem itemValue="TRANSFER" itemLabel="#{msg['op.pay.TRANSFER']}"/>
+                                </p:selectOneButton>
+                                <h:panelGroup rendered="#{appointmentActionsMb.alreadyPaid}" styleClass="badge badge-success">
+                                    #{msg['op.lbl.alreadyPaid']}</h:panelGroup>
+                                <!-- Prepaid online: the tip is left here, so ask how -->
+                                <h:panelGroup rendered="#{appointmentActionsMb.alreadyPaid and appointmentActionsMb.hasTip}" layout="block" style="margin-top:.5rem">
+                                    <label class="muted small" style="display:block">#{msg['op.tip.paidWith']}</label>
+                                    <p:selectOneButton value="#{appointmentActionsMb.tipPaymentMethod}" styleClass="vz-pay">
+                                        <f:selectItem itemValue="CASH" itemLabel="#{msg['op.pay.CASH']}"/>
+                                        <f:selectItem itemValue="CARD" itemLabel="#{msg['op.pay.CARD']}"/>
+                                        <f:selectItem itemValue="TRANSFER" itemLabel="#{msg['op.pay.TRANSFER']}"/>
+                                    </p:selectOneButton>
+                                </h:panelGroup>
+                            </div>
+
+                            <p:outputPanel id="chargeRow" layout="block">
+                            <p:commandButton value="#{appointmentActionsMb.chargeLabel}" icon="pi pi-check"
+                                             actionListener="#{appointmentActionsMb.close(owner)}"
+                                             update=":apptCloseForm :apptResultForm :form :messages"
+                                             disabled="#{not appointmentActionsMb.canCharge}"
+                                             styleClass="ui-button-success vz-charge"/>
+                            </p:outputPanel>
+                            <p:commandButton value="#{msg['action.back']}" type="button" onclick="PF('apptCloseDlg').hide()"
+                                             styleClass="ui-button-secondary ui-button-flat vz-back"/>
                         </p:outputPanel>
 
-                        <div class="mt-3">
-                            <span class="kpi-label">#{msg['op.effects.title']}</span>
-                            <ul class="attention-list small">
-                                <li><span><i class="pi pi-box muted"></i>&#160;#{msg['op.effects.inventory']}</span></li>
-                                <li><span><i class="pi pi-money-bill muted"></i>&#160;#{msg['op.effects.commission']}</span></li>
-                                <li><span><i class="pi pi-star muted"></i>&#160;#{msg['op.effects.stamp']}</span></li>
-                                <li><span><i class="pi pi-comments muted"></i>&#160;#{msg['op.effects.review']}</span></li>
-                            </ul>
-                        </div>
+                        <ul class="attention-list small vz-effects">
+                            <li><span><i class="pi pi-box muted"></i>&#160;#{msg['op.effects.inventory']}</span></li>
+                            <li><span><i class="pi pi-money-bill muted"></i>&#160;#{msg['op.effects.commission']}</span></li>
+                            <li><span><i class="pi pi-star muted"></i>&#160;#{msg['op.effects.stamp']}</span></li>
+                        </ul>
                     </div>
-                </div>
-
-                <div class="flex gap-2 mt-2" style="justify-content:flex-end">
-                    <p:commandButton value="#{msg['action.back']}" type="button" onclick="PF('apptCloseDlg').hide()"
-                                     styleClass="ui-button-secondary"/>
-                    <p:commandButton value="#{msg['op.close.confirm']}" icon="pi pi-check"
-                                     actionListener="#{appointmentActionsMb.close(owner)}"
-                                     update=":apptCloseForm :apptResultForm :form :messages" styleClass="ui-button-success"/>
                 </div>
             </h:panelGroup>
         </h:form>
     </p:dialog>
 
     <!-- ============================ RESULT ============================ -->
-    <p:dialog header="#{msg['op.result.title']}" widgetVar="apptResultDlg" modal="true" responsive="true"
+    <p:dialog header="#{msg['op.visit.result']}" widgetVar="apptResultDlg" modal="true" responsive="true"
               width="480" appendTo="@(body)" closeOnEscape="true">
         <h:form id="apptResultForm">
             <h:panelGroup rendered="#{not empty appointmentActionsMb.result}">
                 <div class="empty-state" style="padding:.5rem 0 1rem">
                     <i class="pi pi-check-circle"></i>
                     <b>#{appointmentActionsMb.result.appointment.customerName}</b>
-                    <span class="muted" style="display:block">#{appointmentActionsMb.result.appointment.serviceName}
-                        &#183; #{sessionMb.fmtMoney(appointmentActionsMb.result.appointment.total)}</span>
+                    <span class="muted" style="display:block">
+                        <h:outputText value="#{appointmentActionsMb.result.appointment.serviceName}" rendered="#{appointmentActionsMb.result.servicesClosed le 1}"/>
+                        <h:outputFormat value="#{msg['op.visit.services']}" rendered="#{appointmentActionsMb.result.servicesClosed gt 1}">
+                            <f:param value="#{appointmentActionsMb.result.servicesClosed}"/></h:outputFormat>
+                        &#183; <b>#{sessionMb.fmtMoney(appointmentActionsMb.result.visitTotal)}</b></span>
                 </div>
                 <div class="totals-box">
                     <div class="totals-row"><span>#{msg['op.result.commission']}</span>
                         <span>#{sessionMb.fmtMoney(appointmentActionsMb.result.commissionAmount)}</span></div>
+                    <h:panelGroup rendered="#{appointmentActionsMb.result.tipAmount gt 0}" layout="block" styleClass="totals-row vz-tip-row">
+                        <span>#{msg['op.tip.result']}</span>
+                        <span>#{sessionMb.fmtMoney(appointmentActionsMb.result.tipAmount)}</span></h:panelGroup>
                     <div class="totals-row"><span>#{msg['op.result.inventory']}</span>
                         <span>#{empty appointmentActionsMb.result.inventoryUnits ? 0 : appointmentActionsMb.result.inventoryUnits}</span></div>
                     <div class="totals-row"><span>#{msg['op.result.stamps']}</span>

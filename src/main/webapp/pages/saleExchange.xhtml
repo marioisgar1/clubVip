@@ -32,7 +32,7 @@
                         <div class="flex gap-2 wrap">
                             <p:datePicker value="#{saleExchangeMb.from}" pattern="dd/MM/yyyy" showIcon="true" style="width:150px"/>
                             <p:datePicker value="#{saleExchangeMb.to}" pattern="dd/MM/yyyy" showIcon="true" style="width:150px"/>
-                            <p:commandButton icon="pi pi-calendar" title="#{msg['action.search']}"
+                            <p:commandButton icon="pi pi-search" value="#{msg['action.search']}"
                                              actionListener="#{saleExchangeMb.searchByDate}" process="@this @parent"
                                              update=":form:candidatesTable :messages" styleClass="ui-button-secondary"/>
                         </div>
@@ -151,6 +151,7 @@
                                     <p:selectOneMenu id="location" value="#{saleExchangeMb.saleLocationId}" styleClass="w-100">
                                         <f:selectItem itemLabel="#{msg['lbl.select']}" itemValue="#{null}" noSelectionOption="true"/>
                                         <f:selectItems value="#{saleExchangeMb.saleLocations}" var="sl" itemLabel="#{sl.name}" itemValue="#{sl.id}"/>
+                                        <p:ajax process="@this" update="@none"/>
                                     </p:selectOneMenu>
                                 </div>
                                 <div class="field">
@@ -158,6 +159,7 @@
                                     <p:selectOneMenu id="payment" value="#{saleExchangeMb.paymentMethodId}" styleClass="w-100">
                                         <f:selectItem itemLabel="#{msg['lbl.select']}" itemValue="#{null}" noSelectionOption="true"/>
                                         <f:selectItems value="#{saleExchangeMb.paymentMethods}" var="pm" itemLabel="#{pm.name}" itemValue="#{pm.id}"/>
+                                        <p:ajax process="@this" update="@none"/>
                                     </p:selectOneMenu>
                                 </div>
                                 <div class="totals-box">
@@ -190,17 +192,17 @@
                 <h3 class="section-title"><i class="pi pi-check-circle gold"></i>&#160;#{msg['pos.exchange.lastResult']}</h3>
                 <div class="kpi-grid">
                     <div class="kpi-card kpi-ink">
-                        <span class="kpi-label">#{msg['pos.lbl.folio']}</span>
+                        <span class="kpi-icon"><i class="pi pi-hashtag"></i></span><span class="kpi-label">#{msg['pos.lbl.folio']}</span>
                         <span class="kpi-value">#{saleExchangeMb.lastResult.folio}</span>
                         <span class="kpi-hint">#{msg['pos.exchange.originSale']}: #{saleExchangeMb.lastResult.originFolio}</span>
                     </div>
                     <div class="kpi-card">
-                        <span class="kpi-label">#{msg['pos.exchange.credit']}</span>
+                        <span class="kpi-icon"><i class="pi pi-credit-card"></i></span><span class="kpi-label">#{msg['pos.exchange.credit']}</span>
                         <span class="kpi-value">#{sessionMb.fmtMoney(saleExchangeMb.lastResult.creditAmount)}</span>
                         <span class="kpi-hint">#{msg['pos.exchange.newAmount']}: #{sessionMb.fmtMoney(saleExchangeMb.lastResult.newAmount)}</span>
                     </div>
                     <div class="kpi-card">
-                        <span class="kpi-label">#{msg['pos.exchange.collected']}</span>
+                        <span class="kpi-icon"><i class="pi pi-dollar"></i></span><span class="kpi-label">#{msg['pos.exchange.collected']}</span>
                         <span class="kpi-value">#{sessionMb.fmtMoney(saleExchangeMb.lastResult.amountToPay)}</span>
                         <span class="kpi-hint">#{msg['pos.exchange.forfeited']}: #{sessionMb.fmtMoney(saleExchangeMb.lastResult.forfeitedCredit)}</span>
                     </div>

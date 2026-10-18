@@ -15,12 +15,12 @@
             <p:outputPanel id="kpis">
                 <div class="kpi-grid">
                     <div class="kpi-card kpi-ink">
-                        <span class="kpi-label">#{msg['pos.credit.totalOwed']}</span>
+                        <span class="kpi-icon"><i class="pi pi-wallet"></i></span><span class="kpi-label">#{msg['pos.credit.totalOwed']}</span>
                         <span class="kpi-value">#{sessionMb.fmtMoney(collectionMb.totalOwed)}</span>
                         <span class="kpi-hint">#{collectionMb.openCount} #{msg['pos.credit.openPlans']}</span>
                     </div>
                     <div class="kpi-card">
-                        <span class="kpi-label">#{msg['pos.credit.overdue']}</span>
+                        <span class="kpi-icon"><i class="pi pi-exclamation-triangle"></i></span><span class="kpi-label">#{msg['pos.credit.overdue']}</span>
                         <span class="kpi-value" style="color:var(--vip-danger)">#{sessionMb.fmtMoney(collectionMb.totalOverdue)}</span>
                         <span class="kpi-hint">#{collectionMb.overdueCustomers} #{msg['pos.credit.overdueCustomers']}</span>
                     </div>
@@ -54,7 +54,7 @@
                             <p:inputText id="globalFilter" onkeyup="PF('planTable').filter()" placeholder="#{msg['action.search']}"/>
                         </div>
                     </f:facet>
-                    <p:column headerText="#{msg['pos.customer.name']}" sortBy="#{plan.customerName}"
+                    <p:column headerText="#{msg['pos.customer.name']}" sortBy="#{plan.customerName}" styleClass="cv-col-main"
                               filterBy="#{plan.customerName}" filterMatchMode="contains">
                         <span style="font-weight:600">#{plan.customerName}</span>
                         <span class="muted" style="display:block">#{plan.customerPhone}</span>

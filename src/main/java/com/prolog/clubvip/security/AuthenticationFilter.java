@@ -47,8 +47,40 @@ public class AuthenticationFilter implements Filter {
             return;
         }
 
+        // Signed in with a temporary password ("forgot password"): choose the new one before anything else.
+        if (user.isMustChangePassword()) {
+            if (!path.endsWith("/newPassword.xhtml")) {
+                response.sendRedirect(contextPath + "/pages/newPassword.xhtml");
+                return;
+            }
+            chain.doFilter(req, res);
+            return;
+        }
+        if (path.endsWith("/newPassword.xhtml")) {
+            response.sendRedirect(contextPath + "/pages/dashboard.xhtml");
+            return;
+        }
+        // No payment yet (or membership expired): only "Activa tu membresía" until Stripe confirms it.
+        if (user.isMembershipRequired()) {
+            if (!path.endsWith("/membership.xhtml")) {
+                response.sendRedirect(contextPath + "/pages/membership.xhtml");
+                return;
+            }
+            chain.doFilter(req, res);
+            return;
+        }
+        // An owner with an e-mail or phone to confirm sees that screen first, unless "Confirmar después".
+        if (user.isVerificationRequired()) {
+            if (!path.endsWith("/verifyContact.xhtml")) {
+                response.sendRedirect(contextPath + "/pages/verifyContact.xhtml");
+                return;
+            }
+            chain.doFilter(req, res);
+            return;
+        }
         // dashboard / home / accessDenied are always allowed; other pages must match an allowed outcomeWeb
-        if (path.endsWith("/dashboard.xhtml") || path.endsWith("/home.xhtml")
+        if (path.endsWith("/dashboard.xhtml") || path.endsWith("/verifyContact.xhtml") || path.endsWith("/home.xhtml")
+                || path.endsWith("/membership.xhtml")
                 || path.endsWith("/accessDenied.xhtml") || isAllowed(user, path)) {
             chain.doFilter(req, res);
         } else {

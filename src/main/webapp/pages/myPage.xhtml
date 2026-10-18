@@ -7,7 +7,7 @@
     <!-- "Mi página": the business landing page editor. Template + any color change the preview
          at once (mypage.js); every other change is saved by itself and the preview reloads. -->
     <ui:define name="content">
-        <link rel="stylesheet" href="#{request.contextPath}/resources/css/mypage.css?v=20261007a"/>
+        <link rel="stylesheet" href="#{request.contextPath}/resources/css/mypage.css?v=20261018a"/>
         <ui:repeat value="#{myPageMb.templates}" var="t">
             <link rel="stylesheet" href="#{t.fontsUrl}"/>
         </ui:repeat>
@@ -181,15 +181,15 @@
                             </div>
                             <div class="mp-social">
                                 <div class="field">
-                                    <label for="form:ig">Instagram</label>
+                                    <label for="form:ig" class="mp-sn-label"><span class="mp-sn mp-sn-ig" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="#fff" stroke-width="2"/><circle cx="12" cy="12" r="4.2" fill="none" stroke="#fff" stroke-width="2"/><circle cx="17.3" cy="6.7" r="1.3" fill="#fff"/></svg></span>Instagram</label>
                                     <p:inputText id="ig" value="#{myPageMb.page.instagram}" maxlength="80" styleClass="mp-auto" placeholder="@tunegocio"/>
                                 </div>
                                 <div class="field">
-                                    <label for="form:fb">Facebook</label>
+                                    <label for="form:fb" class="mp-sn-label"><span class="mp-sn mp-sn-fb" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="#fff" d="M13.6 21v-7.6h2.6l.4-3h-3V8.5c0-.9.3-1.5 1.5-1.5h1.6V4.3c-.3 0-1.2-.1-2.3-.1-2.3 0-3.9 1.4-3.9 4v2.2H7.9v3h2.6V21h3.1z"/></svg></span>Facebook</label>
                                     <p:inputText id="fb" value="#{myPageMb.page.facebook}" maxlength="120" styleClass="mp-auto" placeholder="tunegocio"/>
                                 </div>
                                 <div class="field">
-                                    <label for="form:tt">TikTok</label>
+                                    <label for="form:tt" class="mp-sn-label"><span class="mp-sn mp-sn-tt" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="#25F4EE" d="M15.2 3.2h-2.7v12a2.6 2.6 0 1 1-2.6-2.6c.3 0 .6 0 .8.1V9.9a5.4 5.4 0 1 0 4.5 5.3V9.1a7 7 0 0 0 4.1 1.3V7.7a4.1 4.1 0 0 1-4.1-4.5z" transform="translate(-.6 -.5)"/><path fill="#FE2C55" d="M15.2 3.2h-2.7v12a2.6 2.6 0 1 1-2.6-2.6c.3 0 .6 0 .8.1V9.9a5.4 5.4 0 1 0 4.5 5.3V9.1a7 7 0 0 0 4.1 1.3V7.7a4.1 4.1 0 0 1-4.1-4.5z" transform="translate(.6 .5)"/><path fill="#fff" d="M15.2 3.2h-2.7v12a2.6 2.6 0 1 1-2.6-2.6c.3 0 .6 0 .8.1V9.9a5.4 5.4 0 1 0 4.5 5.3V9.1a7 7 0 0 0 4.1 1.3V7.7a4.1 4.1 0 0 1-4.1-4.5z"/></svg></span>TikTok</label>
                                     <p:inputText id="tt" value="#{myPageMb.page.tiktok}" maxlength="80" styleClass="mp-auto" placeholder="@tunegocio"/>
                                 </div>
                             </div>
@@ -229,7 +229,7 @@
                         </h:panelGroup>
                         <div class="mp-pub-actions">
                             <p:commandButton value="#{msg['pg.ed.save']}" icon="pi pi-check" action="#{myPageMb.saveNow}"
-                                             process="@form" update="pubPanel :messages" oncomplete="mpReload()" styleClass="ui-button-secondary"/>
+                                             process="@form" update="pubPanel :messages" oncomplete="mpReload()" styleClass="#{myPageMb.published ? 'ui-button-primary' : 'ui-button-secondary'}"/>
                             <p:commandButton value="#{msg['pg.ed.publish']}" icon="pi pi-send" action="#{myPageMb.publish}"
                                              rendered="#{not myPageMb.published}" disabled="#{not myPageMb.hasSlug}"
                                              process="@form" update="pubPanel :messages" oncomplete="mpReload()" styleClass="ui-button-primary"/>

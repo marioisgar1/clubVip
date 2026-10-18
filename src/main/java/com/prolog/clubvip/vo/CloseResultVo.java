@@ -28,6 +28,15 @@ public class CloseResultVo implements Serializable {
 
     private MessageComposeVo reviewMessage;
 
+    /** Services closed in this charge (1 for a single appointment). */
+    private Integer servicesClosed;
+
+    /** Amount charged for the whole visit. */
+    private java.math.BigDecimal visitTotal;
+
+    /** Tip charged with the visit (for the staff; not part of visitTotal). */
+    private java.math.BigDecimal tipAmount;
+
     public AppointmentVo getAppointment() {
         return appointment;
     }
@@ -98,5 +107,29 @@ public class CloseResultVo implements Serializable {
 
     public void setReviewMessage(MessageComposeVo reviewMessage) {
         this.reviewMessage = reviewMessage;
+    }
+
+    public Integer getServicesClosed() {
+        return servicesClosed;
+    }
+
+    public void setServicesClosed(Integer servicesClosed) {
+        this.servicesClosed = servicesClosed;
+    }
+
+    public java.math.BigDecimal getVisitTotal() {
+        return visitTotal;
+    }
+
+    public void setVisitTotal(java.math.BigDecimal visitTotal) {
+        this.visitTotal = visitTotal;
+    }
+
+    public java.math.BigDecimal getTipAmount() {
+        return tipAmount;
+    }
+
+    public void setTipAmount(java.math.BigDecimal tipAmount) {
+        this.tipAmount = tipAmount;
     }
 }

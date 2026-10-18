@@ -27,6 +27,8 @@ public class StockItemVo implements Serializable {
 
     private String color;
 
+    private java.util.List<AttributeVo> attributes = new java.util.ArrayList<>();
+
     /** Outlet (discontinued) product. */
     private Boolean isOutlet;
 
@@ -184,14 +186,34 @@ public class StockItemVo implements Serializable {
     }
 
     /** Units missing to get back to the minimum (0 when it is exactly at the minimum). */
+    /** Units to buy to get back to the minimum; a product never stays at zero, so the target is at least 1.
+     *  A negative stock (oversold) counts as zero: the report asks for the same piece as an item at 0. */
     public int getShortage() {
         int min = minStock != null ? minStock : 0;
-        int qty = quantityOnHand != null ? quantityOnHand : 0;
-        return Math.max(min - qty, 0);
+        int qty = Math.max(quantityOnHand != null ? quantityOnHand : 0, 0);
+        return Math.max(Math.max(min, 1) - qty, 0);
     }
 
     /** Estimated cost of the shortage at the average cost. */
     public BigDecimal getShortageCost() {
         return (averageCost != null ? averageCost : BigDecimal.ZERO).multiply(BigDecimal.valueOf(getShortage()));
+    }
+
+    public java.util.List<AttributeVo> getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(java.util.List<AttributeVo> attributes) {
+        this.attributes = attributes;
+    }
+
+    /** "Talla: M · Color: Negro" of the characteristics named by the category. */
+    public String getAttributesText() {
+        StringBuilder sb = new StringBuilder();
+        for (AttributeVo a : attributes != null ? attributes : java.util.Collections.<AttributeVo>emptyList()) {
+            if (sb.length() > 0) sb.append(" · ");
+            sb.append(a.getLabel()).append(": ").append(a.getValue());
+        }
+        return sb.toString();
     }
 }

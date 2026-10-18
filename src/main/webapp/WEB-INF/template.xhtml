@@ -9,41 +9,51 @@
     <title>#{sessionMb.hasBusiness ? sessionMb.businessName.concat(' · Club VIP') : msg['app.title']}</title>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <link rel="icon" href="#{sessionMb.hasBusinessLogo ? sessionMb.businessLogoUrl : request.contextPath.concat('/resources/img/favicon.png')}"/>
+    <link rel="icon" href="#{sessionMb.hasBusinessLogo ? sessionMb.businessIconUrl : request.contextPath.concat('/resources/img/favicon.png?v=20261010')}"/>
     <link rel="preconnect" href="https://fonts.googleapis.com"/>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Playfair+Display:wght@500;600;700&amp;display=swap"/>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Poppins:wght@300;400;500;600;700&amp;display=swap"/>
     <!-- Plain link with a version so a CSS change is not hidden by the Production resource cache. -->
-    <link rel="stylesheet" href="#{request.contextPath}/resources/css/clubvip.css?v=20261007b"/>
+    <link rel="stylesheet" href="#{request.contextPath}/resources/css/clubvip.css?v=20261014b"/>
+    <link rel="stylesheet" href="#{request.contextPath}/resources/css/portal.css?v=20261015t"/>
 </h:head>
 <h:body styleClass="#{sessionMb.themeClass}">
+    <script type="text/javascript">
+    //<![CDATA[
+    // Menu toggle: on desktop it hides/shows the sidebar (remembered per browser); on small
+    // screens it opens the sidebar as an overlay.
+    try { if (localStorage.getItem('cv.sidebarCollapsed') === '1') { document.body.classList.add('sidebar-collapsed'); } } catch (e) {}
+    function cvToggleSidebar() {
+        if (window.matchMedia('(max-width: 900px)').matches) { document.body.classList.toggle('sidebar-open'); return; }
+        var collapsed = document.body.classList.toggle('sidebar-collapsed');
+        try { localStorage.setItem('cv.sidebarCollapsed', collapsed ? '1' : '0'); } catch (e) {}
+    }
+    //]]>
+    </script>
 
     <div class="layout-topbar">
         <div class="topbar-left">
-            <a href="#" class="sidebar-toggle" onclick="document.body.classList.toggle('sidebar-open');return false;"
-               title="#{msg['app.menu']}"><i class="pi pi-bars"></i></a>
-            <!-- Branding: a business with a logo shows only its logo; without one, its monogram and
-                 name. Users without a business (operator) keep the Club VIP wordmark. -->
+            <a href="#" class="sidebar-toggle" onclick="cvToggleSidebar();return false;"
+               title="#{msg['app.menu']}" aria-label="#{msg['app.menu']}"><i class="pi pi-bars"></i></a>
+            <!-- The portal is Club VIP: the business logo, the user and the profile live at the top of
+                 the side menu (as in the Android drawer). -->
             <h:panelGroup id="topbarBrand" layout="block" styleClass="topbar-brand">
-                <a class="logo" href="#{request.contextPath}/pages/dashboard.xhtml" title="#{sessionMb.businessName}">
-                    <h:panelGroup rendered="#{sessionMb.hasBusinessLogo}">
-                        <img class="business-logo" src="#{sessionMb.businessLogoUrl}" alt="#{sessionMb.businessName}"/>
-                    </h:panelGroup>
-                    <h:panelGroup rendered="#{sessionMb.hasBusiness and not sessionMb.hasBusinessLogo}"
-                                  styleClass="business-monogram">#{sessionMb.businessInitials}</h:panelGroup>
-                    <h:graphicImage rendered="#{not sessionMb.hasBusiness}" library="img" name="logo.svg"
-                                    alt="Club VIP" styleClass="club-logo"/>
+                <a class="logo" href="#{request.contextPath}/pages/dashboard.xhtml" title="Club VIP">
+                    <h:graphicImage value="/resources/img/logo-clubvip.svg?v=20261014" alt="Club VIP" styleClass="club-wordmark"/>
                 </a>
-                <h:panelGroup rendered="#{not sessionMb.hasBusinessLogo}" layout="block" styleClass="topbar-business">
-                    <span class="business-name">
-                        #{sessionMb.hasBusiness ? sessionMb.businessName : msg['app.caption']}
-                        <h:panelGroup rendered="#{sessionMb.businessVerified}" styleClass="verified-badge"
-                                      title="#{msg['lbl.verified']}">&#10004;</h:panelGroup>
-                    </span>
-                </h:panelGroup>
             </h:panelGroup>
         </div>
         <div class="topbar-actions">
             <h:form id="topbarForm">
+                <!-- "Mi negocio" at hand for whoever may set the business up (also in the side menu) -->
+                <h:outputLink rendered="#{sessionMb.hasPermission('BUSINESS_VIEW')}"
+                              value="#{request.contextPath}/pages/business.xhtml" title="#{msg['menu.admin.business']}"
+                              styleClass="topbar-biz#{view.viewId eq '/pages/business.xhtml' ? ' cv-current' : ''}">
+                    <i class="pi pi-shop"></i><span class="topbar-biz-text">#{msg['menu.admin.business']}</span>
+                </h:outputLink>
+                <h:outputLink rendered="#{sessionMb.admin}" value="#{request.contextPath}/pages/membership.xhtml"
+                              title="#{msg['mem.menu']}" styleClass="topbar-mem#{view.viewId eq '/pages/membership.xhtml' ? ' cv-current' : ''}">
+                    <i class="pi pi-star"></i><span class="topbar-biz-text">#{msg['mem.menu']}</span>
+                </h:outputLink>
                 <p:selectOneButton value="#{sessionMb.theme}" styleClass="theme-switch">
                     <f:selectItem itemValue="light" itemLabel="#{msg['theme.light']}"/>
                     <f:selectItem itemValue="dim" itemLabel="#{msg['theme.dim']}"/>
@@ -57,13 +67,6 @@
                     <p:ajax event="change" listener="#{sessionMb.changeLanguage(sessionMb.language)}"
                             oncomplete="window.location.reload()"/>
                 </p:selectOneMenu>
-                <span class="topbar-user" title="#{sessionMb.user.username}">
-                    <span class="avatar">#{sessionMb.initials}</span>
-                    <span class="topbar-user-text">
-                        <span class="user-name">#{sessionMb.user.fullName}</span>
-                        <span class="user-profile">#{sessionMb.user.profileName}</span>
-                    </span>
-                </span>
                 <p:commandLink action="#{sessionMb.logout}" title="#{msg['logout']}" styleClass="logout-link"
                                ajax="false">
                     <i class="pi pi-sign-out"></i>
@@ -73,6 +76,53 @@
     </div>
 
     <div class="layout-sidebar">
+        <!-- Menu header, like the Android drawer and the public store hero: lime gradient, the
+             business logo on a tilted card as wide as the menu (monogram + name without a logo),
+             and the user with their photo (tap to change it) and profile. -->
+        <div class="cv-side-hero">
+            <h:panelGroup rendered="#{sessionMb.hasBusinessLogo}">
+                <a class="cv-side-logo cv-side-logo-#{sessionMb.businessLogoTone}" href="#{request.contextPath}/pages/dashboard.xhtml"
+                   title="#{sessionMb.businessName}"><img src="#{sessionMb.businessLogoUrl}" alt="#{sessionMb.businessName}"/></a>
+            </h:panelGroup>
+            <h:panelGroup rendered="#{sessionMb.hasBusiness and not sessionMb.hasBusinessLogo}" layout="block" styleClass="cv-side-biz">
+                <span class="cv-side-monogram">#{sessionMb.businessInitials}</span>
+                <span class="cv-side-bizname">#{sessionMb.businessName}<h:panelGroup rendered="#{sessionMb.businessVerified}"
+                      styleClass="verified-badge" title="#{msg['lbl.verified']}">&#10004;</h:panelGroup></span>
+            </h:panelGroup>
+            <div class="cv-side-me">
+                <label class="cv-side-avatar" title="#{msg['menu.photo.change']}">
+                    <input type="file" accept="image/*" onchange="cvPickMyPhoto(this)" aria-label="#{msg['menu.photo.change']}"/>
+                    <h:panelGroup rendered="#{sessionMb.hasUserPhoto}" styleClass="avatar avatar-photo">
+                        <img src="#{sessionMb.userPhotoUrl}" alt="#{sessionMb.user.fullName}"
+                             onerror="this.parentNode.classList.remove('avatar-photo');this.parentNode.textContent='#{sessionMb.initials}'"/>
+                    </h:panelGroup>
+                    <h:panelGroup rendered="#{not sessionMb.hasUserPhoto}" styleClass="avatar">#{sessionMb.initials}</h:panelGroup>
+                    <span class="cv-side-cam"><i class="pi pi-camera"></i></span>
+                </label>
+                <span class="cv-side-who">
+                    <span class="cv-side-name" title="#{sessionMb.user.username}">#{sessionMb.user.fullName}</span>
+                    <span class="cv-side-profile">#{sessionMb.profileLabel}</span>
+                </span>
+            </div>
+            <h:form id="meForm" style="display:none">
+                <h:inputHidden id="myPhotoData" value="#{sessionMb.myPhotoData}"/>
+                <h:commandButton id="btnMyPhoto" action="#{sessionMb.uploadMyPhoto}" tabindex="-1"/>
+            </h:form>
+        </div>
+        <!-- "A la mano": the most used screens of this user, then a search over the menu -->
+        <h:panelGroup rendered="#{not empty sessionMb.quickLinks}" layout="block" styleClass="cv-hand">
+            <div class="cv-hand-label"><i class="pi pi-bolt"></i>#{msg['menu.quick']}</div>
+            <div class="cv-hand-grid cv-hand-#{sessionMb.quickLinks.size()}">
+                <ui:repeat value="#{sessionMb.quickLinks}" var="q">
+                    <a class="cv-hand-tile" href="#{q.url}"><span class="cv-hand-ic"><i class="#{q.icon}"></i></span><span>#{q.label}</span></a>
+                </ui:repeat>
+            </div>
+        </h:panelGroup>
+        <h:panelGroup rendered="#{sessionMb.menuSize gt 10}" layout="block" styleClass="cv-menu-search">
+            <i class="pi pi-search"></i>
+            <input type="search" id="cvMenuSearch" placeholder="#{msg['menu.search']}" aria-label="#{msg['menu.search']}" autocomplete="off"/>
+        </h:panelGroup>
+        <div class="cv-menu-empty" id="cvMenuEmpty" style="display:none">#{msg['menu.search.empty']}</div>
         <h:form id="menuForm">
             <p:menu model="#{sessionMb.menuModel}"/>
         </h:form>
@@ -80,9 +130,142 @@
     <div class="sidebar-backdrop" onclick="document.body.classList.remove('sidebar-open')"></div>
 
     <div class="layout-content">
-        <p:growl id="messages" showDetail="true" life="4000"/>
+    <!-- A failed renewal: the business keeps working during the grace period, with this reminder -->
+        <h:panelGroup rendered="#{sessionMb.user.membershipPastDue}" layout="block" styleClass="membership-banner">
+            <i class="pi pi-exclamation-triangle"></i>
+            <span>
+                <h:outputFormat value="#{sessionMb.user.membershipPlan eq 'COURTESY' ? msg['mem.banner.courtesyOver'] : msg['mem.banner.pastDue']}">
+                    <f:param value="#{sessionMb.membershipGraceText}"/>
+                    <f:param value="#{sessionMb.user.membershipDaysLeft}"/>
+                </h:outputFormat>
+            </span>
+            <a href="#{request.contextPath}/pages/membership.xhtml">#{sessionMb.user.membershipPlan eq 'COURTESY' ? msg['mem.banner.activate'] : msg['mem.banner.fix']} →</a>
+        </h:panelGroup>
+        <!-- summary only: every message in the portal sets the same text as summary and detail -->
+        <p:growl id="messages" showDetail="false" life="4000"/>
         <ui:insert name="content"/>
     </div>
+
+    <script type="text/javascript" src="#{request.contextPath}/resources/js/photo-crop.js?v=20261011a"></script>
+    <script type="text/javascript">
+    //<![CDATA[
+    // Menu avatar: frame the picked picture in the circle (photo-crop.js) and post it.
+    window.cvPhotoCropTexts = window.cvPhotoCropTexts || {title: "#{msg['photo.crop.title']}", hint: "#{msg['photo.crop.hint']}",
+        zoom: "#{msg['logo.crop.zoom']}", center: "#{msg['photo.crop.center']}", cancel: "#{msg['action.cancel']}", use: "#{msg['photo.crop.use']}"};
+    function cvPickMyPhoto(input) {
+        cvPhotoCrop.pick(input, function (dataUrl) {
+            document.getElementById('meForm:myPhotoData').value = dataUrl;
+            document.getElementById('meForm:btnMyPhoto').click();
+        });
+    }
+    // Charts (Chart.js) use the portal font and the theme's muted text color.
+    if (window.Chart && Chart.defaults) {
+        var cs = getComputedStyle(document.body);
+        Chart.defaults.font = Chart.defaults.font || {};
+        Chart.defaults.font.family = "'Poppins', system-ui, sans-serif";
+        Chart.defaults.color = cs.getPropertyValue('--vip-text-muted').trim() || '#5D5F66';
+        Chart.defaults.borderColor = cs.getPropertyValue('--vip-border').trim() || '#E4E2DA';
+    }
+    // Marks the sidebar link of the current page (styled in portal.css).
+    (function () {
+        var here = location.pathname;
+        var links = document.querySelectorAll('.layout-sidebar .ui-menuitem-link');
+        for (var i = 0; i < links.length; i++) {
+            var path = (links[i].getAttribute('href') || '').split('?')[0].split('#')[0];
+            if (path.length > 1 && here.slice(-path.length) === path) { links[i].classList.add('cv-current'); }
+        }
+        var tiles = document.querySelectorAll('.cv-hand-tile');
+        for (var t = 0; t < tiles.length; t++) {
+            var tp = (tiles[t].getAttribute('href') || '').split('?')[0];
+            if (tp.length > 1 && here.slice(-tp.length) === tp) { tiles[t].classList.add('cv-current'); }
+        }
+    })();
+    // Menu groups fold and unfold (remembered per browser). Configuration-like groups start folded;
+    // the group of the current page always opens. The search box filters every entry.
+    (function () {
+        var KEY = 'cv.menuGroups', FOLDED = {'cv-g-inventory': 1, 'cv-g-sales_reports': 1, 'cv-g-business': 1};
+        var state = {};
+        try { state = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { state = {}; }
+        var headers = document.querySelectorAll('.layout-sidebar li.ui-widget-header.cv-grp');
+        function groupOf(el) {
+            var m = /(?:^|\s)(cv-g-[a-z_]+)/.exec(el.className);
+            return m ? m[1] : null;
+        }
+        function itemsOf(g) { return document.querySelectorAll('.layout-sidebar li.cv-in.' + g); }
+        function setOpen(h, open) {
+            var g = groupOf(h);
+            h.classList.toggle('cv-closed', !open);
+            h.setAttribute('aria-expanded', open ? 'true' : 'false');
+            var its = itemsOf(g);
+            for (var i = 0; i < its.length; i++) { its[i].classList.toggle('cv-folded', !open); }
+        }
+        for (var i = 0; i < headers.length; i++) {
+            (function (h) {
+                var g = groupOf(h);
+                if (!g) { return; }
+                var hasCurrent = false, its = itemsOf(g);
+                for (var k = 0; k < its.length; k++) { if (its[k].querySelector('.cv-current')) { hasCurrent = true; } }
+                var open = hasCurrent ? true : (state.hasOwnProperty(g) ? state[g] : !FOLDED[g]);
+                h.setAttribute('role', 'button');
+                h.setAttribute('tabindex', '0');
+                setOpen(h, open);
+                function toggle() {
+                    var now = h.classList.contains('cv-closed');
+                    setOpen(h, now);
+                    state[g] = now;
+                    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+                }
+                h.addEventListener('click', toggle);
+                h.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
+            })(headers[i]);
+        }
+        var box = document.getElementById('cvMenuSearch');
+        if (!box) { return; }
+        function norm(s) { return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
+        box.addEventListener('input', function () {
+            var q = norm(box.value).trim();
+            var sidebar = document.querySelector('.layout-sidebar');
+            sidebar.classList.toggle('cv-searching', q.length > 0);
+            var items = document.querySelectorAll('.layout-sidebar .ui-menu li.ui-menuitem'), shown = 0, groupsHit = {};
+            for (var i = 0; i < items.length; i++) {
+                var ok = !q || norm(items[i].textContent).indexOf(q) >= 0;
+                items[i].classList.toggle('cv-nomatch', !ok);
+                if (ok) { shown++; var g = groupOf(items[i]); if (g) { groupsHit[g] = 1; } }
+            }
+            for (var j = 0; j < headers.length; j++) {
+                headers[j].classList.toggle('cv-nomatch', q.length > 0 && !groupsHit[groupOf(headers[j])]);
+            }
+            document.getElementById('cvMenuEmpty').style.display = q && !shown ? '' : 'none';
+        });
+        box.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                var first = document.querySelector('.layout-sidebar .ui-menu li.ui-menuitem:not(.cv-nomatch):not(.cv-soon) a');
+                if (first) { e.preventDefault(); location.href = first.getAttribute('href'); }
+            } else if (e.key === 'Escape') { box.value = ''; box.dispatchEvent(new Event('input')); }
+        });
+    })();
+    // Each menu link loads a new page, which scrolls the side menu back to the top. Keep its scroll
+    // position across pages (per tab) and, when there is none, bring the current entry into view.
+    // Runs after the groups fold/unfold so the heights are final.
+    (function () {
+        var KEY = 'cv.sidebarScroll', side = document.querySelector('.layout-sidebar');
+        if (!side) { return; }
+        var saved = null;
+        try { saved = sessionStorage.getItem(KEY); } catch (e) {}
+        if (saved !== null && !isNaN(+saved)) { side.scrollTop = +saved; }
+        var cur = side.querySelector('.ui-menuitem-link.cv-current');
+        if (cur) {
+            var sr = side.getBoundingClientRect(), cr = cur.getBoundingClientRect();
+            if (cr.top < sr.top || cr.bottom > sr.bottom) {
+                side.scrollTop += cr.top - sr.top - (sr.height - cr.height) / 2;
+            }
+        }
+        function save() { try { sessionStorage.setItem(KEY, String(side.scrollTop)); } catch (e) {} }
+        side.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('a')) { save(); } });
+        window.addEventListener('pagehide', save);
+    })();
+    //]]>
+    </script>
 
 </h:body>
 </f:view>

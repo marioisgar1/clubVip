@@ -18,7 +18,7 @@
 .mp-tpl-desc{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .mp-tpl{display:flex;flex-direction:column;gap:.3rem;text-align:left;padding:.45rem;border:1.5px solid var(--vip-border);border-radius:12px;background:var(--vip-surface);color:var(--vip-text);cursor:pointer;font:inherit;transition:border-color .15s ease,box-shadow .15s ease}
 .mp-tpl:hover{border-color:var(--vip-gold-deep)}
-.mp-tpl.sel{border-color:var(--vip-gold-deep);box-shadow:0 0 0 3px rgba(240,199,86,.35)}
+.mp-tpl.sel{border-color:var(--vip-gold-deep);box-shadow:0 0 0 3px rgba(206,241,135,.6)}
 .mp-tpl-swatch{position:relative;display:flex;align-items:flex-end;height:62px;border-radius:8px;padding:.45rem .55rem;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
 .mp-tpl-swatch b{font-size:1.65rem;line-height:1;font-weight:600;color:#16171A}
 .mp-tpl-swatch i{position:absolute;right:.5rem;top:.5rem;width:1.4rem;height:.45rem;border-radius:99px;background:var(--mp-accent,#B8902F)}
@@ -100,7 +100,7 @@
 .mp-preview-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem}
 .mp-devices{display:flex;gap:.3rem}
 .mp-dev{width:36px;height:32px;border-radius:8px;border:1px solid var(--vip-border);background:var(--vip-surface);color:var(--vip-text-muted);cursor:pointer}
-.mp-dev.sel{background:var(--vip-ink);color:var(--vip-gold);border-color:var(--vip-ink)}
+.mp-dev.sel{background:var(--vip-gold);color:var(--vip-ink);border-color:var(--vip-gold)}
 .mp-stage{background:var(--vip-surface-2);border-radius:16px;padding:1rem;display:flex;justify-content:center;overflow:hidden;height:calc(100vh - var(--vip-topbar-h,60px) - 90px);min-height:520px}
 .mp-stage iframe{border:0;background:#fff;display:block}
 .mp-stage[data-mode="phone"] iframe{width:390px;max-width:100%;height:100%;border-radius:28px;box-shadow:0 0 0 8px #111,0 18px 40px rgba(0,0,0,.25)}
@@ -108,3 +108,11 @@
 .mp-stage[data-mode="desktop"] iframe{width:1280px;height:200%;transform:scale(.5);transform-origin:top center;border-radius:12px;box-shadow:0 18px 40px rgba(0,0,0,.2);flex:none}
 .mp-noframe{align-self:center;text-align:center;color:var(--vip-text-muted)}
 .mp-noframe i{font-size:2rem;color:var(--vip-gold-deep)}
+
+/* Redes sociales: logo de cada red junto a su nombre */
+.mp-sn-label{display:inline-flex;align-items:center;gap:.5rem}
+.mp-sn{width:24px;height:24px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.mp-sn svg{width:16px;height:16px;display:block}
+.mp-sn-ig{background:radial-gradient(circle at 30% 107%,#fdf497 0%,#fdf497 5%,#fd5949 45%,#d6249f 60%,#285AEB 90%)}
+.mp-sn-fb{background:#1877F2}
+.mp-sn-tt{background:#000}

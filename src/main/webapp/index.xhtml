@@ -10,17 +10,22 @@
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
     <meta name="description" content="#{msg['hm.hero.kicker']}: #{msg['hm.hero.title']}"/>
-    <link rel="icon" type="image/png" href="#{request.contextPath}/resources/img/favicon.png"/>
+    <link rel="icon" type="image/png" href="#{request.contextPath}/resources/img/favicon.png?v=20261010"/>
     <link rel="preconnect" href="https://fonts.googleapis.com"/>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;display=swap"/>
-    <link rel="stylesheet" href="#{request.contextPath}/resources/css/homepage.css?v=20261010d"/>
+    <link rel="stylesheet" href="#{request.contextPath}/resources/css/homepage.css?v=20261015m"/>
+    <script>
+      if('IntersectionObserver' in window){
+        if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches){document.documentElement.classList.add('hp-io');}
+      }
+    </script>
 </h:head>
 <h:body styleClass="hp">
 
 <!-- ============================ NAV ============================ -->
 <header class="hp-nav">
     <div class="hp-nav-in">
-        <a class="hp-logo" href="#top">CLUB <b>VIP</b></a>
+        <a class="hp-logo" href="#top"><img src="#{request.contextPath}/resources/img/logo-clubvip.svg?v=20261014" alt="Club VIP"/></a>
         <div class="hp-menu" id="hpMenu">
             <nav class="hp-links" aria-label="#{msg['lp.nav.aria']}">
                 <a href="#propulsores">#{msg['hm.nav.boost']}</a>
@@ -49,32 +54,14 @@
 </header>
 
 <main>
-<!-- ============================ HERO ============================ -->
-<section class="hp-hero" id="top">
-    <div class="hp-hero-copy">
-        <p class="hp-hero-kicker">#{msg['hm.hero.kicker']}</p>
-        <h1>#{msg['hm.hero.title']}</h1>
-        <p class="hp-hero-lead"><h:outputText value="#{msg['hm.hero.lead']}" escape="false"/></p>
-        <div class="hp-hero-cta">
-            <a class="hp-btn" href="#{request.contextPath}/register.xhtml">#{msg['lp.cta.register']}</a>
-            <a class="hp-btn hp-btn-ghost" href="#modulos">#{msg['hm.hero.modules']}</a>
-        </div>
-    </div>
-    <div class="hp-hero-media">
-        <img class="hp-hero-main" src="#{request.contextPath}/resources/img/home/hero-owner.jpg" alt=""/>
-        <div class="hp-hero-side">
-            <div class="hp-hero-phone"><img src="#{request.contextPath}/resources/img/home/phone-agenda.png" alt="#{msg['hm.link.img3']}"/></div>
-            <img src="#{request.contextPath}/resources/img/home/shipping.jpg" alt=""/>
-        </div>
-    </div>
-</section>
-
-<!-- ============================ CONECTA ============================ -->
-<section class="hp-connect" style="background-image:url('#{request.contextPath}/resources/img/home/mi-negocio.jpg')">
+<!-- ============================ HERO: CONECTA ============================ -->
+<!-- XD "01 Home CLUB VIP - 3 REACOMODO" (2026-10-14): the page opens on the Mi negocio photo with the Conecta card -->
+<section class="hp-connect" id="top" style="background-image:url('#{request.contextPath}/resources/img/home/mi-negocio.jpg')">
     <div class="hp-connect-card">
-        <h2><h:outputText value="#{msg['hm.conn.title']}" escape="false"/></h2>
+        <h1><h:outputText value="#{msg['hm.conn.title']}" escape="false"/></h1>
         <p class="hp-connect-sub">#{msg['hm.conn.sub']}</p>
         <p><h:outputText value="#{msg['hm.conn.lead']}" escape="false"/></p>
+        <p class="hp-connect-more">#{msg['hm.hero.more']}<strong>#{msg['hm.hero.next']}</strong></p>
     </div>
 </section>
 
@@ -108,13 +95,22 @@
             <p><strong>#{msg['hm.ag.4']}</strong> #{msg['hm.ag.4.t']}</p>
         </div>
         <div class="hp-agenda-media">
-            <img src="#{request.contextPath}/resources/img/home/agenda-phone.png" alt="#{msg['hm.ag.img']}" loading="lazy"/>
+            <!-- el teléfono viene sin las tarjetas del menú (agenda-phone-clean.png); se dibujan aquí para animarlas y traducirlas -->
+            <div class="hp-agenda-phone">
+                <img src="#{request.contextPath}/resources/img/home/agenda-phone-clean.png?v=20261015" alt="#{msg['hm.ag.img']}" loading="lazy"/>
+                <div class="hp-agenda-menu" aria-hidden="true">
+                    <span>#{msg['hm.ag.c1']}</span>
+                    <span>#{msg['hm.ag.c2']}</span>
+                    <span>#{msg['hm.ag.c3']}</span>
+                    <span>#{msg['hm.ag.c4']}</span>
+                </div>
+            </div>
         </div>
     </div>
 </section>
 
 <!-- ============================ PUNTO DE VENTA ============================ -->
-<section class="hp-pos" id="venta" style="background-image:url('#{request.contextPath}/resources/img/home/pos-phone.jpg')">
+<section class="hp-pos" id="venta" data-reveal="zoom replay" style="background-image:url('#{request.contextPath}/resources/img/home/pos-phone.jpg?v=20261015')">
     <div class="hp-pos-panel">
         <h2><h:outputText value="#{msg['hm.pos.title']}" escape="false"/></h2>
         <p class="hp-lead">#{msg['hm.pos.lead']}</p>
@@ -132,7 +128,18 @@
 
 <!-- ============================ CONSIGNACION ============================ -->
 <section class="hp-cons" id="consignacion">
-    <img src="#{request.contextPath}/resources/img/home/consignment.jpg" alt="#{msg['hm.cons.img']}" loading="lazy"/>
+    <!-- ciclo de consignación: base con círculos y flechas tenues + 8 piezas que se encienden en orden (1 → flecha → 2 → ...) -->
+    <figure class="hp-cons-fig" data-reveal="seq replay"><div class="hp-cons-stage">
+        <img class="hp-cons-base" src="#{request.contextPath}/resources/img/home/cons/consignment-base.jpg?v=20261015" alt="#{msg['hm.cons.img']}" loading="lazy"/>
+        <img class="hp-cons-p hp-cons-c1" src="#{request.contextPath}/resources/img/home/cons/c1.png?v=20261015" alt="" style="--s:0"/>
+        <img class="hp-cons-p hp-cons-a1" src="#{request.contextPath}/resources/img/home/cons/a1.png?v=20261015" alt="" style="--s:1"/>
+        <img class="hp-cons-p hp-cons-c2" src="#{request.contextPath}/resources/img/home/cons/c2.png?v=20261015" alt="" style="--s:2"/>
+        <img class="hp-cons-p hp-cons-a2" src="#{request.contextPath}/resources/img/home/cons/a2.png?v=20261015" alt="" style="--s:3"/>
+        <img class="hp-cons-p hp-cons-c3" src="#{request.contextPath}/resources/img/home/cons/c3.png?v=20261015" alt="" style="--s:4"/>
+        <img class="hp-cons-p hp-cons-a3" src="#{request.contextPath}/resources/img/home/cons/a3.png?v=20261015" alt="" style="--s:5"/>
+        <img class="hp-cons-p hp-cons-c4" src="#{request.contextPath}/resources/img/home/cons/c4.png?v=20261015" alt="" style="--s:6"/>
+        <img class="hp-cons-p hp-cons-a4" src="#{request.contextPath}/resources/img/home/cons/a4.png?v=20261015" alt="" style="--s:7"/>
+    </div></figure>
     <div class="hp-cons-copy">
         <h2><h:outputText value="#{msg['hm.cons.title']}" escape="false"/></h2>
         <p><h:outputText value="#{msg['hm.cons.lead']}" escape="false"/></p>
@@ -153,8 +160,8 @@
             <dt>#{msg['hm.pay.6']}</dt><dd>#{msg['hm.pay.6.t']}</dd>
         </dl>
     </div>
-    <div class="hp-pay-media" style="background-image:url('#{request.contextPath}/resources/img/home/payroll.jpg')">
-        <div class="hp-cut">
+    <div class="hp-pay-media" data-reveal="zoom replay" style="background-image:url('#{request.contextPath}/resources/img/home/payroll.jpg')">
+        <div class="hp-cut" data-reveal="up">
             <div class="hp-cut-head"><span>#{msg['hm.pay.cut']}</span><span>#{msg['hm.pay.period']}</span></div>
             <table>
                 <thead><tr><th>#{msg['hm.pay.col.person']}</th><th>#{msg['hm.pay.col.billed']}</th><th>#{msg['hm.pay.col.commission']}</th><th>#{msg['hm.pay.col.salary']}</th><th>#{msg['hm.pay.col.toPay']}</th></tr></thead>
@@ -173,8 +180,43 @@
 <!-- ============================ MODULOS ============================ -->
 <section class="hp-mods" id="modulos">
     <div class="hp-wrap hp-split">
-        <div class="hp-mods-media">
-            <img src="#{request.contextPath}/resources/img/home/modules-hand.png" alt="#{msg['hm.mods.img']}" loading="lazy"/>
+        <div class="hp-mods-media" data-reveal="up">
+            <!-- el panel verde de la pantalla es HTML: los módulos se prenden y apagan de verdad (sin lógica de negocio,
+                 sólo la regla de que Consignación requiere Venta). El dedo va en una capa encima para seguir "tocando" la pantalla. -->
+            <div class="hp-mods-phone">
+                <img class="hp-mods-base" src="#{request.contextPath}/resources/img/home/modules-hand.png?v=20261014" alt="#{msg['hm.mods.img']}" loading="lazy"/>
+                <div class="hp-mp-panel" id="modsPanel">
+                    <div class="hp-mp-grid">
+                        <button type="button" class="hp-mp-card" role="switch" aria-checked="true" data-mod="1">
+                            <span class="hp-mp-ico"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></span>
+                            <span class="hp-mp-t">#{msg['hm.mods.ph.1']}</span>
+                            <span class="hp-mp-d">#{msg['hm.mods.ph.1.t']}</span>
+                            <span class="hp-mp-sw"><i>#{msg['hm.who.off']}</i><b></b><i>#{msg['hm.who.on']}</i></span>
+                        </button>
+                        <button type="button" class="hp-mp-card" role="switch" aria-checked="true" data-mod="2">
+                            <span class="hp-mp-ico"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg></span>
+                            <span class="hp-mp-t">#{msg['hm.mods.ph.2']}</span>
+                            <span class="hp-mp-d">#{msg['hm.mods.ph.2.t']}</span>
+                            <span class="hp-mp-sw"><i>#{msg['hm.who.off']}</i><b></b><i>#{msg['hm.who.on']}</i></span>
+                        </button>
+                        <button type="button" class="hp-mp-card" role="switch" aria-checked="false" data-mod="3">
+                            <span class="hp-mp-ico"><svg viewBox="0 0 24 24"><path d="M3 7l9-4 9 4-9 4z"/><path d="M3 7v10l9 4 9-4V7M12 11v10"/></svg></span>
+                            <span class="hp-mp-t">#{msg['hm.mods.ph.3']}</span>
+                            <span class="hp-mp-d">#{msg['hm.mods.ph.3.t']}</span>
+                            <span class="hp-mp-req">#{msg['hm.mods.ph.req']}</span>
+                            <span class="hp-mp-sw"><i>#{msg['hm.who.off']}</i><b></b><i>#{msg['hm.who.on']}</i></span>
+                        </button>
+                        <button type="button" class="hp-mp-card" role="switch" aria-checked="false" data-mod="4">
+                            <span class="hp-mp-ico"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 9v.01M18 15v.01"/></svg></span>
+                            <span class="hp-mp-t">#{msg['hm.mods.ph.4']}</span>
+                            <span class="hp-mp-d">#{msg['hm.mods.ph.4.t']}</span>
+                            <span class="hp-mp-sw"><i>#{msg['hm.who.off']}</i><b></b><i>#{msg['hm.who.on']}</i></span>
+                        </button>
+                    </div>
+                    <span class="hp-mp-tap" aria-hidden="true"></span>
+                </div>
+                <img class="hp-mods-finger" src="#{request.contextPath}/resources/img/home/modules-finger.png?v=20261015" alt="" aria-hidden="true"/>
+            </div>
         </div>
         <div class="hp-mods-copy">
             <h2 class="hp-light">#{msg['hm.mods.title']}</h2>
@@ -218,21 +260,21 @@
             <div class="hp-link-col">
                 <p><h:outputText value="#{msg['hm.link.1']}" escape="false"/></p>
                 <figure class="hp-phone tilt-l">
-                    <img src="#{request.contextPath}/resources/img/home/phone-modules.png" alt="#{msg['hm.link.img1']}" loading="lazy"/>
+                    <img src="#{request.contextPath}/resources/img/home/phone-modules.png?v=20261014" data-reveal="up" style="--i:0" alt="#{msg['hm.link.img1']}" loading="lazy"/>
                     <figcaption class="hp-url">www.clubvip.club/<b>beautysalon</b>/modulos</figcaption>
                 </figure>
             </div>
             <div class="hp-link-col">
                 <p><h:outputText value="#{msg['hm.link.2']}" escape="false"/></p>
                 <figure class="hp-phone">
-                    <img src="#{request.contextPath}/resources/img/home/phone-store.png" alt="#{msg['hm.link.img2']}" loading="lazy"/>
+                    <img src="#{request.contextPath}/resources/img/home/phone-store.png?v=20261014" data-reveal="up" style="--i:1" alt="#{msg['hm.link.img2']}" loading="lazy"/>
                     <figcaption class="hp-url">www.clubvip.club/<b>beautysalon</b>/tienda</figcaption>
                 </figure>
             </div>
             <div class="hp-link-col">
                 <p><h:outputText value="#{msg['hm.link.3']}" escape="false"/></p>
                 <figure class="hp-phone tilt-r">
-                    <img src="#{request.contextPath}/resources/img/home/phone-agenda.png" alt="#{msg['hm.link.img3']}" loading="lazy"/>
+                    <img src="#{request.contextPath}/resources/img/home/phone-agenda.png?v=20261014" data-reveal="up" style="--i:2" alt="#{msg['hm.link.img3']}" loading="lazy"/>
                     <figcaption class="hp-url">www.clubvip.club/<b>beautysalon</b>/agenda</figcaption>
                 </figure>
             </div>
@@ -257,8 +299,8 @@
                     <li>#{msg['hm.rw.4']}</li>
                 </ul>
             </div>
-            <div class="hp-rw-media">
-                <img src="#{request.contextPath}/resources/img/home/reward-cards.png" alt="#{msg['hm.rw.cards']}" loading="lazy"/>
+            <div class="hp-rw-media" data-reveal="up">
+                <img src="#{request.contextPath}/resources/img/home/reward-cards.png?v=20261014" alt="#{msg['hm.rw.cards']}" loading="lazy"/>
                 <div class="hp-notes">
                     <div class="hp-note"><span class="hp-av">CV</span><div><div class="hp-note-h"><b>CLUBVIP</b><small>#{msg['hm.rw.ago']}</small></div><b>#{msg['hm.rw.n1.biz']}</b><p><h:outputText value="#{msg['hm.rw.n1']}" escape="false"/></p></div></div>
                     <div class="hp-note dark"><span class="hp-av">CV</span><div><div class="hp-note-h"><b>CLUBVIP</b><small>#{msg['hm.rw.ago']}</small></div><b>#{msg['hm.rw.n2.biz']}</b><p>#{msg['hm.rw.n2']}</p></div></div>
@@ -271,7 +313,7 @@
                 <h3>#{msg['hm.rw.loyal']}</h3>
                 <p>#{msg['hm.rw.loyal.t']}</p>
             </div>
-            <div class="hp-stamps" role="img" aria-label="#{msg['hm.rw.loyal.aria']}">
+            <div class="hp-stamps" role="img" data-reveal="stagger" aria-label="#{msg['hm.rw.loyal.aria']}">
                 <span class="done">✓</span><span class="done">✓</span><span class="done">✓</span><span class="grey">✓</span><span class="next">5</span><span class="prize">★</span>
             </div>
         </div>
@@ -330,9 +372,9 @@
 </section>
 
 <!-- ============================ FINAL ============================ -->
-<section class="hp-final" id="empezar" style="background-image:url('#{request.contextPath}/resources/img/home/final.jpg')">
+<section class="hp-final" id="empezar">
     <div class="hp-final-in">
-        <h2>#{msg['hm.final.title']}</h2>
+        <h2><h:outputText value="#{msg['hm.final.title']}" escape="false"/></h2>
         <p class="hp-final-note">#{msg['hm.final.note']}</p>
         <a class="hp-btn" href="#{request.contextPath}/register.xhtml">#{msg['lp.cta.register']}</a>
         <div class="hp-secure"><span>#{msg['hm.final.secure']}</span><span class="hp-pay-logos" role="img" aria-label="#{msg['hm.final.methods']}"><img src="#{request.contextPath}/resources/img/home/pay-1.png" alt="" loading="lazy"/><img src="#{request.contextPath}/resources/img/home/pay-2.png" alt="" loading="lazy"/></span></div>
@@ -349,12 +391,13 @@
 
 <footer class="hp-foot">
     <div class="hp-foot-in">
-        <a class="hp-logo" href="#top">CLUB <b>VIP</b></a>
-        <span><a href="https://clubvip.club" target="_blank" rel="noopener">clubvip.club</a> · <a href="#{request.contextPath}/register.xhtml#privacidad">#{msg['landing.footer.privacy']}</a> · © 2026 Club VIP</span>
+        <a class="hp-foot-privacy" href="#{request.contextPath}/register.xhtml#privacidad">#{msg['landing.footer.privacy']}</a>
+        <a class="hp-logo" href="#top"><img src="#{request.contextPath}/resources/img/logo-clubvip.svg?v=20261014" alt="Club VIP"/></a>
+        <span class="hp-foot-copy">© 2026 Club VIP</span>
     </div>
 </footer>
 
-<script src="#{request.contextPath}/resources/js/homepage.js?v=20261010c"></script>
+<script src="#{request.contextPath}/resources/js/homepage.js?v=20261015i"></script>
 </h:body>
 </f:view>
 </html>

@@ -25,22 +25,22 @@
         <h:form id="form">
             <div class="kpi-grid">
                 <div class="kpi-card kpi-ink">
-                    <span class="kpi-label">#{msg['rel.network.affiliates']}</span>
+                    <span class="kpi-icon"><i class="pi pi-building"></i></span><span class="kpi-label">#{msg['rel.network.affiliates']}</span>
                     <span class="kpi-value">#{affiliateMb.affiliatesCount}</span>
                     <span class="kpi-hint">+#{affiliateMb.newThisMonth} #{msg['rel.network.newThisMonth']}</span>
                 </div>
                 <div class="kpi-card">
-                    <span class="kpi-label">#{msg['rel.network.verified']}</span>
+                    <span class="kpi-icon"><i class="pi pi-verified"></i></span><span class="kpi-label">#{msg['rel.network.verified']}</span>
                     <span class="kpi-value">#{affiliateMb.verifiedCount}</span>
                     <span class="kpi-hint">#{affiliateMb.verifiedPercent}% #{msg['rel.network.ofRegistry']}</span>
                 </div>
                 <div class="kpi-card">
-                    <span class="kpi-label">#{msg['rel.network.pending']}</span>
+                    <span class="kpi-icon"><i class="pi pi-hourglass"></i></span><span class="kpi-label">#{msg['rel.network.pending']}</span>
                     <span class="kpi-value">#{affiliateMb.pendingCount}</span>
                     <span class="kpi-hint">#{msg['rel.network.pending.hint']}</span>
                 </div>
                 <div class="kpi-card">
-                    <span class="kpi-label">#{msg['rel.network.appointments30']}</span>
+                    <span class="kpi-icon"><i class="pi pi-calendar"></i></span><span class="kpi-label">#{msg['rel.network.appointments30']}</span>
                     <span class="kpi-value">#{affiliateMb.appointmentsLast30Days}</span>
                     <span class="kpi-hint">#{msg['rel.network.appointments30.hint']}</span>
                 </div>
@@ -76,14 +76,28 @@
                                     <f:convertDateTime pattern="dd/MM/yyyy" timeZone="America/Mexico_City"/>
                                 </h:outputText>
                             </div>
-                            <span class="#{affiliateMb.verificationBadge(b.verificationStatus)}">#{msg['status.'.concat(b.verificationStatus)]}</span>
+                            <span class="#{affiliateMb.verificationBadge(b.verificationStatus)}">#{msg['ver.'.concat(b.verificationStatus)]}</span>
                             <h:panelGroup rendered="#{b.verificationStatus eq 'REJECTED' and not empty b.rejectionReason}" layout="block" styleClass="muted small">
                                 #{b.rejectionReason}
                             </h:panelGroup>
                         </p:column>
                         <p:column headerText="#{msg['lbl.owner']}" sortBy="#{b.ownerName}" filterBy="#{b.ownerName}">
                             #{b.ownerName}
-                            <div class="muted">#{b.contactPhone}</div>
+                            <!-- Contacts and whether the owner confirmed them with a code -->
+                            <div class="af-contact">
+                                <span class="muted">#{b.ownerEmail}</span>
+                                <p:commandLink actionListener="#{affiliateMb.prepareContact(b, 'EMAIL')}" process="@this" update=":form:contactDialog"
+                                               oncomplete="PF('contactDialog').show()" styleClass="af-chk #{empty b.ownerEmailVerifiedAt ? 'af-chk-no' : 'af-chk-ok'}" title="#{msg['rel.affiliate.toggleHint']}">
+                                    <i class="pi #{empty b.ownerEmailVerifiedAt ? 'pi-circle' : 'pi-check'}"></i> #{empty b.ownerEmailVerifiedAt ? msg['rel.affiliate.unconfirmed'] : msg['rel.affiliate.confirmed']}
+                                </p:commandLink>
+                            </div>
+                            <div class="af-contact">
+                                <span class="muted">#{b.contactPhone}</span>
+                                <p:commandLink actionListener="#{affiliateMb.prepareContact(b, 'CONTACT_PHONE')}" process="@this" update=":form:contactDialog"
+                                               oncomplete="PF('contactDialog').show()" styleClass="af-chk #{empty b.contactPhoneVerifiedAt ? 'af-chk-no' : 'af-chk-ok'}" title="#{msg['rel.affiliate.toggleHint']}">
+                                    <i class="pi #{empty b.contactPhoneVerifiedAt ? 'pi-circle' : 'pi-check'}"></i> #{empty b.contactPhoneVerifiedAt ? msg['rel.affiliate.unconfirmed'] : msg['rel.affiliate.confirmed']}
+                                </p:commandLink>
+                            </div>
                         </p:column>
                         <p:column headerText="#{msg['lbl.category']}" sortBy="#{b.categoryName}" filterBy="#{b.categoryName}">
                             #{b.categoryName}
@@ -99,16 +113,26 @@
                                                  styleClass="ui-button-sm ui-button-outlined ui-button-secondary"/>
                             </h:panelGroup>
                         </p:column>
-                        <p:column headerText="#{msg['rel.affiliate.groupPhone']}" width="120">#{b.groupPhone}</p:column>
+                        <p:column headerText="#{msg['rel.affiliate.groupPhone']}" width="130">
+                            #{b.groupPhone}
+                            <div><p:commandLink actionListener="#{affiliateMb.prepareContact(b, 'PHONE')}" process="@this" update=":form:contactDialog"
+                                               oncomplete="PF('contactDialog').show()" styleClass="af-chk #{empty b.ownerPhoneVerifiedAt ? 'af-chk-no' : 'af-chk-ok'}" title="#{msg['rel.affiliate.toggleHint']}">
+                                    <i class="pi #{empty b.ownerPhoneVerifiedAt ? 'pi-circle' : 'pi-check'}"></i> #{empty b.ownerPhoneVerifiedAt ? msg['rel.affiliate.unconfirmed'] : msg['rel.affiliate.confirmed']}
+                                </p:commandLink></div>
+                        </p:column>
                         <p:column headerText="#{msg['rel.affiliate.bankAccount']}">
                             #{b.bankName}
                             <h:panelGroup rendered="#{not empty b.bankAccountMasked}" layout="block" styleClass="muted">#{b.bankAccountMasked}</h:panelGroup>
                         </p:column>
-                        <p:column headerText="#{msg['rel.affiliate.subscription']}" width="110">
+                        <p:column headerText="#{msg['rel.affiliate.subscription']}" width="150">
                             <h:outputText rendered="#{not empty b.subscriptionStatus}" styleClass="#{affiliateMb.subscriptionBadge(b.subscriptionStatus)}"
-                                          value="#{msg['status.'.concat(b.subscriptionStatus)]}"/>
-                            <h:panelGroup rendered="#{not empty b.subscriptionUntil}" layout="block" styleClass="muted small">
-                                #{sessionMb.fmtDay(b.subscriptionUntil)}
+                                          value="#{msg['substatus.'.concat(b.subscriptionStatus)]}"/>
+                            <h:panelGroup rendered="#{not empty b.disputeStatus}" layout="block" styleClass="mem-dispute mem-dispute-#{b.disputeStatus}"><i class="pi pi-exclamation-triangle"></i>&#160;#{msg['dispute.'.concat(b.disputeStatus)]}</h:panelGroup>
+                            <h:panelGroup rendered="#{not empty b.membershipPlan}" layout="block" styleClass="mem-plan-wrap">
+                                <span class="mem-plan mem-plan-#{b.membershipPlan eq 'COURTESY' ? 'courtesy' : 'stripe'}"><i class="#{sessionMb.planIcon(b)}"></i>&#160;#{sessionMb.planLabel(b)}</span>
+                            </h:panelGroup>
+                            <h:panelGroup rendered="#{not empty sessionMb.untilLabel(b)}" layout="block" styleClass="mem-date#{sessionMb.isMembershipExpired(b) ? ' mem-date-expired' : ''}">
+                                <i class="pi #{empty b.subscriptionUntil ? 'pi-infinity' : 'pi-calendar'}"></i>&#160;#{sessionMb.untilLabel(b)}
                             </h:panelGroup>
                         </p:column>
                         <p:column headerText="#{msg['lbl.actions']}" width="110" styleClass="text-right">
@@ -118,6 +142,10 @@
                                              styleClass="ui-button-rounded ui-button-success">
                                 <p:confirm header="#{msg['action.confirm']}" message="#{msg['rel.affiliate.confirmApprove']}" icon="pi pi-check-circle"/>
                             </p:commandButton>
+                            <p:commandButton icon="pi pi-gift" title="#{msg['aff.courtesy']}"
+                                             actionListener="#{affiliateMb.prepareCourtesy(b)}" update=":form:courtesyDialog"
+                                             oncomplete="PF('courtesyDialog').show()"
+                                             styleClass="ui-button-rounded ui-button-secondary ml-2"/>
                             <p:commandButton icon="pi pi-times" title="#{msg['rel.affiliate.reject']}"
                                              actionListener="#{affiliateMb.prepareReject(b)}" update=":form:rejectDialog"
                                              oncomplete="PF('rejectDialog').show()"
@@ -143,6 +171,37 @@
                     </ul>
                 </div>
             </div>
+
+            <!-- Courtesy dialog: free access until a date (or without expiry) -->
+            <p:dialog id="courtesyDialog" header="#{msg['aff.courtesy']}" widgetVar="courtesyDialog" modal="true"
+                      width="460" resizable="false" responsive="true">
+                <p><strong>#{affiliateMb.selected.name}</strong> &#183; <span class="muted">#{affiliateMb.selected.ownerName}</span></p>
+                <div class="courtesy-row">
+                    <p:toggleSwitch value="#{affiliateMb.courtesyEnabled}">
+                        <p:ajax update=":form:courtesyFields"/>
+                    </p:toggleSwitch>
+                    <div>
+                        <strong>#{msg['aff.courtesy.toggle']}</strong>
+                        <span class="muted small">#{msg['aff.courtesy.toggle.hint']}</span>
+                    </div>
+                </div>
+                <h:panelGroup id="courtesyFields" layout="block">
+                    <h:panelGroup rendered="#{affiliateMb.courtesyEnabled}" layout="block" styleClass="field">
+                        <label>#{msg['aff.courtesy.until']}</label>
+                        <p:datePicker value="#{affiliateMb.courtesyUntil}" pattern="dd/MM/yyyy" showIcon="true" style="width:100%"
+                                      placeholder="#{msg['aff.courtesy.until.none']}" mindate="#{affiliateMb.courtesyUntil}"/>
+                        <span class="hint">#{msg['aff.courtesy.until.hint']}</span>
+                    </h:panelGroup>
+                    <h:panelGroup rendered="#{not affiliateMb.courtesyEnabled}" layout="block" styleClass="hint courtesy-off">
+                        <i class="pi pi-info-circle"></i>&#160;#{msg['aff.courtesy.off.hint']}
+                    </h:panelGroup>
+                </h:panelGroup>
+                <div class="dialog-actions">
+                    <p:commandButton value="#{msg['action.cancel']}" type="button" onclick="PF('courtesyDialog').hide()" styleClass="ui-button-secondary"/>
+                    <p:commandButton value="#{msg['action.save']}" icon="pi pi-check" actionListener="#{affiliateMb.saveCourtesy}"
+                                     update="@form :messages"/>
+                </div>
+            </p:dialog>
 
             <!-- Reject dialog -->
             <p:dialog id="rejectDialog" header="#{msg['rel.affiliate.reject']}" widgetVar="rejectDialog" modal="true"
@@ -174,6 +233,49 @@
                 </h:panelGroup>
                 <f:facet name="footer">
                     <p:commandButton value="#{msg['action.close']}" type="button" onclick="PF('licenseDialog').hide()" styleClass="ui-button-secondary"/>
+                </f:facet>
+            </p:dialog>
+
+            <!-- Confirm / un-confirm a contact by hand (operator) -->
+            <p:dialog id="contactDialog" header="#{msg['rel.affiliate.contact.title']}" widgetVar="contactDialog" modal="true"
+                      width="500" resizable="false" responsive="true" closeOnEscape="true" styleClass="af-dlg">
+                <h:panelGroup rendered="#{not empty affiliateMb.selected}" layout="block">
+                    <div class="af-dlg-biz">
+                        <span class="avatar">#{sessionMb.initialsOf(affiliateMb.selected.name)}</span>
+                        <span class="who">
+                            <span class="name">#{affiliateMb.selected.name}</span>
+                            <span class="muted">#{affiliateMb.selected.ownerName}</span>
+                        </span>
+                    </div>
+                    <div class="af-dlg-contact">
+                        <span class="af-dlg-ico"><i class="pi #{affiliateMb.contactEmail ? 'pi-envelope' : 'pi-mobile'}"></i></span>
+                        <span class="af-dlg-txt">
+                            <span class="muted small">#{affiliateMb.contactLabel}</span>
+                            <strong>#{affiliateMb.contactValue}</strong>
+                        </span>
+                        <span class="af-chk #{affiliateMb.contactVerified ? 'af-chk-ok' : 'af-chk-no'}">
+                            <i class="pi #{affiliateMb.contactVerified ? 'pi-check' : 'pi-circle'}"></i>
+                            #{affiliateMb.contactVerified ? msg['rel.affiliate.confirmed'] : msg['rel.affiliate.unconfirmed']}
+                        </span>
+                    </div>
+                    <h:panelGroup rendered="#{affiliateMb.contactVerified}" layout="block" styleClass="muted small af-dlg-stamp">
+                        <i class="pi pi-clock"></i>&#160;<h:outputFormat value="#{msg['rel.affiliate.contact.confirmedOn']}"><f:param value="#{affiliateMb.contactVerifiedStamp}"/></h:outputFormat>
+                    </h:panelGroup>
+                    <div class="af-dlg-note">
+                        <i class="pi pi-info-circle"></i>
+                        <span>
+                            <h:outputText rendered="#{not affiliateMb.contactVerified}" value="#{msg['rel.affiliate.contact.explainConfirm']}"/>
+                            <h:outputText rendered="#{affiliateMb.contactVerified and affiliateMb.contactEmail}" value="#{msg['rel.affiliate.contact.explainUnconfirmEmail']}"/>
+                            <h:outputText rendered="#{affiliateMb.contactVerified and not affiliateMb.contactEmail}" value="#{msg['rel.affiliate.contact.explainUnconfirmPhone']}"/>
+                        </span>
+                    </div>
+                </h:panelGroup>
+                <f:facet name="footer">
+                    <p:commandButton value="#{msg['action.cancel']}" type="button" onclick="PF('contactDialog').hide()" styleClass="ui-button-flat"/>
+                    <p:commandButton rendered="#{not affiliateMb.contactVerified}" value="#{msg['rel.affiliate.contact.markConfirmed']}" icon="pi pi-check"
+                                     action="#{affiliateMb.confirmContact}" update="@form :messages" oncomplete="PF('contactDialog').hide()" styleClass="ui-button-primary"/>
+                    <p:commandButton rendered="#{affiliateMb.contactVerified}" value="#{msg['rel.affiliate.contact.markUnconfirmed']}" icon="pi pi-undo"
+                                     action="#{affiliateMb.confirmContact}" update="@form :messages" oncomplete="PF('contactDialog').hide()" styleClass="ui-button-secondary"/>
                 </f:facet>
             </p:dialog>
 

@@ -17,6 +17,7 @@ public class CommissionVo implements Serializable {
     private String employeeName;
 
     private Integer appointmentId;
+    private Integer saleId;
 
     private String serviceName;
 
@@ -27,6 +28,9 @@ public class CommissionVo implements Serializable {
     private BigDecimal commissionAmount;
 
     private String earnedDate;
+
+    /** HH:mm of the sale or the appointment start (business time zone); null when unknown. */
+    private String earnedTime;
 
     private Integer payrollPeriodId;
 
@@ -60,6 +64,14 @@ public class CommissionVo implements Serializable {
 
     public void setAppointmentId(Integer appointmentId) {
         this.appointmentId = appointmentId;
+    }
+
+    public Integer getSaleId() {
+        return saleId;
+    }
+
+    public void setSaleId(Integer saleId) {
+        this.saleId = saleId;
     }
 
     public String getServiceName() {
@@ -100,6 +112,14 @@ public class CommissionVo implements Serializable {
 
     public void setEarnedDate(String earnedDate) {
         this.earnedDate = earnedDate;
+    }
+
+    public String getEarnedTime() {
+        return earnedTime;
+    }
+
+    public void setEarnedTime(String earnedTime) {
+        this.earnedTime = earnedTime;
     }
 
     public Integer getPayrollPeriodId() {

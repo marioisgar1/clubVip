@@ -1,0 +1,34 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="jakarta.faces.facelets">
+    <!-- Traffic report beacons. Param "visitId" = the visit opened by the bean (null = not counted).
+         Sends the seconds on the page while it is open (every 30 s and when the tab is hidden or
+         closed) and exposes cvTrack('WA_CLICK') for the WhatsApp links. Goes to /track in this war,
+         which forwards to the backend. -->
+    <ui:fragment rendered="#{not empty visitId}">
+        <script type="text/javascript">
+        //<![CDATA[
+        (function () {
+            var url = '#{request.contextPath}/track?v=#{visitId}';
+            var t0 = Date.now(), lastSent = 0;
+            function send(extra) {
+                var s = Math.round((Date.now() - t0) / 1000);
+                var u = url + '&s=' + s + (extra || '');
+                if (!extra && s - lastSent < 5) { return; }
+                lastSent = s;
+                try {
+                    if (navigator.sendBeacon) { navigator.sendBeacon(u); }
+                    else { var x = new XMLHttpRequest(); x.open('POST', u, true); x.send(); }
+                } catch (e) { /* ignore */ }
+            }
+            window.cvTrack = function (event) { send('&e=' + encodeURIComponent(event)); };
+            setInterval(function () { if (document.visibilityState !== 'hidden') { send(); } }, 30000);
+            document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') { send(); } });
+            window.addEventListener('pagehide', function () { send(); });
+        })();
+        //]]>
+        </script>
+    </ui:fragment>
+    <ui:fragment rendered="#{empty visitId}">
+        <script type="text/javascript">window.cvTrack = function () {};</script>
+    </ui:fragment>
+</ui:composition>

@@ -87,6 +87,7 @@ public class PayrollMb implements Serializable {
                     if (p.getPayStatus() == null) {
                         p.setPayStatus("PENDING");
                     }
+                    fillPhoto(p);
                     previews.add(p);
                 }
             } catch (RestException e) {
@@ -149,6 +150,17 @@ public class PayrollMb implements Serializable {
         return sum;
     }
 
+    /** Tips owed in the previewed cuts (100 % for the staff; included in the total to pay). */
+    public BigDecimal getPreviewTip() {
+        BigDecimal sum = BigDecimal.ZERO;
+        for (PayrollPeriodVo p : previews) {
+            if (p.getTipAmount() != null) {
+                sum = sum.add(p.getTipAmount());
+            }
+        }
+        return sum;
+    }
+
     public BigDecimal getPreviewSalary() {
         BigDecimal sum = BigDecimal.ZERO;
         for (PayrollPeriodVo p : previews) {
@@ -183,6 +195,7 @@ public class PayrollMb implements Serializable {
         try {
             List<PayrollPeriodVo> list = RestClient.get(path.toString(), PERIOD_LIST, userId(), locale());
             periods = list != null ? list : new ArrayList<>();
+            periods.forEach(this::fillPhoto);
         } catch (RestException e) {
             periods = new ArrayList<>();
             errors(e);
@@ -242,6 +255,19 @@ public class PayrollMb implements Serializable {
     }
 
     // ------------------------------------------------------------------ helpers
+
+    /** The payroll endpoints don't say whether the employee has a photo: take it from the staff list. */
+    private void fillPhoto(PayrollPeriodVo p) {
+        if (Boolean.TRUE.equals(p.getEmployeeHasPhoto()) || p.getEmployeeId() == null) {
+            return;
+        }
+        for (EmployeeVo emp : employees) {
+            if (p.getEmployeeId().equals(emp.getId())) {
+                p.setEmployeeHasPhoto(Boolean.TRUE.equals(emp.getHasPhoto()));
+                return;
+            }
+        }
+    }
 
     private Integer userId() {
         return sessionMb.getUserId();

@@ -14,6 +14,8 @@ public class AppointmentRequestVo implements Serializable {
     private Integer businessId;
 
     private Integer serviceId;
+    /** Several services back to back in one visit (first = serviceId). */
+    private List<Integer> serviceIds = new ArrayList<>();
 
     private Integer employeeId;
 
@@ -119,5 +121,13 @@ public class AppointmentRequestVo implements Serializable {
 
     public void setCustomerName(String customerName) {
         this.customerName = customerName;
+    }
+
+    public List<Integer> getServiceIds() {
+        return serviceIds;
+    }
+
+    public void setServiceIds(List<Integer> serviceIds) {
+        this.serviceIds = serviceIds;
     }
 }

@@ -35,23 +35,23 @@
 
                 <div class="kpi-grid">
                     <div class="kpi-card kpi-ink">
-                        <span class="kpi-label">#{msg['pos.credit.overdue']}</span>
-                        <span class="kpi-value" style="color:#F08A96">#{sessionMb.fmtMoney(reportPortfolioMb.portfolio.overdueAmount)}</span>
+                        <span class="kpi-icon"><i class="pi pi-exclamation-triangle"></i></span><span class="kpi-label">#{msg['pos.credit.overdue']}</span>
+                        <span class="kpi-value" style="color:var(--vip-danger)">#{sessionMb.fmtMoney(reportPortfolioMb.portfolio.overdueAmount)}</span>
                         <span class="kpi-hint">#{reportPortfolioMb.portfolio.overdueCount} #{msg['pos.portfolio.installments']} &#183;
                             #{reportPortfolioMb.portfolio.overdueCustomersCount} #{msg['pos.portfolio.customers']}</span>
                     </div>
                     <div class="kpi-card">
-                        <span class="kpi-label">#{msg['pos.credit.dueToday']}</span>
+                        <span class="kpi-icon"><i class="pi pi-calendar"></i></span><span class="kpi-label">#{msg['pos.credit.dueToday']}</span>
                         <span class="kpi-value">#{sessionMb.fmtMoney(reportPortfolioMb.portfolio.dueTodayAmount)}</span>
                         <span class="kpi-hint">#{reportPortfolioMb.portfolio.dueTodayCount} #{msg['pos.portfolio.installments']}</span>
                     </div>
                     <div class="kpi-card">
-                        <span class="kpi-label">#{msg['pos.portfolio.upcoming']}</span>
+                        <span class="kpi-icon"><i class="pi pi-calendar-plus"></i></span><span class="kpi-label">#{msg['pos.portfolio.upcoming']}</span>
                         <span class="kpi-value">#{sessionMb.fmtMoney(reportPortfolioMb.portfolio.upcomingAmount)}</span>
                         <span class="kpi-hint">#{reportPortfolioMb.portfolio.upcomingCount} #{msg['pos.portfolio.installments']}</span>
                     </div>
                     <div class="kpi-card">
-                        <span class="kpi-label">#{msg['pos.credit.totalOwed']}</span>
+                        <span class="kpi-icon"><i class="pi pi-wallet"></i></span><span class="kpi-label">#{msg['pos.credit.totalOwed']}</span>
                         <span class="kpi-value">#{sessionMb.fmtMoney(reportPortfolioMb.portfolio.totalOutstanding)}</span>
                         <span class="kpi-hint">#{reportPortfolioMb.portfolio.customersCount} #{msg['pos.portfolio.customers']}</span>
                     </div>

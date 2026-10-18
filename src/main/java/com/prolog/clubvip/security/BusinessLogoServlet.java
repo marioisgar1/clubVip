@@ -15,6 +15,8 @@ import jakarta.servlet.http.HttpSession;
  * Serves the logged user's business logo ({@code /businessLogo?b=businessId&v=n}) for the branded topbar and
  * favicon. Private to the session; the {@code v} parameter changes on upload, so the browser can
  * keep it cached meanwhile. 404 when there is no session or the business has no logo.
+ * {@code &trim=1} cuts the transparent margin of the 4:1 stored logo (topbar) and {@code &icon=1}
+ * returns it as a 128x128 square (favicon), the same treatment as the public pages.
  */
 @WebServlet("/businessLogo")
 public class BusinessLogoServlet extends HttpServlet {
@@ -37,6 +39,11 @@ public class BusinessLogoServlet extends HttpServlet {
         if (logo.length == 0) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
+        }
+        if ("1".equals(request.getParameter("icon"))) {
+            logo = PublicImageServlet.squareIcon(logo);
+        } else if ("1".equals(request.getParameter("trim"))) {
+            logo = PublicImageServlet.trimTransparent(logo);
         }
         response.setContentType(BusinessLogo.contentType(logo));
         response.setHeader("Cache-Control", "private, max-age=86400");

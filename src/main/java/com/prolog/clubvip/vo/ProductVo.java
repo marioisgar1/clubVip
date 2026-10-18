@@ -24,6 +24,9 @@ public class ProductVo implements Serializable {
 
     private String barcode;
 
+    /** Optional; products with the same reference are one product with size / colour variants in the store. */
+    private String referenceCode;
+
     private Integer familyId;
 
     private String familyName;
@@ -35,6 +38,17 @@ public class ProductVo implements Serializable {
     private Integer modelId;
 
     private String modelName;
+    /** Characteristics 1..4 and their names from the category (label null = not used); attributes = ready to show. */
+    private String attribute1;
+    private String attribute2;
+    private String attribute3;
+    private String attribute4;
+    private String attribute1Label;
+    private String attribute2Label;
+    private String attribute3Label;
+    private String attribute4Label;
+    private java.util.List<AttributeVo> attributes = new java.util.ArrayList<>();
+
 
     private String size;
 
@@ -106,6 +120,14 @@ public class ProductVo implements Serializable {
 
     public void setBarcode(String barcode) {
         this.barcode = barcode;
+    }
+
+    public String getReferenceCode() {
+        return referenceCode;
+    }
+
+    public void setReferenceCode(String referenceCode) {
+        this.referenceCode = referenceCode;
     }
 
     public Integer getFamilyId() {
@@ -271,5 +293,87 @@ public class ProductVo implements Serializable {
 
     public void setConsignmentSupplierName(String consignmentSupplierName) {
         this.consignmentSupplierName = consignmentSupplierName;
+    }
+
+    public String getAttribute1() {
+        return attribute1;
+    }
+
+    public void setAttribute1(String attribute1) {
+        this.attribute1 = attribute1;
+    }
+
+    public String getAttribute2() {
+        return attribute2;
+    }
+
+    public void setAttribute2(String attribute2) {
+        this.attribute2 = attribute2;
+    }
+
+    public String getAttribute3() {
+        return attribute3;
+    }
+
+    public void setAttribute3(String attribute3) {
+        this.attribute3 = attribute3;
+    }
+
+    public String getAttribute4() {
+        return attribute4;
+    }
+
+    public void setAttribute4(String attribute4) {
+        this.attribute4 = attribute4;
+    }
+
+    public String getAttribute1Label() {
+        return attribute1Label;
+    }
+
+    public void setAttribute1Label(String attribute1Label) {
+        this.attribute1Label = attribute1Label;
+    }
+
+    public String getAttribute2Label() {
+        return attribute2Label;
+    }
+
+    public void setAttribute2Label(String attribute2Label) {
+        this.attribute2Label = attribute2Label;
+    }
+
+    public String getAttribute3Label() {
+        return attribute3Label;
+    }
+
+    public void setAttribute3Label(String attribute3Label) {
+        this.attribute3Label = attribute3Label;
+    }
+
+    public String getAttribute4Label() {
+        return attribute4Label;
+    }
+
+    public void setAttribute4Label(String attribute4Label) {
+        this.attribute4Label = attribute4Label;
+    }
+
+    public java.util.List<AttributeVo> getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(java.util.List<AttributeVo> attributes) {
+        this.attributes = attributes;
+    }
+
+    /** "Talla: M · Color: Negro" of the characteristics that are on and have a value. */
+    public String getAttributesText() {
+        StringBuilder sb = new StringBuilder();
+        for (AttributeVo a : attributes != null ? attributes : java.util.Collections.<AttributeVo>emptyList()) {
+            if (sb.length() > 0) sb.append(" · ");
+            sb.append(a.getLabel()).append(": ").append(a.getValue());
+        }
+        return sb.toString();
     }
 }

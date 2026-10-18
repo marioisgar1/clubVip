@@ -26,9 +26,10 @@ import jakarta.inject.Inject;
 import jakarta.inject.Named;
 
 /**
- * Business dashboard: today's KPIs, the day's appointments, birthdays and pending attention items.
- * Businesses without the appointments module (and sellers) get the SALES variant instead: today's
- * tickets and total from sale/getSales, and the credit portfolio from credit/getPortfolio.
+ * Business dashboard. Each module brings its own block, and a business with both sees both:
+ * AGENDA (appointments module, not for sellers): today's KPIs, the day's appointments, birthdays and
+ * pending attention items (appointment/getToday). SALES (sales module, or a seller): today's tickets and
+ * total from sale/getSales, and the credit portfolio from credit/getPortfolio.
  * A failing backend leaves an empty (but rendered) dashboard instead of an error page.
  */
 @Named("dashboardMb")
@@ -54,15 +55,27 @@ public class DashboardMb implements Serializable {
         refresh();
     }
 
-    /** SALES variant: sellers, and businesses that switched the appointments module off. */
-    public boolean isSalesVariant() {
-        return sessionMb.isSeller() || !sessionMb.isAppointmentsEnabled();
+    /** Agenda block: the business has the appointments module (a seller has no agenda). */
+    public boolean isShowAgenda() {
+        return !sessionMb.isSeller() && sessionMb.isAppointmentsEnabled();
+    }
+
+    /** Sales block: the business has the sales module, the user is a seller, or there is no agenda to show. */
+    public boolean isShowSales() {
+        return sessionMb.isSeller() || sessionMb.isSalesEnabled() || !isShowAgenda();
+    }
+
+    /** Both blocks on screen: each one gets its own title. */
+    public boolean isShowBoth() {
+        return isShowAgenda() && isShowSales();
     }
 
     public void refresh() {
         loaded = false;
-        if (isSalesVariant()) {
+        if (isShowSales()) {
             refreshSales();
+        }
+        if (!isShowAgenda()) {
             return;
         }
         try {

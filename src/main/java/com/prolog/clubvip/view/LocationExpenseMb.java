@@ -1,6 +1,8 @@
 package com.prolog.clubvip.view;
 
 import java.lang.reflect.Type;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,6 +34,10 @@ public class LocationExpenseMb extends BaseMb implements Refreshable {
     private List<LocationExpenseVo> filtered;
     private LocationExpenseVo selected = new LocationExpenseVo();
     private List<SaleLocationVo> saleLocations = new ArrayList<>();
+    /** Dialog dates (p:datePicker does not take a String); copied into the VO on save. */
+    private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private LocalDate startDate;
+    private LocalDate endDate;
 
     @PostConstruct
     public void init() {
@@ -57,8 +63,8 @@ public class LocationExpenseMb extends BaseMb implements Refreshable {
 
     public void prepareNew() {
         selected = new LocationExpenseVo();
-        selected.setStartDate(sessionMb.today());
-        selected.setEndDate(sessionMb.today());
+        startDate = today();
+        endDate = today();
     }
 
     public void prepareEdit(LocationExpenseVo vo) {
@@ -67,13 +73,15 @@ public class LocationExpenseMb extends BaseMb implements Refreshable {
         selected.setSaleLocationId(vo.getSaleLocationId());
         selected.setSaleLocationName(vo.getSaleLocationName());
         selected.setDescription(vo.getDescription());
-        selected.setStartDate(vo.getStartDate());
-        selected.setEndDate(vo.getEndDate());
+        startDate = vo.getStartDate() != null ? LocalDate.parse(vo.getStartDate(), FMT) : today();
+        endDate = vo.getEndDate() != null ? LocalDate.parse(vo.getEndDate(), FMT) : startDate;
         selected.setTotalCost(vo.getTotalCost());
         selected.setStatus(vo.getStatus());
     }
 
     public void save() {
+        selected.setStartDate(startDate != null ? startDate.format(FMT) : null);
+        selected.setEndDate(endDate != null ? endDate.format(FMT) : null);
         try {
             RestClient.post("locationExpense/saveUpdateLocationExpense", selected, null, userId(), locale());
             refresh();
@@ -100,6 +108,22 @@ public class LocationExpenseMb extends BaseMb implements Refreshable {
     }
 
     // ------------------------------------------------------------------ getters / setters
+
+    public LocalDate getStartDate() {
+        return startDate;
+    }
+
+    public void setStartDate(LocalDate startDate) {
+        this.startDate = startDate;
+    }
+
+    public LocalDate getEndDate() {
+        return endDate;
+    }
+
+    public void setEndDate(LocalDate endDate) {
+        this.endDate = endDate;
+    }
 
     public List<LocationExpenseVo> getExpenses() {
         return expenses;

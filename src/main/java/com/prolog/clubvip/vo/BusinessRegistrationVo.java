@@ -63,6 +63,19 @@ public class BusinessRegistrationVo implements Serializable {
 
     private Boolean privacyAccepted;
 
+    /** Modules chosen at sign-up (null = default: appointments and sales on, consignment off). */
+    private Boolean moduleAppointments;
+
+    private Boolean moduleSales;
+
+    private Boolean moduleConsignment;
+
+    /** Payroll and commissions module (sueldos y comisiones del personal). */
+    private Boolean modulePayroll;
+
+    /** Rewards Club VIP: customers earn points at this business (null = on). */
+    private Boolean pointsEnabled;
+
     /** Payment methods the business accepts (at least one active); commission = what the provider charges. */
     private List<PaymentMethodVo> paymentMethods;
 
@@ -277,5 +290,45 @@ public class BusinessRegistrationVo implements Serializable {
 
     public void setSaleLocations(List<SaleLocationVo> saleLocations) {
         this.saleLocations = saleLocations;
+    }
+
+    public Boolean getModuleAppointments() {
+        return moduleAppointments;
+    }
+
+    public void setModuleAppointments(Boolean moduleAppointments) {
+        this.moduleAppointments = moduleAppointments;
+    }
+
+    public Boolean getModuleSales() {
+        return moduleSales;
+    }
+
+    public void setModuleSales(Boolean moduleSales) {
+        this.moduleSales = moduleSales;
+    }
+
+    public Boolean getModuleConsignment() {
+        return moduleConsignment;
+    }
+
+    public void setModuleConsignment(Boolean moduleConsignment) {
+        this.moduleConsignment = moduleConsignment;
+    }
+
+    public Boolean getPointsEnabled() {
+        return pointsEnabled;
+    }
+
+    public void setPointsEnabled(Boolean pointsEnabled) {
+        this.pointsEnabled = pointsEnabled;
+    }
+
+    public Boolean getModulePayroll() {
+        return modulePayroll;
+    }
+
+    public void setModulePayroll(Boolean modulePayroll) {
+        this.modulePayroll = modulePayroll;
     }
 }

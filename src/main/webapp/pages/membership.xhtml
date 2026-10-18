@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core"
+      xmlns:ui="jakarta.faces.facelets"
+      xmlns:p="http://primefaces.org/ui"
+      lang="#{sessionMb.language}">
+<f:view locale="#{sessionMb.locale}">
+<h:head>
+    <title>#{msg['app.title']} - #{msg['mem.title']}</title>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <link rel="icon" type="image/png" href="#{request.contextPath}/resources/img/favicon.png?v=20261010"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;display=swap"/>
+    <link rel="stylesheet" href="#{request.contextPath}/resources/css/clubvip.css?v=20261007a"/>
+    <link rel="stylesheet" href="#{request.contextPath}/resources/css/homepage.css?v=20261014a"/>
+    <link rel="stylesheet" href="#{request.contextPath}/resources/css/auth.css?v=20261014b"/>
+</h:head>
+<h:body styleClass="hp hp-auth">
+    <!-- Same header as login/register; the only way out is logging out -->
+    <header class="hp-nav au-nav">
+        <div class="hp-nav-in">
+            <a class="hp-logo" href="#{request.contextPath}/index.xhtml"><img src="#{request.contextPath}/resources/img/logo-clubvip.svg?v=20261014" alt="Club VIP"/></a>
+            <h:form id="langForm" styleClass="hp-lang">
+                <p:commandLink styleClass="#{sessionMb.language eq 'es' ? 'on' : ''}" process="@this" update="@none"
+                               action="#{sessionMb.changeLanguage('es')}" oncomplete="window.location.reload()">#{msg['hm.lang.es']}</p:commandLink>
+                <p:commandLink styleClass="#{sessionMb.language eq 'en' ? 'on' : ''}" process="@this" update="@none"
+                               action="#{sessionMb.changeLanguage('en')}" oncomplete="window.location.reload()">#{msg['hm.lang.en']}</p:commandLink>
+            </h:form>
+            <h:form id="outForm" style="display:inline">
+                <p:commandLink action="#{sessionMb.logout}" ajax="false" styleClass="hp-login">#{msg['logout']}</p:commandLink>
+            </h:form>
+        </div>
+    </header>
+
+    <main class="au-panel mb-panel">
+        <h:form id="form" styleClass="au-card au-card-wide mb-card">
+            <f:metadata>
+                <f:viewParam name="session_id" value="#{membershipMb.sessionId}"/>
+                <f:viewParam name="canceled" value="#{membershipMb.canceled}"/>
+                <f:viewAction action="#{membershipMb.init}"/>
+            </f:metadata>
+            <!-- ============ Paid: thanks / manage ============ -->
+            <h:panelGroup rendered="#{membershipMb.active}" layout="block">
+                <span class="au-caption">#{sessionMb.businessName}</span>
+                <span class="au-fp-badge au-fp-badge-ok mb-badge"><i class="pi pi-check"></i></span>
+                <h1 class="au-title">#{membershipMb.justPaid ? msg['mem.paid.title'] : msg['mem.active.title']}</h1>
+                <p class="au-fp-lead">
+                    <h:outputText rendered="#{membershipMb.justPaid}" value="#{msg['mem.paid.lead']}"/>
+                    <h:outputText rendered="#{not membershipMb.justPaid}" value="#{msg['mem.active.lead']}"/>
+                </p>
+                <p:messages id="msgs1" showDetail="false" closable="true"/>
+                <div class="mb-summary">
+                    <div><span class="mb-summary-k">#{msg['mem.plan']}</span><strong>#{msg['mem.plan.'.concat(empty membershipMb.status.plan ? 'COURTESY' : membershipMb.status.plan)]}</strong></div>
+                    <h:panelGroup rendered="#{not empty membershipMb.status.until}" layout="block">
+                        <span class="mb-summary-k">#{msg['mem.until']}</span><strong>#{membershipMb.untilText}</strong>
+                    </h:panelGroup>
+                </div>
+                <div class="mb-actions">
+                    <p:commandButton value="#{msg['mem.enter']}" icon="pi pi-arrow-right" iconPos="right"
+                                     action="#{membershipMb.goHome}" ajax="false" styleClass="au-submit"/>
+                    <p:commandButton rendered="#{membershipMb.status.canManage and membershipMb.admin}" value="#{msg['mem.manage']}"
+                                     icon="pi pi-credit-card" action="#{membershipMb.portal}" ajax="false" styleClass="ui-button-secondary"/>
+                </div>
+            </h:panelGroup>
+
+            <!-- ============ Not paid / past due: choose a plan ============ -->
+            <h:panelGroup rendered="#{not membershipMb.active}" layout="block">
+                <h1 class="au-title mb-title">
+                    <h:outputText rendered="#{not membershipMb.status.pastDue}" value="#{msg['mem.title']}"/>
+                    <h:outputText rendered="#{membershipMb.status.pastDue}" value="#{membershipMb.status.plan eq 'COURTESY' ? msg['mem.courtesyOver.title'] : msg['mem.pastDue.title']}"/>
+                </h1>
+                <p class="au-fp-lead">
+                    <h:panelGroup rendered="#{not membershipMb.status.pastDue}">
+                        <span class="au-caption mb-biz">#{sessionMb.businessName}</span>
+                    </h:panelGroup>
+                    <h:outputText rendered="#{membershipMb.disputeOpen}" value="#{msg['mem.lead.suspended']}"/>
+                    <h:outputText rendered="#{not membershipMb.status.pastDue and not membershipMb.disputeOpen and membershipMb.admin}" value="#{msg['mem.lead']}"/>
+                    <h:outputText rendered="#{not membershipMb.status.pastDue and not membershipMb.disputeOpen and not membershipMb.admin}" value="#{msg['mem.lead.staff']}"/>
+                    <h:outputFormat rendered="#{membershipMb.status.pastDue}" value="#{membershipMb.status.plan eq 'COURTESY' ? msg['mem.courtesyOver.lead'] : msg['mem.pastDue.lead']}">
+                        <f:param value="#{membershipMb.graceText}"/>
+                        <f:param value="#{membershipMb.status.daysLeft}"/>
+                    </h:outputFormat>
+                </p>
+                <p:messages id="msgs2" showDetail="false" closable="true"/>
+                <h:panelGroup rendered="#{membershipMb.status.status eq 'SUSPENDED' or membershipMb.status.disputeStatus eq 'LOST' or membershipMb.status.disputeStatus eq 'REFUNDED'}" layout="block" styleClass="mb-dispute">
+                    <i class="pi pi-exclamation-triangle"></i>
+                    <div>
+                        <strong>#{msg['mem.dispute.title']}</strong>
+                        <span>
+                            <h:outputText rendered="#{membershipMb.status.disputeStatus eq 'OPEN'}" value="#{msg['mem.dispute.open']}"/>
+                            <h:outputText rendered="#{membershipMb.status.disputeStatus eq 'LOST'}" value="#{msg['mem.dispute.lost']}"/>
+                            <h:outputText rendered="#{membershipMb.status.disputeStatus eq 'REFUNDED'}" value="#{msg['mem.dispute.refunded']}"/>
+                            <h:outputText rendered="#{empty membershipMb.status.disputeStatus}" value="#{msg['mem.suspended']}"/>
+                        </span>
+                    </div>
+                </h:panelGroup>
+
+                <!-- Payment did not go through and there is a card on file: Stripe's portal fixes it -->
+                <h:panelGroup rendered="#{membershipMb.status.pastDue and membershipMb.status.canManage and membershipMb.admin}" layout="block" styleClass="mb-actions">
+                    <p:commandButton value="#{msg['mem.updateCard']}" icon="pi pi-credit-card" action="#{membershipMb.portal}" ajax="false" styleClass="au-submit"/>
+                    <p:commandButton value="#{msg['mem.enter']}" icon="pi pi-arrow-right" iconPos="right" action="#{membershipMb.goHome}" ajax="false" styleClass="ui-button-secondary"/>
+                </h:panelGroup>
+                <!-- Courtesy over (no card on file) or still in grace: the owner may also just enter for now -->
+                <h:panelGroup rendered="#{membershipMb.status.pastDue and not membershipMb.status.canManage and not membershipMb.status.required}" layout="block" styleClass="mb-actions">
+                    <p:commandButton value="#{msg['mem.enter.later']}" icon="pi pi-arrow-right" iconPos="right" action="#{membershipMb.goHome}" ajax="false" styleClass="ui-button-secondary"/>
+                </h:panelGroup>
+
+                <!-- One offer: what the business gets (left, ink) and the plan it picks (right) -->
+                <h:panelGroup rendered="#{not (membershipMb.status.pastDue and membershipMb.status.canManage) and not membershipMb.disputeOpen}" layout="block" styleClass="mb-offer">
+                    <div class="mb-value">
+                        <p class="mb-value-title"><h:outputText value="#{msg['mem.value.title']}" escape="false"/></p>
+                        <span class="mb-value-label">#{msg['mem.inc.modules']}</span>
+                        <ul class="mb-mods">
+                            <li class="#{sessionMb.user.moduleAppointments ne false ? 'on' : ''}"><i class="pi #{sessionMb.user.moduleAppointments ne false ? 'pi-check' : 'pi-plus'}"></i>#{msg['register.module.appointments']}</li>
+                            <li class="#{sessionMb.user.moduleSales ne false ? 'on' : ''}"><i class="pi #{sessionMb.user.moduleSales ne false ? 'pi-check' : 'pi-plus'}"></i>#{msg['register.module.sales']}</li>
+                            <li class="#{sessionMb.user.moduleConsignment eq true ? 'on' : ''}"><i class="pi #{sessionMb.user.moduleConsignment eq true ? 'pi-check' : 'pi-plus'}"></i>#{msg['register.module.consignment']}</li>
+                            <li class="#{sessionMb.user.modulePayroll ne false ? 'on' : ''}"><i class="pi #{sessionMb.user.modulePayroll ne false ? 'pi-check' : 'pi-plus'}"></i>#{msg['register.module.payroll']}</li>
+                        </ul>
+                        <p class="mb-value-note">#{msg['mem.inc.modules.note']}</p>
+                        <span class="mb-value-label">#{msg['mem.inc.promises']}</span>
+                        <ul class="mb-promises">
+                            <li><i class="pi pi-check"></i><div><strong>#{msg['mem.p1.t']}</strong><span>#{msg['mem.p1']}</span></div></li>
+                            <li><i class="pi pi-check"></i><div><strong>#{msg['mem.p2.t']}</strong><span>#{msg['mem.p2']}</span></div></li>
+                            <li><i class="pi pi-check"></i><div><strong>#{msg['mem.p3.t']}</strong><span>#{msg['mem.p3']}</span></div></li>
+                            <li><i class="pi pi-check"></i><div><strong>#{msg['mem.p4.t']}</strong><span>#{msg['mem.p4']}</span></div></li>
+                            <li><i class="pi pi-check"></i><div><strong>#{msg['mem.p5.t']}</strong><span>#{msg['mem.p5']}</span></div></li>
+                        </ul>
+                    </div>
+
+                    <div class="mb-plans">
+                        <h:panelGroup rendered="#{membershipMb.admin}">
+                            <span class="mb-plans-label">#{msg['mem.choose']}</span>
+                            <div class="mb-plan mb-plan-best">
+                                <span class="mb-plan-card"><img src="#{request.contextPath}/resources/img/membership/annual.png?v=20261014" width="400" height="268" alt="#{msg['mem.annual']}"/></span>
+                                <div class="mb-plan-body">
+                                    <div class="mb-plan-head">
+                                        <span class="mb-plan-name">#{msg['mem.annual']}</span>
+                                        <span class="mb-plan-tag"><i class="pi pi-gift"></i>&#160;#{msg['mem.annual.tag']}</span>
+                                    </div>
+                                    <span class="mb-plan-price"><strong>#{membershipMb.annual}</strong><small>#{msg['mem.perYear']}</small></span>
+                                    <span class="mb-plan-note">
+                                        <h:outputFormat value="#{msg['mem.annual.note']}">
+                                            <f:param value="#{membershipMb.annualPerMonth}"/>
+                                            <f:param value="#{membershipMb.saving}"/>
+                                        </h:outputFormat>
+                                    </span>
+                                    <p:commandButton value="#{msg['mem.choose.annual']}" icon="pi pi-arrow-right" iconPos="right"
+                                                     action="#{membershipMb.checkout('ANNUAL')}" ajax="false" styleClass="au-submit mb-plan-btn"/>
+                                </div>
+                            </div>
+                            <div class="mb-plan">
+                                <span class="mb-plan-card"><img src="#{request.contextPath}/resources/img/membership/monthly.png?v=20261014" width="400" height="259" alt="#{msg['mem.monthly']}"/></span>
+                                <div class="mb-plan-body">
+                                    <div class="mb-plan-head"><span class="mb-plan-name">#{msg['mem.monthly']}</span></div>
+                                    <span class="mb-plan-price"><strong>#{membershipMb.monthly}</strong><small>#{msg['mem.perMonth']}</small></span>
+                                    <span class="mb-plan-note">#{msg['mem.monthly.note']}</span>
+                                    <p:commandButton value="#{msg['mem.choose.monthly']}" icon="pi pi-arrow-right" iconPos="right"
+                                                     action="#{membershipMb.checkout('MONTHLY')}" ajax="false" styleClass="ui-button-secondary mb-plan-btn"/>
+                                </div>
+                            </div>
+                            <div class="mb-trust">
+                                <span><i class="pi pi-lock"></i>#{msg['mem.trust.secure']}</span>
+                                <span><i class="pi pi-file"></i>#{msg['mem.trust.invoice']}</span>
+                            </div>
+                        </h:panelGroup>
+                        <h:panelGroup rendered="#{not membershipMb.admin}" layout="block" styleClass="mb-staff">
+                            <i class="pi pi-user"></i>
+                            <span>#{msg['mem.lead.staff']}</span>
+                        </h:panelGroup>
+                    </div>
+                </h:panelGroup>
+                <p class="mb-help au-muted">#{msg['mem.help']} <a href="mailto:soporte@clubvip.club">soporte@clubvip.club</a></p>
+            </h:panelGroup>
+        </h:form>
+    </main>
+</h:body>
+</f:view>
+</html>

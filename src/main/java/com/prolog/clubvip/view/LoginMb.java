@@ -11,6 +11,7 @@ import com.prolog.clubvip.security.BusinessLogo;
 import com.prolog.clubvip.rest.RestClient;
 import com.prolog.clubvip.rest.RestResponse;
 import com.prolog.clubvip.vo.LoginResponseVo;
+import com.prolog.clubvip.vo.MenuItemVo;
 
 import jakarta.faces.application.FacesMessage;
 import jakarta.faces.context.FacesContext;
@@ -36,6 +37,40 @@ public class LoginMb implements Serializable {
     private String username;
     private String password;
 
+    /** "Forgot password" panel: shown instead of the login form; {@code forgotSent} = the "check your e-mail" step. */
+    private boolean forgotMode;
+    private boolean forgotSent;
+    private String forgotUsername;
+
+    public void showForgot() {
+        forgotMode = true;
+        forgotSent = false;
+        forgotUsername = username;
+    }
+
+    public void backToLogin() {
+        if (forgotSent && forgotUsername != null && !forgotUsername.isBlank()) {
+            username = forgotUsername.trim();
+        }
+        forgotMode = false;
+        forgotSent = false;
+        password = null;
+    }
+
+    /** Asks the backend to e-mail a temporary password; it answers OK even for unknown accounts. */
+    public void sendForgot() {
+        Map<String, String> payload = new HashMap<>();
+        payload.put("username", forgotUsername != null ? forgotUsername.trim() : null);
+        RestResponse response = RestClient.post("security/forgotPassword", payload, null, sessionMb.getLocale());
+        if (response.isOk()) {
+            forgotSent = true;
+            return;
+        }
+        List<String> errors = RestClient.extractErrors(response.getBody());
+        FacesContext.getCurrentInstance().addMessage(null, new FacesMessage(FacesMessage.SEVERITY_ERROR,
+                errors.isEmpty() ? sessionMb.text("forgot.error") : errors.get(0), null));
+    }
+
     public String doLogin() {
         Map<String, String> payload = new HashMap<>();
         payload.put("username", username);
@@ -49,6 +84,9 @@ public class LoginMb implements Serializable {
                 FacesContext.getCurrentInstance().addMessage(null, new FacesMessage(
                         FacesMessage.SEVERITY_ERROR, sessionMb.text("login.customer.notallowed"), null));
                 return null;
+            }
+            if (user.isMustChangePassword()) {
+                user.setTemporaryPassword(password);
             }
             storeSession(sessionMb, user);
             return homeFor(user) + "?faces-redirect=true";
@@ -76,29 +114,66 @@ public class LoginMb implements Serializable {
     /**
      * Landing page per profile: operator -> affiliates, employee -> own agenda, seller -> point of
      * sale, admin -> dashboard (or the point of sale when the business has no appointments module,
-     * since the dashboard is appointment-centric).
+     * since the dashboard is appointment-centric). The preferred page is only used when the user's
+     * menu allows it (a module switched off in the business removes its pages); otherwise the first
+     * page of the menu is used, so nobody lands on "access denied" right after logging in.
      */
     static String homeFor(LoginResponseVo user) {
+        if (user.isMustChangePassword()) {
+            return "/pages/newPassword.xhtml";
+        }
+        if (user.isMembershipRequired()) {
+            return "/pages/membership.xhtml";
+        }
+        if (user.isVerificationRequired()) {
+            return "/pages/verifyContact.xhtml";
+        }
         Integer profile = user.getProfileId();
         // A consignment invitation waiting for the answer is the first thing the admin sees.
         if (profile != null && profile == SessionMb.PROFILE_ADMIN
                 && user.getConsignmentPending() != null && user.getConsignmentPending() > 0) {
-            return "/pages/consignment.xhtml";
+            return allowedOrFirst(user, "/pages/consignment.xhtml");
         }
         if (profile != null && profile == SessionMb.PROFILE_OPERATOR) {
-            return "/pages/affiliate.xhtml";
+            return allowedOrFirst(user, "/pages/affiliate.xhtml");
         }
         if (profile != null && profile == SessionMb.PROFILE_EMPLOYEE) {
-            return "/pages/myAppointments.xhtml";
+            return allowedOrFirst(user, Boolean.FALSE.equals(user.getModuleAppointments())
+                    ? "/pages/sale.xhtml" : "/pages/myAppointments.xhtml");
         }
         if (profile != null && profile == SessionMb.PROFILE_SELLER) {
-            return "/pages/sale.xhtml";
+            return allowedOrFirst(user, "/pages/sale.xhtml");
         }
         if (profile != null && profile == SessionMb.PROFILE_ADMIN
                 && Boolean.FALSE.equals(user.getModuleAppointments())) {
-            return "/pages/sale.xhtml";
+            return allowedOrFirst(user, "/pages/sale.xhtml");
         }
         return "/pages/dashboard.xhtml";
+    }
+
+    /**
+     * The preferred page when the menu contains it; otherwise the first menu page (lowest
+     * sortOrder) and, with no menu page at all, the dashboard (always allowed by the filter).
+     */
+    private static String allowedOrFirst(LoginResponseVo user, String preferred) {
+        List<MenuItemVo> menu = user.getMenu();
+        if (menu == null || menu.isEmpty()) {
+            return "/pages/dashboard.xhtml";
+        }
+        MenuItemVo first = null;
+        for (MenuItemVo item : menu) {
+            if (item.getOutcomeWeb() == null) {
+                continue;
+            }
+            if (preferred.equals(item.getOutcomeWeb())) {
+                return preferred;
+            }
+            if (first == null || (item.getSortOrder() != null && first.getSortOrder() != null
+                    && item.getSortOrder() < first.getSortOrder())) {
+                first = item;
+            }
+        }
+        return first != null ? first.getOutcomeWeb() : "/pages/dashboard.xhtml";
     }
 
     /** Club VIP support number for the wa.me link on the login page. */
@@ -125,5 +200,21 @@ public class LoginMb implements Serializable {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public boolean isForgotMode() {
+        return forgotMode;
+    }
+
+    public boolean isForgotSent() {
+        return forgotSent;
+    }
+
+    public String getForgotUsername() {
+        return forgotUsername;
+    }
+
+    public void setForgotUsername(String forgotUsername) {
+        this.forgotUsername = forgotUsername;
     }
 }

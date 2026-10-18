@@ -54,6 +54,20 @@ public final class PageTheme implements Serializable {
             new PageTheme("FRESCO", "#FFFFFF", false,
                     "family=Poppins:wght@400;500;600;700", "#6C4CF1")));
 
+    /** Same white page: lighter look first (Urbano carries a black bar, so it goes last of them). */
+    private static final List<String> WHITE_ORDER = Arrays.asList("LUMINOSA", "FRESCO", "MINIMAL", "URBANO");
+
+    /** The template picker of "Mi página": from the lightest page to the darkest (ALL keeps its order). */
+    public static final List<PageTheme> BY_LIGHTNESS;
+
+    static {
+        List<PageTheme> sorted = new java.util.ArrayList<>(ALL);
+        sorted.sort(java.util.Comparator
+                .comparingDouble((PageTheme t) -> -luminance(rgb(t.background)))
+                .thenComparingInt(t -> WHITE_ORDER.indexOf(t.code)));
+        BY_LIGHTNESS = Collections.unmodifiableList(sorted);
+    }
+
     public static PageTheme of(String code) {
         for (PageTheme t : ALL) {
             if (t.code.equalsIgnoreCase(code != null ? code : "")) {
@@ -106,6 +120,31 @@ public final class PageTheme implements Serializable {
         return "--accent:" + hex(fill) + ";--on-accent:" + hex(on) + ";--accent-text:" + hex(text)
                 + ";--accent-soft:" + hex(mix(base, bg, dark ? 0.20 : 0.12))
                 + ";--accent-line:" + hex(mix(base, bg, dark ? 0.45 : 0.35));
+    }
+
+    /**
+     * The same accent math for the public store and booking pages (public.css): their lime variables
+     * become this template's background and the owner's color, with the same contrast rules as the page.
+     */
+    public String storeVars(String hex) {
+        int[] bg = rgb(background);
+        int[] base = rgb(validHex(hex) ? hex : defaultColor);
+        int[] fill = ensure(base, bg, 1.8);
+        int[] text = ensure(base, bg, 4.5);
+        int[] white = { 255, 255, 255 };
+        int[] ink = { 20, 22, 26 };
+        // Strong colors carry white text (it reads well from 3:1, the bold-button minimum); light ones, black.
+        int[] on = contrast(white, fill) >= 3.0 ? white : ink;
+        return "--pub-lime:" + hex(fill) + ";--pub-lime-ink:" + hex(text) + ";--pub-on-lime:" + hex(on)
+                + ";--pub-cream:" + background
+                + ";--pub-lime-soft:" + hex(mix(base, bg, dark ? 0.20 : 0.12))
+                + ";--pub-lime-line:" + hex(mix(base, bg, dark ? 0.45 : 0.30))
+                + ";--pub-lime-grad:linear-gradient(135deg," + hex(mix(base, bg, dark ? 0.10 : 0.04)) + " 0%,"
+                + hex(mix(base, bg, dark ? 0.20 : 0.14)) + " 45%," + hex(mix(base, bg, dark ? 0.34 : 0.30)) + " 100%)"
+                + ";--pub-glow:rgba(" + fill[0] + "," + fill[1] + "," + fill[2] + ",.45)"
+                // On the white cards (also on the dark templates): readable ink and light tints of the color
+                + ";--pub-ink-card:" + hex(ensure(base, white, 4.5))
+                + ";--pub-tint:" + hex(mix(base, white, 0.12)) + ";--pub-tint-2:" + hex(mix(base, white, 0.05));
     }
 
     public static boolean validHex(String hex) {

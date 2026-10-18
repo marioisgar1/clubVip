@@ -89,12 +89,12 @@
                         </div>
                         <div class="field required">
                             <label for="form:expStart">#{msg['pos.lbl.startDate']}</label>
-                            <p:datePicker id="expStart" value="#{locationExpenseMb.selected.startDate}" pattern="yyyy-MM-dd"
+                            <p:datePicker id="expStart" value="#{locationExpenseMb.startDate}" pattern="dd/MM/yyyy"
                                           showIcon="true" required="true" requiredMessage="#{msg['pos.lbl.startDate']}: #{msg['msg.required']}"/>
                         </div>
                         <div class="field required">
                             <label for="form:expEnd">#{msg['pos.lbl.endDate']}</label>
-                            <p:datePicker id="expEnd" value="#{locationExpenseMb.selected.endDate}" pattern="yyyy-MM-dd"
+                            <p:datePicker id="expEnd" value="#{locationExpenseMb.endDate}" pattern="dd/MM/yyyy"
                                           showIcon="true" required="true" requiredMessage="#{msg['pos.lbl.endDate']}: #{msg['msg.required']}"/>
                         </div>
                         <div class="field required">

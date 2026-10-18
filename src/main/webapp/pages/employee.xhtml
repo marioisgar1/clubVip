@@ -36,13 +36,15 @@
                                          placeholder="#{msg['action.search']}"/>
                         </div>
                     </f:facet>
-                    <p:column headerText="#{msg['cat.employee.name']}" sortBy="#{e.fullName}"
+                    <p:column headerText="#{msg['cat.employee.name']}" sortBy="#{e.fullName}" styleClass="cv-col-main"
                               filterBy="#{e.fullName}" filterMatchMode="contains">
                         <div class="flex gap-2">
-                            <h:panelGroup rendered="#{not empty e.photoBase64}">
-                                <img alt="" class="cv-avatar-img" src="data:image/jpeg;base64,#{e.photoBase64}"/>
+                            <!-- Round photo when there is one (served by /employeePhoto; the list omits photo bytes), else initials -->
+                            <h:panelGroup rendered="#{e.hasPhoto}" styleClass="avatar avatar-photo">
+                                <img alt="" loading="lazy"
+                                     src="#{request.contextPath}/employeePhoto?e=#{e.id}&amp;v=#{employeeMb.photoVersion}"/>
                             </h:panelGroup>
-                            <h:panelGroup rendered="#{empty e.photoBase64}" styleClass="avatar">#{sessionMb.initialsOf(e.fullName)}</h:panelGroup>
+                            <h:panelGroup rendered="#{not e.hasPhoto}" styleClass="avatar">#{sessionMb.initialsOf(e.fullName)}</h:panelGroup>
                             <span>
                                 <span style="font-weight:600">#{e.fullName}</span>
                                 <h:panelGroup rendered="#{not empty e.phone}" styleClass="muted" layout="block">#{e.phone}</h:panelGroup>
@@ -53,14 +55,15 @@
                               filterBy="#{e.specialty}" filterMatchMode="contains">
                         <h:outputText value="#{e.specialty}"/>
                     </p:column>
-                    <p:column headerText="#{msg['cat.employee.scheme']}" sortBy="#{e.payScheme}">
+                    <p:column headerText="#{msg['cat.employee.scheme']}" sortBy="#{e.payScheme}" styleClass="cv-nowrap">
                         <h:outputText value="#{employeeMb.schemeLabel(e)}"/>
                     </p:column>
-                    <p:column headerText="#{msg['cat.employee.payFrequency']}" sortBy="#{e.payFrequency}" width="110">
+                    <p:column headerText="#{msg['cat.employee.payFrequency']}" sortBy="#{e.payFrequency}" width="130">
                         <h:outputText value="#{msg['cat.employee.freq.'.concat(e.payFrequency)]}" rendered="#{not empty e.payFrequency}"/>
+                        <h:panelGroup rendered="#{not empty e.payDay}" layout="block" styleClass="muted small">#{employeeMb.payDayLabel(e)}</h:panelGroup>
                     </p:column>
-                    <p:column headerText="#{msg['cat.employee.section.schedule']}">
-                        <h:outputText value="#{employeeMb.hoursLabel(e)}" styleClass="muted small"/>
+                    <p:column headerText="#{msg['cat.employee.section.schedule']}" styleClass="cv-col-hours">
+                        <h:outputText value="#{employeeMb.hoursLabel(e)}" styleClass="muted small cv-hours"/>
                     </p:column>
                     <p:column headerText="#{msg['cat.employee.bookable']}" width="90" styleClass="text-center" sortBy="#{e.bookable}">
                         <i class="pi #{e.bookable ? 'pi-check gold' : 'pi-times muted'}"></i>
@@ -114,12 +117,12 @@
                                              styleClass="empPhotoB64" style="display:none"/>
                             <div class="file-picker">
                                 <h:panelGroup rendered="#{not empty employeeMb.selected.photoBase64}">
-                                    <img alt="" class="cv-avatar-img lg" src="data:image/jpeg;base64,#{employeeMb.selected.photoBase64}"/>
+                                    <img alt="" class="cv-avatar-img lg empPhotoCurrent" src="data:image/jpeg;base64,#{employeeMb.selected.photoBase64}"/>
                                 </h:panelGroup>
                                 <img id="empPhotoPreview" alt="" class="cv-avatar-img lg" style="display:none"/>
                                 <label class="ui-button ui-button-secondary" style="cursor:pointer">
                                     <i class="pi pi-camera" style="margin-right:.4rem"></i>#{msg['cat.product.choosePhoto']}
-                                    <input type="file" accept="image/*" style="display:none" onchange="cvCompressEmpPhoto(this)"/>
+                                    <input type="file" accept="image/*" style="display:none" onchange="cvPickEmpPhoto(this)"/>
                                 </label>
                                 <p:commandButton icon="pi pi-trash" title="#{msg['action.delete']}"
                                                  actionListener="#{employeeMb.removePhoto}" process="@this"
@@ -138,7 +141,7 @@
                                 <f:selectItem itemValue="COMMISSION" itemLabel="#{msg['cat.employee.scheme.COMMISSION']}"/>
                                 <f:selectItem itemValue="SALARY" itemLabel="#{msg['cat.employee.scheme.SALARY']}"/>
                                 <f:selectItem itemValue="MIXED" itemLabel="#{msg['cat.employee.scheme.MIXED']}"/>
-                                <p:ajax event="itemSelect" update="payFields" process="@this"/>
+                                <p:ajax event="itemSelect" update="payFields servicesPanel" process="@this servicesPanel"/>
                             </p:selectOneMenu>
                         </div>
                         <div class="field">
@@ -148,15 +151,34 @@
                                 <f:selectItem itemValue="WEEKLY" itemLabel="#{msg['cat.employee.freq.WEEKLY']}"/>
                                 <f:selectItem itemValue="BIWEEKLY" itemLabel="#{msg['cat.employee.freq.BIWEEKLY']}"/>
                                 <f:selectItem itemValue="MONTHLY" itemLabel="#{msg['cat.employee.freq.MONTHLY']}"/>
+                                <p:ajax event="itemSelect" listener="#{employeeMb.frequencyChanged}" update="payDayPanel" process="@this"/>
                             </p:selectOneMenu>
                         </div>
+                        <!-- Pay day: asked unless the frequency is daily; the cut closes the day before -->
+                        <p:outputPanel id="payDayPanel" styleClass="field span-2" layout="block">
+                            <h:panelGroup rendered="#{employeeMb.payDayNeeded}" layout="block" styleClass="field required" style="max-width:340px">
+                                <label for="form:empPayDay">#{msg['cat.employee.payDay']}</label>
+                                <p:selectOneMenu id="empPayDay" value="#{employeeMb.selected.payDay}">
+                                    <f:converter converterId="jakarta.faces.Integer"/>
+                                    <f:selectItem itemLabel="#{msg['cat.employee.payDay.placeholder']}" itemValue="#{null}" noSelectionOption="true"/>
+                                    <f:selectItems value="#{employeeMb.payDayOptions}"/>
+                                    <p:ajax event="itemSelect" update="payDayNote" process="@this"/>
+                                </p:selectOneMenu>
+                            </h:panelGroup>
+                            <h:panelGroup id="payDayNote" rendered="#{employeeMb.payDayNeeded}" layout="block" styleClass="pay-day-note">
+                                <i class="pi pi-info-circle"></i><span>#{employeeMb.payDayNote}</span>
+                            </h:panelGroup>
+                        </p:outputPanel>
                         <p:outputPanel id="payFields" styleClass="span-2" layout="block">
                             <div class="form-grid">
                                 <div class="field">
                                     <label for="form:empCommission">#{msg['cat.service.commission']}</label>
                                     <p:inputNumber id="empCommission" value="#{employeeMb.selected.commissionPercent}" symbol=" %"
                                                    symbolPosition="s" decimalPlaces="2" minValue="0" maxValue="100"
-                                                   disabled="#{not employeeMb.commissionVisible}"/>
+                                                   disabled="#{not employeeMb.commissionVisible}">
+                                        <!-- The services list shows this percent beside each service -->
+                                        <p:ajax event="blur" process="@this :form:servicesPanel" update=":form:servicesPanel"/>
+                                    </p:inputNumber>
                                     <span class="hint">#{msg['cat.employee.commission.hint']}</span>
                                 </div>
                                 <div class="field">
@@ -189,6 +211,7 @@
                         </p:outputPanel>
                         <p:outputPanel id="dateOffsPanel" styleClass="field span-2" layout="block">
                             <label>#{msg['cat.employee.dateOffs']}</label>
+                            <span class="hint" style="display:block;margin-bottom:.4rem">#{msg['cat.employee.dateOffs.hint']}</span>
                             <div class="flex wrap gap-2">
                                 <p:datePicker id="empNewDateOff" value="#{employeeMb.newDateOff}" pattern="dd/MM/yyyy"
                                               showIcon="true" style="width:160px"/>
@@ -210,15 +233,47 @@
                             </div>
                         </p:outputPanel>
 
-                        <!-- Services -->
+                        <!-- Services: which ones the employee gives and, beside each, the commission it earns.
+                             The percent lives in the employee; the pencil sets a special one for that service only. -->
                         <div class="form-section">#{msg['cat.employee.section.services']}</div>
-                        <div class="field span-2">
-                            <p:selectManyCheckbox id="empServices" value="#{employeeMb.selected.serviceIds}" layout="responsive" columns="2">
-                                <f:converter converterId="jakarta.faces.Integer"/>
-                                <f:selectItems value="#{employeeMb.services}" var="s" itemLabel="#{s.name}" itemValue="#{s.id}"/>
-                            </p:selectManyCheckbox>
+                        <p:outputPanel id="servicesPanel" styleClass="field span-2" layout="block">
+                            <h:panelGroup rendered="#{empty employeeMb.serviceRows}" styleClass="muted" layout="block">#{msg['msg.noData']}</h:panelGroup>
+                            <h:panelGroup rendered="#{not empty employeeMb.serviceRows}" styleClass="es-list" layout="block">
+                                <ui:repeat var="r" value="#{employeeMb.serviceRows}">
+                                    <p:outputPanel id="esRow" layout="block"
+                                                   styleClass="es-row #{r.gives ? 'on' : ''} #{not empty r.specialPercent ? 'special' : ''}">
+                                        <p:selectBooleanCheckbox value="#{r.gives}" itemLabel="#{r.name}" styleClass="es-name">
+                                            <p:ajax process="@this" update="esRow"/>
+                                        </p:selectBooleanCheckbox>
+                                        <h:panelGroup rendered="#{employeeMb.commissionVisible}" styleClass="es-comm" layout="block">
+                                            <h:panelGroup rendered="#{not r.editing}">
+                                                <span class="es-pct">#{employeeMb.pct(empty r.specialPercent ? employeeMb.selected.commissionPercent : r.specialPercent)}</span>
+                                                <span class="es-tag #{empty r.specialPercent ? '' : 'es-tag-special'}">#{empty r.specialPercent ? msg['cat.employee.svcComm.default'] : msg['cat.employee.svcComm.special']}</span>
+                                                <p:commandButton icon="pi pi-pencil" title="#{msg['cat.employee.svcComm.edit']}"
+                                                                 actionListener="#{employeeMb.editServiceCommission(r)}" process="@this" update="esRow"
+                                                                 styleClass="ui-button-rounded ui-button-text es-btn"/>
+                                            </h:panelGroup>
+                                            <h:panelGroup rendered="#{r.editing}">
+                                                <p:inputNumber value="#{r.specialPercent}" symbol=" %" symbolPosition="s" decimalPlaces="2"
+                                                               minValue="0" maxValue="100" styleClass="es-input"/>
+                                                <p:commandButton icon="pi pi-check" title="#{msg['action.save']}"
+                                                                 actionListener="#{employeeMb.doneServiceCommission(r)}" process="esRow" update="esRow"
+                                                                 styleClass="ui-button-rounded ui-button-text es-btn"/>
+                                            </h:panelGroup>
+                                            <p:commandButton icon="pi pi-undo" title="#{msg['cat.employee.svcComm.reset']}"
+                                                             rendered="#{not empty r.specialPercent}"
+                                                             actionListener="#{employeeMb.clearServiceCommission(r)}" process="@this" update="esRow"
+                                                             styleClass="ui-button-rounded ui-button-text es-btn"/>
+                                        </h:panelGroup>
+                                    </p:outputPanel>
+                                </ui:repeat>
+                            </h:panelGroup>
                             <span class="hint">#{msg['cat.employee.services.hint']}</span>
-                        </div>
+                            <h:panelGroup rendered="#{employeeMb.commissionVisible}" styleClass="hint" layout="block">
+                                <i class="pi pi-pencil" style="font-size:.7rem"></i>&#160;#{msg['cat.employee.svcComm.hint']}
+                            </h:panelGroup>
+                            <h:panelGroup rendered="#{not employeeMb.commissionVisible}" styleClass="hint" layout="block">#{msg['cat.employee.svcComm.salary']}</h:panelGroup>
+                        </p:outputPanel>
 
                         <!-- Flags -->
                         <div class="form-section">#{msg['cat.employee.section.flags']}</div>
@@ -245,7 +300,7 @@
                         <div class="field span-2" style="margin-bottom:.2rem">
                             <span class="hint">#{employeeMb.hasLogin(employeeMb.selected) ? msg['cat.employee.access.hint.existing'] : msg['cat.employee.access.hint.new']}</span>
                         </div>
-                        <div class="field">
+                        <div class="field span-2">
                             <label for="form:empEmail">#{msg['lbl.email']}</label>
                             <p:inputText id="empEmail" value="#{employeeMb.selected.email}" maxlength="120" type="email"
                                          autocomplete="off"/>
@@ -253,8 +308,23 @@
                         <div class="field">
                             <label for="form:empPassword">#{msg['lbl.password']}</label>
                             <p:password id="empPassword" value="#{employeeMb.selected.password}" feedback="false" maxlength="60"
-                                        redisplay="false" autocomplete="new-password"/>
-                            <span class="hint">#{msg['cat.user.password.hint']}</span>
+                                        redisplay="false" autocomplete="new-password" toggleMask="true" styleClass="np-new"/>
+                            <span class="hint">#{employeeMb.hasLogin(employeeMb.selected) ? msg['cat.user.password.hint'] : msg['cat.employee.password.hint.new']}</span>
+                        </div>
+                        <div class="field">
+                            <label for="form:empPasswordConfirm">#{msg['register.passwordConfirm']}</label>
+                            <p:password id="empPasswordConfirm" value="#{employeeMb.passwordConfirm}" feedback="false" maxlength="60"
+                                        redisplay="false" autocomplete="new-password" toggleMask="true" styleClass="np-confirm"/>
+                        </div>
+                        <!-- Password rules: live checklist (script below); EmployeeMb checks length and match again -->
+                        <div class="field span-2 np-rules-box">
+                            <p class="np-rules-title">#{msg['register.password.rules']}</p>
+                            <ul class="np-rules np-rules-reg" id="npRules">
+                                <li data-rule="len"><i class="pi pi-check"></i>
+                                    <h:outputFormat value="#{msg['newpwd.rule.length']}"><f:param value="#{employeeMb.minLength}"/></h:outputFormat></li>
+                                <li data-rule="mix"><i class="pi pi-check"></i>#{msg['newpwd.rule.mix']}</li>
+                                <li data-rule="match"><i class="pi pi-check"></i>#{msg['newpwd.rule.match']}</li>
+                            </ul>
                         </div>
                     </div>
 
@@ -277,41 +347,80 @@
             </h:form>
 
             <style type="text/css">
-                .cv-avatar-img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 1px solid var(--vip-border); }
+                .cv-avatar-img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 1px solid var(--vip-border); flex: none; display: block; background: var(--vip-surface-2); }
                 .cv-avatar-img.lg { width: 64px; height: 64px; }
+                .pay-day-note { display: flex; gap: .5rem; align-items: flex-start; margin-top: .5rem; padding: .6rem .75rem;
+                    border-radius: 10px; background: var(--vip-surface-2); border: 1px solid var(--vip-border);
+                    font-size: .85rem; line-height: 1.4; color: var(--vip-text); }
+                .pay-day-note .pi { color: var(--vip-gold-deep); margin-top: .15rem; }
+                /* Services of the employee with the commission each one earns */
+                .es-list { border: 1px solid var(--vip-border); border-radius: 12px; overflow: hidden; margin-bottom: .5rem; }
+                .es-row { display: flex; align-items: center; gap: .75rem; min-height: 3rem; padding: .35rem .5rem .35rem .85rem;
+                    border-top: 1px solid var(--vip-border); background: var(--vip-surface); }
+                .es-list > .es-row:first-child { border-top: 0; }
+                .es-row.on { background: var(--vip-surface-2); }
+                .es-name.ui-selectbooleancheckbox { flex: 1; min-width: 0; display: flex; align-items: center; }
+                .es-name .ui-chkbox-label { margin-left: .6rem; font-weight: 500; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+                .es-row:not(.on) .es-name .ui-chkbox-label { color: var(--vip-text-muted); }
+                .es-comm { display: flex; align-items: center; gap: .35rem; flex: none; }
+                .es-comm > span { display: inline-flex; align-items: center; gap: .35rem; }
+                .es-pct { font-weight: 700; font-variant-numeric: tabular-nums; min-width: 3.4rem; text-align: right; }
+                .es-row:not(.special) .es-pct { color: var(--vip-text-muted); font-weight: 600; }
+                .es-tag { font-size: .72rem; color: var(--vip-text-muted); white-space: nowrap; }
+                .es-tag-special { color: var(--vip-gold-deep); font-weight: 700; background: color-mix(in srgb, var(--vip-gold) 18%, transparent);
+                    padding: .1rem .5rem; border-radius: 999px; }
+                .es-input input { width: 6.5rem; text-align: right; }
+                .es-btn.ui-button { width: 2.2rem; height: 2.2rem; }
+                @media (max-width: 560px) {
+                    .es-row { flex-wrap: wrap; padding: .5rem .75rem; }
+                    .es-comm { width: 100%; justify-content: flex-end; }
+                }
             </style>
+            <script type="text/javascript" src="#{request.contextPath}/resources/js/photo-crop.js?v=20261011a"></script>
             <script type="text/javascript">
             //<![CDATA[
-            // Photo: downscale (max 512px) to JPEG, keep the data URL in the hidden textarea and show a preview.
-            function cvCompressEmpPhoto(input) {
-                if (!input.files || !input.files[0]) { return; }
-                var reader = new FileReader();
-                reader.onload = function (e) {
-                    var img = new Image();
-                    img.onload = function () {
-                        var max = 512;
-                        var scale = Math.min(1, max / Math.max(img.width, img.height));
-                        var w = Math.round(img.width * scale);
-                        var h = Math.round(img.height * scale);
-                        var canvas = document.createElement('canvas');
-                        canvas.width = w;
-                        canvas.height = h;
-                        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                        var dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-                        var ta = document.querySelector('textarea.empPhotoB64');
-                        if (ta) { ta.value = dataUrl; }
-                        var preview = document.getElementById('empPhotoPreview');
-                        if (preview) { preview.src = dataUrl; preview.style.display = 'inline-block'; }
-                    };
-                    img.src = e.target.result;
-                };
-                reader.readAsDataURL(input.files[0]);
+            // Photo: the cropper (resources/js/photo-crop.js) lets the user frame the face inside the
+            // circle and returns a 512x512 JPEG data URL, kept in the hidden textarea and previewed.
+            window.cvPhotoCropTexts = {title: "#{msg['photo.crop.title']}", hint: "#{msg['photo.crop.hint']}", zoom: "#{msg['logo.crop.zoom']}",
+                center: "#{msg['photo.crop.center']}", cancel: "#{msg['action.cancel']}", use: "#{msg['photo.crop.use']}"};
+            function cvPickEmpPhoto(input) {
+                cvPhotoCrop.pick(input, function (dataUrl) {
+                    var ta = document.querySelector('textarea.empPhotoB64');
+                    if (ta) { ta.value = dataUrl; }
+                    var preview = document.getElementById('empPhotoPreview');
+                    if (preview) { preview.src = dataUrl; preview.style.display = 'inline-block'; }
+                    // The new photo replaces the current one (an employee has a single photo).
+                    document.querySelectorAll('.empPhotoCurrent').forEach(function (img) { img.style.display = 'none'; });
+                });
             }
+            // Password checklist: purely visual; EmployeeMb checks length and match again.
+            (function () {
+                var min = #{employeeMb.minLength};
+                function q(sel) { return document.querySelector(sel); }
+                function set(rule, ok) {
+                    var li = q('#npRules [data-rule="' + rule + '"]');
+                    if (li) { li.classList.toggle('ok', ok); }
+                }
+                function update() {
+                    var a = q('input.np-new, .np-new input'), b = q('input.np-confirm, .np-confirm input');
+                    if (!a || !b) { return; }
+                    var v = a.value, c = b.value;
+                    set('len', v.length >= min);
+                    set('mix', /[A-Za-z]/.test(v) && /[0-9]/.test(v));
+                    set('match', v.length > 0 && v === c);
+                }
+                document.addEventListener('input', function (e) {
+                    if (e.target.closest && e.target.closest('.np-new, .np-confirm')) { update(); }
+                });
+                document.addEventListener('DOMContentLoaded', update);
+                if (window.jQuery) { jQuery(document).on('pfAjaxComplete', update); }
+            })();
             function cvResetEmpPhoto() {
                 var ta = document.querySelector('textarea.empPhotoB64');
                 if (ta) { ta.value = ''; }
                 var preview = document.getElementById('empPhotoPreview');
                 if (preview) { preview.removeAttribute('src'); preview.style.display = 'none'; }
+                document.querySelectorAll('.empPhotoCurrent').forEach(function (img) { img.style.display = ''; });
             }
             //]]>
             </script>

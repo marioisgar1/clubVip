@@ -40,6 +40,10 @@
                               filterBy="#{fm.name}" filterMatchMode="contains">
                         <span style="font-weight:600">#{fm.name}</span>
                     </p:column>
+                    <p:column headerText="#{msg['pos.family.attrs']}">
+                        <h:outputText value="#{familyMb.attributesOf(fm)}" rendered="#{not empty familyMb.attributesOf(fm)}"/>
+                        <h:outputText value="#{msg['pos.family.attrs.none']}" styleClass="muted" rendered="#{empty familyMb.attributesOf(fm)}"/>
+                    </p:column>
                     <p:column headerText="" style="width:7rem;text-align:center" rendered="#{sessionMb.admin}">
                         <p:commandButton icon="pi pi-pencil" title="#{msg['action.edit']}"
                                          process="@this" actionListener="#{familyMb.prepareEdit(fm)}"
@@ -55,14 +59,60 @@
                 </p:dataTable>
 
                 <p:dialog header="#{msg['menu.catalog.family']}" widgetVar="familyDialog" modal="true" id="dialog"
-                          width="460" resizable="false" fitViewport="true" responsive="true" closeOnEscape="true">
+                          width="500" resizable="false" fitViewport="true" responsive="true" closeOnEscape="true">
                     <div class="form-grid" style="margin-top:.5rem">
                         <div class="field required span-2">
                             <label for="form:famName">#{msg['lbl.name']}</label>
                             <p:inputText id="famName" value="#{familyMb.selected.name}" maxlength="120" required="true"
                                          requiredMessage="#{msg['lbl.name']}: #{msg['msg.required']}"/>
                         </div>
+                        <!-- Up to 4 characteristics of its products (Talla, Color, Sabor, Material…) -->
+                        <div class="field span-2">
+                            <label>#{msg['pos.family.attrs']}</label>
+                            <span class="hint" style="display:block;margin-bottom:.5rem">#{msg['pos.family.attrs.hint']}</span>
+                            <div class="cv-attr-row">
+                                <span class="cv-attr-n">1</span>
+                                <p:toggleSwitch id="famAttr1On" value="#{familyMb.selected.attribute1Enabled}">
+                                    <p:ajax update="famAttr1Label"/>
+                                </p:toggleSwitch>
+                                <p:inputText id="famAttr1Label" value="#{familyMb.selected.attribute1Label}" maxlength="40"
+                                             disabled="#{not familyMb.selected.attribute1Enabled}"
+                                             placeholder="#{msg['pos.family.attr.ph1']}" styleClass="cv-attr-input"/>
+                            </div>
+                            <div class="cv-attr-row">
+                                <span class="cv-attr-n">2</span>
+                                <p:toggleSwitch id="famAttr2On" value="#{familyMb.selected.attribute2Enabled}">
+                                    <p:ajax update="famAttr2Label"/>
+                                </p:toggleSwitch>
+                                <p:inputText id="famAttr2Label" value="#{familyMb.selected.attribute2Label}" maxlength="40"
+                                             disabled="#{not familyMb.selected.attribute2Enabled}"
+                                             placeholder="#{msg['pos.family.attr.ph2']}" styleClass="cv-attr-input"/>
+                            </div>
+                            <div class="cv-attr-row">
+                                <span class="cv-attr-n">3</span>
+                                <p:toggleSwitch id="famAttr3On" value="#{familyMb.selected.attribute3Enabled}">
+                                    <p:ajax update="famAttr3Label"/>
+                                </p:toggleSwitch>
+                                <p:inputText id="famAttr3Label" value="#{familyMb.selected.attribute3Label}" maxlength="40"
+                                             disabled="#{not familyMb.selected.attribute3Enabled}"
+                                             placeholder="#{msg['pos.family.attr.ph3']}" styleClass="cv-attr-input"/>
+                            </div>
+                            <div class="cv-attr-row">
+                                <span class="cv-attr-n">4</span>
+                                <p:toggleSwitch id="famAttr4On" value="#{familyMb.selected.attribute4Enabled}">
+                                    <p:ajax update="famAttr4Label"/>
+                                </p:toggleSwitch>
+                                <p:inputText id="famAttr4Label" value="#{familyMb.selected.attribute4Label}" maxlength="40"
+                                             disabled="#{not familyMb.selected.attribute4Enabled}"
+                                             placeholder="#{msg['pos.family.attr.ph4']}" styleClass="cv-attr-input"/>
+                            </div>
+                        </div>
                     </div>
+                    <style type="text/css">
+                        .cv-attr-row { display: flex; align-items: center; gap: .6rem; margin-bottom: .45rem; }
+                        .cv-attr-n { width: 1.5rem; height: 1.5rem; border-radius: 50%; background: #F4FBE3; color: #5B7720; font-size: .75rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+                        .cv-attr-input { flex: 1; min-width: 0; }
+                    </style>
                     <f:facet name="footer">
                         <p:commandButton value="#{msg['action.save']}" icon="pi pi-check"
                                          actionListener="#{familyMb.save}" update=":form:table :messages"

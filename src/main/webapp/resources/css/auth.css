@@ -1,0 +1,324 @@
+/* Login y registro con el estilo de la home (homepage.css). Se carga después de clubvip.css y homepage.css. */
+.hp-auth{
+  --vip-primary:#CEF187; --vip-primary-text:#0B0B0C; --vip-gold:#CEF187; --vip-gold-deep:#5B7720; --vip-gold-light:#CEF187;
+  --vip-bg:#FBFCF5; --vip-surface:#fff; --vip-surface-2:#F6F5F1; --vip-text:#292827; --vip-text-muted:#5D5F66; --vip-border:#E4E2DA;
+  --vip-font-heading:'Poppins',system-ui,sans-serif; --vip-font-body:'Poppins',system-ui,sans-serif;
+}
+body.hp-auth{background:#FBFCF5}
+.hp-auth .ui-widget,.hp-auth .ui-widget .ui-widget,.hp-auth .ui-inputfield,.hp-auth .ui-button,.hp-auth .ui-selectonemenu-label{font-family:var(--font)}
+
+/* ---- header ---- */
+.au-nav .hp-nav-in{justify-content:flex-start}
+.au-nav .hp-logo{margin-right:auto}
+.au-nav .hp-lang{display:flex}
+.au-nav .hp-lang a{font-size:11px;padding:5px 12px}
+
+/* ---- tarjeta y textos ---- */
+.au-card{background:#fff;border:1px solid var(--line);border-radius:22px;box-shadow:0 18px 40px rgba(16,33,0,.08);padding:40px 40px 32px;width:min(440px,100%)}
+.au-caption{display:inline-block;background:var(--lime);color:#000;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;padding:5px 12px;border-radius:999px}
+.hp-auth h1.au-title{font-size:clamp(28px,3vw,38px);font-weight:600;line-height:1.15;margin:14px 0 26px;color:var(--title)}
+.au-muted{color:var(--grey)!important;font-size:14px;text-decoration:none}
+.au-muted:hover{color:var(--ink)!important}
+
+/* ---- campos ---- */
+.au-form .field{margin-bottom:18px}
+.au-form .field label{font-size:13px;font-weight:600;color:var(--title);margin-bottom:6px}
+.au-form .field.required label::after{color:var(--pink)}
+.au-form .field label:not(.ui-button):has(>i.pi){display:flex;align-items:center;flex-wrap:wrap;gap:0 4px}
+/* Jerarquía: sólo los títulos de sección llevan ícono (círculo lima); las etiquetas van limpias */
+.au-form .field label:not(.ui-button)>i.pi{display:none}
+.au-form .field label:not(.ui-button)>i.pi-whatsapp{color:#1DA851}
+.au-form .field .hint{font-size:12px;color:var(--grey);line-height:1.5}
+.hp-auth .ui-inputfield,.hp-auth .ui-selectonemenu,.hp-auth .ui-inputtextarea{border:1px solid var(--line)!important;border-radius:12px!important;background:#fff;box-shadow:none}
+.hp-auth .ui-inputfield{padding:12px 14px!important;font-size:15px}
+.hp-auth .ui-selectonemenu{min-height:46px}
+.hp-auth .ui-selectonemenu .ui-selectonemenu-label{padding:12px 14px!important;font-size:15px}
+.hp-auth .ui-password{width:100%}
+.hp-auth .ui-password .ui-inputfield{width:100%}
+.hp-auth .ui-inputfield:focus,.hp-auth .ui-inputfield.ui-state-focus,.hp-auth .ui-selectonemenu.ui-state-focus{border-color:var(--lime-ink)!important;box-shadow:0 0 0 3px rgba(206,241,135,.6)!important}
+.hp-auth .ui-chkbox .ui-chkbox-box,.hp-auth .ui-radiobutton .ui-radiobutton-box{border-color:#BDBBB2;border-radius:6px}
+.hp-auth .ui-radiobutton .ui-radiobutton-box{border-radius:50%}
+.hp-auth .ui-chkbox .ui-chkbox-box.ui-state-active,.hp-auth .ui-radiobutton .ui-radiobutton-box.ui-state-active{background:var(--lime)!important;border-color:var(--lime-ink)!important;color:#000!important}
+.hp-auth .ui-chkbox .ui-chkbox-icon,.hp-auth .ui-radiobutton .ui-radiobutton-icon{color:#000}
+.hp-auth .ui-radiobutton .ui-radiobutton-box.ui-state-active .ui-radiobutton-icon{background:#000}
+.hp-auth .ui-toggleswitch.ui-toggleswitch-checked .ui-toggleswitch-slider{background:var(--lime-ink)}
+
+/* ---- botones ---- */
+.hp-auth .ui-button.au-submit{background:var(--lime)!important;border:1px solid var(--lime)!important;color:#000!important;border-radius:999px!important;min-height:52px;padding:0 34px;font-weight:600;font-size:15px;box-shadow:none;transition:transform .15s,box-shadow .15s}
+.hp-auth .ui-button.au-submit:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(91,119,32,.25)}
+.hp-auth .ui-button.au-submit .ui-button-text{padding:0}
+.hp-auth .ui-button.ui-button-secondary{background:#fff!important;border:1px solid var(--line)!important;color:var(--ink)!important;border-radius:999px!important}
+.hp-auth .ui-button.ui-button-secondary:hover{border-color:var(--lime-ink)!important}
+.hp-auth .ui-button.ui-button-flat{border:0!important;background:transparent!important}
+
+/* ---- mensajes ---- */
+.hp-auth .ui-messages>div{border-radius:12px}
+
+/* ---- login: imagen + formulario ---- */
+.au-split{display:grid;grid-template-columns:1fr 1fr;min-height:calc(100vh - 65px)}
+.au-visual{position:relative;background-size:cover;background-position:center;display:flex;align-items:flex-end;padding:40px}
+.au-visual::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(16,33,0,0) 35%,rgba(16,33,0,.55) 100%)}
+.au-visual-card{position:relative;background:rgba(244,243,238,.96);padding:30px 34px;max-width:520px}
+.au-kicker{font-weight:600;font-size:15px;color:var(--text)}
+.au-visual-title{color:var(--pink);font-weight:300;font-size:clamp(28px,2.8vw,38px);line-height:1.15}
+.au-visual-title strong{font-weight:700}
+.au-visual-sub{font-weight:600;color:#000;font-size:17px;line-height:1.45;margin:8px 0 12px!important}
+.au-visual-card p:last-child{font-size:14px;line-height:1.7}
+.au-visual-card strong{font-weight:700}
+.au-panel{display:flex;align-items:center;justify-content:center;padding:48px 24px}
+.au-panel .hp-btn{width:100%}
+.au-links{display:flex;flex-direction:column;gap:12px;margin-top:22px;font-size:14px}
+.au-link-strong{font-weight:600;color:var(--lime-ink)!important;text-decoration:none}
+.au-link-strong:hover{text-decoration:underline}
+.hp-auth .wa-link{color:#128C7E!important;font-weight:600;text-decoration:none;margin-left:4px}
+/* "¿Solo quieres preguntar? Escríbenos por WhatsApp" siempre en un renglón; la letra se ajusta al ancho */
+.au-links{container-type:inline-size}
+.au-links .au-ask{white-space:nowrap;font-size:13px;font-size:min(14px,3.4cqi)}
+
+/* ---- registro ---- */
+.au-reg{padding:48px 16px 72px;background:var(--cream)}
+.au-reg-head{max-width:860px;margin:0 auto 26px}
+.hp-auth .au-reg-head h1.au-title{margin-bottom:10px}
+.au-reg-intro{color:var(--grey);font-size:15px;line-height:1.7;max-width:640px}
+.au-card-wide{width:min(860px,100%);margin:0 auto;padding:36px 40px}
+/* Registro por pasos: cada sección es su propia tarjeta sobre el fondo crema */
+.au-reg-body{width:min(860px,100%);margin:0 auto}
+.au-sec{background:#fff;border:1px solid var(--line);border-radius:22px;box-shadow:0 14px 34px rgba(16,33,0,.06);padding:30px 40px 26px;margin-bottom:24px}
+.au-sec-head{display:flex;align-items:flex-start;gap:16px;padding-bottom:22px;margin-bottom:24px;border-bottom:1px solid var(--line)}
+.au-sec-head>i{width:46px;height:46px;border-radius:50%;background:var(--lime);color:#000;display:grid;place-items:center;font-size:19px;flex:none}
+.au-sec-txt{min-width:0}
+.au-sec-step{display:block;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--lime-ink);margin-bottom:3px}
+.hp-auth .au-sec-head h2{font-family:var(--font);font-size:20px;font-weight:600;color:var(--title);margin:0;line-height:1.25}
+.hp-auth .au-sec-head p{margin:4px 0 0;font-size:14px;color:var(--grey);line-height:1.6}
+.au-sec .form-grid>.field:last-child,.au-sec .form-grid>.field.span-2:last-child{margin-bottom:0}
+.au-form .form-grid{gap:0 24px}
+.hp-auth .form-section{font-family:var(--font);font-weight:600;font-size:18px;color:var(--title);border-bottom:0;margin:22px 0 14px;padding:0;display:flex;align-items:center;gap:12px}
+.hp-auth .form-section::before{content:"";width:10px;height:22px;border-radius:4px;background:var(--lime)}
+.hp-auth .form-grid>.form-section:first-child{margin-top:0}
+.hp-auth .form-section:has(> i)::before{content:none}
+.hp-auth .form-section>i{width:34px;height:34px;border-radius:50%;background:var(--lime);color:#000;display:grid;place-items:center;font-size:15px;flex:none}
+.hp-auth .au-icon{display:block;width:100%}
+.hp-auth .au-icon>i{color:var(--grey);font-size:15px;left:14px!important}
+.hp-auth .au-icon>i.pi-whatsapp{color:#25D366}
+.hp-auth .au-icon .ui-inputfield{width:100%;padding-left:40px!important}
+.hp-auth .au-icon:focus-within>i:not(.pi-whatsapp){color:var(--lime-ink)}
+.hp-auth .ui-password .ui-password-icon,.hp-auth .ui-password>i{color:var(--grey);cursor:pointer;right:14px!important;top:50%!important;margin-top:0!important;transform:translateY(-50%)}
+.hp-auth .ui-password .ui-password-icon:hover,.hp-auth .ui-password>i:hover{color:var(--ink)}
+.hp-auth .ui-password.ui-input-icon-right .ui-inputfield{padding-right:42px!important}
+.hp-auth .reg-rows{gap:10px}
+.hp-auth .reg-row{background:#FBFCF5;border:1px solid var(--line);border-radius:12px;padding:8px 12px}
+.hp-auth .field .reg-row label{font-size:14px}
+.hp-auth .logo-preview{background:#fff;border-color:var(--line);border-radius:12px}
+/* Logotipo en el registro: zona grande para que no pase desapercibida */
+.au-logo-drop{display:flex;align-items:center;gap:22px;padding:18px;border:2px dashed #CFE59A;border-radius:18px;background:#FBFCF5}
+.au-logo-box{width:240px;height:72px;flex:none;border-radius:14px;background:#fff;border:1px solid var(--line);display:grid;place-items:center;overflow:hidden}
+.au-logo-box .logo-preview{width:100%;height:100%;object-fit:contain;border:0;padding:8px;background:#fff}
+.au-logo-box .logo-preview[src]~.au-logo-ph{display:none}
+.hp-auth .au-logo-ph{font-size:34px!important;color:#B9C98E}
+.hp-auth .au-logo-txt .ui-button{padding:10px 20px;min-height:44px}
+.au-logo-txt{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.au-logo-txt strong{font-size:16px;color:var(--title)}
+.au-logo-txt .au-muted{font-size:13px;line-height:1.5;margin-bottom:6px}
+@media (max-width:640px){.au-logo-drop{flex-direction:column;align-items:center;text-align:center}.au-logo-txt{align-items:center}}
+.hp-auth .file-picker .ui-button{padding:10px 18px}
+.au-reg-actions{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:4px;padding:0 8px}
+.hp-auth .check-inline span,.hp-auth .check-inline .ui-commandlink{font-size:14px;color:var(--text)}
+.hp-auth .check-inline .ui-commandlink{font-weight:600;color:var(--lime-ink)!important}
+.hp-auth .privacy-text{white-space:pre-line;font-size:14px;line-height:1.7}
+
+/* ---- responsive ---- */
+@media (max-width:1180px){
+  .au-nav .hp-lang a{font-size:11px;padding:5px 12px}
+}
+@media (max-width:900px){
+  .au-split{grid-template-columns:1fr;min-height:0}
+  .au-visual{min-height:300px;padding:16px;order:2}
+  .au-panel{padding:32px 16px}
+}
+@media (max-width:640px){
+  .au-card,.au-card-wide{padding:28px 20px;border-radius:18px}
+  .au-sec{padding:22px 18px 20px;border-radius:18px;margin-bottom:16px}
+  .au-sec-head{gap:12px;padding-bottom:16px;margin-bottom:18px}
+  .au-sec-head>i{width:40px;height:40px;font-size:16px}
+  .au-reg{padding:28px 12px 48px}
+  .au-reg-head{padding:0 4px}
+  .au-reg-actions{flex-direction:column-reverse;align-items:stretch;text-align:center}
+  .hp-auth .ui-button.au-submit{width:100%}
+  .au-visual{display:none}
+}
+
+/* Paso 1 del registro: tarjetas-interruptor de módulos */
+.au-mod-grid{display:grid;grid-template-columns:1fr;gap:10px}
+.au-mod,.au-mod-inner{display:flex;align-items:center;gap:14px;cursor:pointer}
+.au-mod-inner{flex:1;width:100%}
+.au-mod{padding:14px 18px;border:1.5px solid var(--line);border-radius:16px;background:#fff;transition:border-color .15s,background .15s,box-shadow .15s;margin:0}
+.au-mod:has(.ui-toggleswitch-checked){border-color:#B9D97A;background:#F7FBEA;box-shadow:0 6px 18px rgba(91,119,32,.08)}
+.au-mod-off{opacity:.55;cursor:default}
+.au-mod-off .au-mod-inner{cursor:default}
+.au-mod-ico{width:42px;height:42px;flex:none;border-radius:50%;background:#F1F5E4;color:var(--lime-ink);display:grid;place-items:center;font-size:18px}
+.au-mod:has(.ui-toggleswitch-checked) .au-mod-ico{background:var(--lime);color:#000}
+.au-mod-txt{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.au-mod-txt strong{font-size:16px;color:var(--title);line-height:1.25}
+.au-mod-txt span{font-size:13.5px;color:var(--grey);line-height:1.5}
+.au-mod .ui-toggleswitch{flex:none}
+.au-mod-note{display:block;margin-top:12px;font-size:13px}
+.au-mod-tag{display:inline-block;vertical-align:middle;margin-left:6px;padding:2px 9px;border-radius:999px;background:#FFF3B1;color:#6B5600;font-size:11px;font-weight:600;letter-spacing:.02em;white-space:nowrap}
+
+/* Tarjetas de módulos: nunca más anchas que la pantalla. La etiqueta "Requiere..." era de una
+   sola línea y, como los elementos de grid no encogen por debajo de su contenido, empujaba todas. */
+.au-mod-grid>*{min-width:0;max-width:100%;box-sizing:border-box}
+.au-mod-txt strong,.au-mod-txt span{overflow-wrap:anywhere}
+.au-mod-tag{white-space:normal;margin:4px 0 0;line-height:1.35;border-radius:10px}
+@media (max-width:560px){
+  .au-mod{padding:12px 14px;gap:12px}
+  .au-mod-inner{gap:12px}
+  .au-mod-ico{width:36px;height:36px;font-size:16px}
+}
+
+/* Confirma tus datos: una tarjeta por contacto con su código */
+.vf-panel{align-items:flex-start;padding-top:40px}
+.vf-card{width:min(720px,100%)}
+.vf-lead{margin:-6px 0 18px;line-height:1.55}
+.vf-progress{display:flex;align-items:center;gap:14px;margin:0 0 18px}
+.vf-progress-text{font-size:13px;font-weight:600;color:var(--title);white-space:nowrap}
+.vf-progress-bar{flex:1;height:8px;border-radius:999px;background:#EEF2E3;overflow:hidden}
+.vf-progress-bar>span{display:block;height:100%;background:var(--lime);border-radius:999px;transition:width .3s}
+.vf-item{display:flex;gap:14px;padding:16px 18px;border:1.5px solid var(--line);border-radius:16px;background:#fff;margin-bottom:12px}
+.vf-item.vf-done{border-color:#B9D97A;background:#F7FBEA}
+.vf-ico{width:42px;height:42px;flex:none;border-radius:50%;background:#F1F5E4;color:var(--lime-ink);display:grid;place-items:center;font-size:18px}
+.vf-done .vf-ico{background:var(--lime);color:#000}
+.vf-body{flex:1;min-width:0}
+.vf-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.vf-head strong{font-size:15px;color:var(--title)}
+.vf-tag{padding:2px 9px;border-radius:999px;background:#FFF3B1;color:#6B5600;font-size:11px;font-weight:600}
+.vf-tag-ok{background:var(--lime);color:#000}
+.vf-target{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:4px}
+.vf-value{font-size:15px;color:var(--title);overflow-wrap:anywhere}
+.vf-link{font-size:13px;font-weight:600;color:var(--lime-ink)}
+.vf-code,.vf-edit{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px}
+.vf-code .hint,.vf-edit .hint{flex-basis:100%;font-size:12px;color:var(--grey)}
+.vf-code-input{width:9.5ch!important;font-size:22px!important;letter-spacing:.35em;text-align:center;font-weight:600}
+.vf-input{min-width:min(280px,100%)}
+.vf-finish{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:18px;padding:18px;border-radius:16px;background:#0B0B0C;color:#fff}
+.vf-finish>i{font-size:28px;color:var(--lime)}
+.vf-finish>div{flex:1;display:flex;flex-direction:column;gap:2px;min-width:200px}
+.vf-finish .au-muted{color:rgba(255,255,255,.65)}
+@media (max-width:560px){.vf-item{padding:14px}.vf-ico{width:36px;height:36px;font-size:16px}.vf-code .ui-button,.vf-edit .ui-button{flex:1 1 auto}}
+.vf-help{display:flex;gap:8px;align-items:flex-start;margin-top:10px;padding:10px 12px;border-radius:12px;background:#F7F8F2;font-size:13px;line-height:1.5;color:var(--grey)}
+.vf-help>i{color:var(--lime-ink);margin-top:2px}
+.vf-later{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+.vf-later .au-muted{flex:1;min-width:200px;font-size:13px}
+/* ---- ¿Olvidaste tu contraseña? (login) y Crea tu nueva contraseña ---- */
+.au-label-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:6px}
+.au-form .au-label-row label{margin-bottom:0}
+.hp-auth a.au-forgot{font-size:13px;font-weight:600;color:var(--lime-ink)!important;text-decoration:none;white-space:nowrap}
+.hp-auth a.au-forgot:hover{text-decoration:underline;text-underline-offset:3px}
+.au-fp .field{margin-top:6px}
+.au-fp-badge{width:56px;height:56px;border-radius:18px;background:var(--lime);color:#000;display:grid;place-items:center;font-size:22px;box-shadow:0 10px 24px rgba(91,119,32,.25)}
+.au-fp-badge-ok{background:#0B0B0C;color:var(--lime);box-shadow:0 10px 24px rgba(0,0,0,.18)}
+.hp-auth .au-fp-badge+h1.au-title{margin:20px 0 10px}
+.au-fp-lead{margin:0 0 20px;color:var(--grey);font-size:15px;line-height:1.6;overflow-wrap:anywhere}
+.au-fp-note{display:flex;gap:10px;align-items:flex-start;margin-top:16px;padding:12px 14px;border-radius:14px;background:#F7F8F2;color:var(--grey);font-size:13px;line-height:1.5}
+.au-fp-note>i{color:var(--lime-ink);margin-top:2px}
+.au-fp-steps{list-style:none;margin:0 0 22px;padding:16px 18px;border:1.5px solid var(--line);border-radius:16px;display:flex;flex-direction:column;gap:12px}
+.au-fp-steps li{display:flex;gap:12px;align-items:flex-start;font-size:14px;line-height:1.5;color:var(--text)}
+.au-fp-steps li>span{flex:none;width:24px;height:24px;border-radius:50%;background:#0B0B0C;color:var(--lime);font-size:12px;font-weight:600;display:grid;place-items:center;margin-top:-1px}
+.au-fp-resend{display:flex;justify-content:center;align-items:baseline;gap:6px;flex-wrap:wrap;margin-top:18px;font-size:13px}
+.au-fp-resend .au-muted{font-size:13px}
+/* "Revisa tu correo": the envelope sits next to the title, not above it. */
+.au-fp-head{display:flex;align-items:center;gap:16px;margin:0 0 12px}
+.hp-auth .au-fp-head h1.au-title,.hp-auth .au-fp-head .au-fp-badge+h1.au-title{margin:0;font-size:clamp(24px,2.4vw,30px)}
+.au-fp-head .au-fp-badge{flex:none}
+.au-fp-sent .au-fp-badge{animation:au-pop .45s cubic-bezier(.2,1.4,.4,1) both}
+@keyframes au-pop{from{transform:scale(.6);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.au-fp-sent .au-fp-badge{animation:none}}
+.np-panel{align-items:flex-start;padding-top:48px}
+.np-card{width:min(460px,100%)}
+.np-rules{list-style:none;margin:2px 0 22px;padding:0;display:flex;flex-direction:column;gap:8px}
+.np-rules li{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--grey);transition:color .2s}
+.np-rules li>i{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;font-size:10px;color:transparent;transition:all .2s}
+.np-rules li.ok{color:var(--title)}
+.np-rules li.ok>i{background:var(--lime);border-color:var(--lime);color:#000}
+.np-foot{display:flex;gap:8px;align-items:flex-start;margin:16px 0 0;font-size:13px!important;line-height:1.5}
+.np-foot>i{color:var(--lime-ink);margin-top:2px}
+.au-fp-badge>i.pi{font-size:22px}
+.hp-auth p.au-fp-lead{margin:0 0 22px}
+/* ---- Activa tu membresía: one offer, value on the left (ink) and the plan picker on the right ---- */
+.mb-panel{align-items:flex-start;padding-top:40px}
+.mb-card{width:min(1040px,100%)}
+.mb-badge{margin-top:18px}
+.hp-auth h1.au-title.mb-title{margin:6px 0 12px}
+.mb-biz{vertical-align:2px;margin-right:6px;font-size:11px}
+.mb-offer{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);border-radius:24px;overflow:hidden;border:1.5px solid var(--line);box-shadow:0 24px 50px rgba(16,33,0,.1);margin:6px 0 18px}
+.mb-value{position:relative;isolation:isolate;padding:30px 30px 28px;color:#fff;background:radial-gradient(ellipse 80% 55% at 0% 0%,rgba(206,241,135,.22),rgba(206,241,135,0) 70%),linear-gradient(170deg,#17181B 0%,#0B0B0C 100%)}
+.mb-value::after{content:"";position:absolute;right:-70px;bottom:-110px;width:260px;height:260px;border-radius:50%;background:rgba(206,241,135,.08);z-index:-1}
+.mb-value-title{margin:0 0 26px;font-size:clamp(19px,2vw,24px);line-height:1.3;font-weight:500;color:#fff}
+.mb-value-title strong{font-weight:700;color:var(--lime)}
+.mb-value-label{display:block;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.55);margin:0 0 12px;padding-top:4px}
+.mb-mods{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mb-mods li{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:12px;border:1.5px dashed rgba(255,255,255,.22);color:rgba(255,255,255,.6);font-size:13.5px;font-weight:500;line-height:1.25}
+.mb-mods li>i{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:10px;flex:none;border:1.5px solid rgba(255,255,255,.3)}
+.mb-mods li.on{border:1.5px solid var(--lime);background:var(--lime);color:#0B0B0C}
+.mb-mods li.on>i{background:#0B0B0C;border-color:#0B0B0C;color:var(--lime)}
+.mb-value-note{margin:12px 0 26px;font-size:12px;line-height:1.5;color:rgba(255,255,255,.55)}
+.mb-promises{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.mb-promises li{display:flex;gap:11px;align-items:flex-start}
+.mb-promises li>i{width:22px;height:22px;border-radius:50%;background:var(--lime);color:#0B0B0C;display:grid;place-items:center;font-size:10px;flex:none;margin-top:1px}
+.mb-promises li>div{display:flex;flex-direction:column;gap:1px;font-size:12.5px;line-height:1.45;color:rgba(255,255,255,.62)}
+.mb-promises strong{font-size:14px;color:#fff}
+.mb-plans{display:flex;flex-direction:column;justify-content:center;gap:16px;padding:26px 26px 22px;background:#fff}
+.mb-plans>.mb-plans-label+.mb-plan{margin-top:2px}
+.mb-plans-label{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--grey);margin-bottom:2px}
+.mb-plan{--mb-glow:rgba(206,241,135,.9);position:relative;display:grid;grid-template-columns:minmax(0,210px) 1fr;gap:18px;align-items:center;padding:16px 20px 16px 12px;border:1.5px solid var(--line);border-radius:20px;background:#fff;transition:transform .25s,box-shadow .25s}
+.mb-plan:hover{transform:translateY(-3px);box-shadow:0 18px 40px rgba(16,33,0,.12)}
+.mb-plan-best{--mb-glow:rgba(226,190,104,.8);border-color:var(--lime);background:linear-gradient(135deg,#FDFEF8,#F7FBEA);box-shadow:0 0 0 3px rgba(206,241,135,.45)}
+/* The membership card is the hero: it floats tilted over a soft glow (gold for Prestige, lime for Select) and straightens on hover */
+.mb-plan-card{position:relative;isolation:isolate;display:block;padding:14px 6px;perspective:900px}
+.mb-plan-card::before{content:"";position:absolute;inset:-4% -14% -12%;border-radius:50%;background:radial-gradient(closest-side,var(--mb-glow),transparent);filter:blur(18px);z-index:-1}
+.mb-plan-card>img{display:block;width:100%;height:auto;transform:rotateY(-18deg) rotateX(9deg) rotateZ(-2deg);filter:drop-shadow(0 20px 22px rgba(0,0,0,.38)) drop-shadow(0 2px 3px rgba(0,0,0,.25));transition:transform .55s cubic-bezier(.2,.8,.2,1),filter .55s}
+.mb-plan:hover .mb-plan-card>img{transform:rotateY(0) rotateX(0) rotateZ(0) translateY(-6px) scale(1.05);filter:drop-shadow(0 28px 30px rgba(0,0,0,.42)) drop-shadow(0 2px 3px rgba(0,0,0,.25))}
+.mb-plan-body{display:flex;flex-direction:column;gap:5px;min-width:0}
+.mb-plan-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.mb-plan-name{font-size:12.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--grey)}
+.mb-plan-tag{position:absolute;top:-13px;right:18px;background:var(--ink);color:var(--lime);font-size:11px;font-weight:600;letter-spacing:.04em;padding:6px 12px;border-radius:999px;display:inline-flex;align-items:center;white-space:nowrap;box-shadow:0 6px 16px rgba(0,0,0,.22)}
+.mb-plan-price{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;color:var(--title)}
+.mb-plan-price strong{font-size:32px;font-weight:600;letter-spacing:-.02em;line-height:1.1}
+.mb-plan-price small{font-size:13px;color:var(--grey)}
+.mb-plan-note{font-size:12.5px;line-height:1.45;color:var(--grey)}
+.hp-auth .ui-button.mb-plan-btn{width:100%;margin-top:6px;min-height:44px;font-size:14px}
+.mb-trust{display:flex;flex-wrap:wrap;gap:8px 20px;justify-content:center;margin-top:4px;font-size:12.5px;color:var(--grey)}
+.mb-trust span{display:inline-flex;align-items:center;gap:6px}
+.mb-trust i{color:var(--lime-ink)}
+.mb-staff{display:flex;gap:12px;align-items:flex-start;padding:16px;border-radius:14px;background:#F7F8F2;color:var(--grey);font-size:14px;line-height:1.5}
+.mb-staff>i{color:var(--lime-ink);font-size:18px}
+.mb-help{text-align:center;margin:6px 0 0;font-size:13px!important}
+.mb-help a{color:var(--lime-ink);font-weight:600;text-decoration:none}
+.mb-summary{display:flex;flex-wrap:wrap;gap:12px 36px;padding:18px 20px;border:1.5px solid var(--line);border-radius:16px;margin:4px 0 20px}
+.mb-summary>div{display:flex;flex-direction:column;gap:2px}
+.mb-summary-k{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--grey)}
+.mb-summary strong{font-size:17px;color:var(--title)}
+.mb-actions{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:18px}
+@media (max-width:860px){.mb-offer{grid-template-columns:1fr}.mb-value{padding:24px 20px}.mb-plans{padding:20px 16px}}
+@media (max-width:700px){.mb-panel{padding-top:16px}.mb-actions .ui-button{width:100%}.mb-mods{grid-template-columns:1fr}.mb-plan{grid-template-columns:1fr;gap:4px;padding:16px 16px 18px}.mb-plan-card{max-width:250px;margin:0 auto}.mb-plan-tag{right:12px}}
+@media (max-width:480px){.mb-plan-price strong{font-size:28px}}
+/* Registration: the membership note above the submit button */
+.au-reg-price{display:flex;gap:12px;align-items:flex-start;margin:8px 0 18px;padding:14px 16px;border-radius:14px;background:#F7FBEA;border:1px solid #DDEFB4;font-size:13px;line-height:1.55;color:var(--text)}
+.au-reg-price>i{color:var(--lime-ink);font-size:16px;margin-top:2px}
+.mb-dispute{display:flex;gap:12px;align-items:flex-start;margin:0 0 18px;padding:14px 16px;border-radius:14px;background:#FDF2F7;border-left:4px solid var(--pink)}
+.mb-dispute>i{color:var(--pink);font-size:18px;margin-top:2px}
+.mb-dispute>div{display:flex;flex-direction:column;gap:3px;font-size:14px;line-height:1.5;color:var(--grey)}
+.mb-dispute strong{color:var(--title)}
+/* Return page of the app's Stripe Checkout */
+.mr-card{margin:40px auto;text-align:left}
+.mr-card .au-fp-badge{font-size:26px;font-weight:700}
+.hp-auth a.mr-btn{display:flex;width:100%;margin-top:6px}
+.mr-hint{margin:14px 0 0;font-size:13px!important;line-height:1.5}
+/* New password: lock badge to the left of the title */
+.np-head{display:flex;align-items:center;gap:16px;margin-bottom:10px}
+.np-head .au-fp-badge{flex:none}
+.hp-auth .np-head h1.au-title{margin:0}
+
+/* ---- registro: reglas de la contraseña (mismo checklist que newPassword) ---- */
+.np-rules-box{background:#FBFCF5;border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.np-rules-title{font-size:13px;font-weight:600;color:var(--title);margin:0 0 10px!important}
+.np-rules.np-rules-reg{flex-direction:row;flex-wrap:wrap;gap:8px 22px;margin:0}

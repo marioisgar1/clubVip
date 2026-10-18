@@ -59,6 +59,7 @@ public class NetworkReportMb implements Serializable {
             errors(e);
         }
         filtered = null;
+        planFilter = "ALL";
     }
 
     public List<CategoryCountVo> getByCategory() {
@@ -164,5 +165,109 @@ public class NetworkReportMb implements Serializable {
 
     public void setFiltered(List<BusinessVo> filtered) {
         this.filtered = filtered;
+    }
+
+    // ------------------------------------------------------------ membership (plan) report
+
+    /** ALL | COURTESY | MONTHLY | ANNUAL | UNPAID | EXPIRING: which businesses the table shows. */
+    private String planFilter = "ALL";
+
+    private static String planOf(BusinessVo b) {
+        String status = b.getSubscriptionStatus() != null ? b.getSubscriptionStatus() : "";
+        if ("ACTIVE".equals(status) || "CANCELLED".equals(status) || "PAST_DUE".equals(status)) {
+            return b.getMembershipPlan() != null ? b.getMembershipPlan() : "ACTIVE";
+        }
+        return "UNPAID";
+    }
+
+    private static boolean expiresWithin(BusinessVo b, int days) {
+        if (b.getSubscriptionUntil() == null || b.getSubscriptionUntil().isBlank()) {
+            return false;
+        }
+        try {
+            java.time.LocalDate until = java.time.LocalDate.parse(b.getSubscriptionUntil());
+            java.time.LocalDate today = java.time.LocalDate.now();
+            return !until.isBefore(today) && !until.isAfter(today.plusDays(days));
+        } catch (RuntimeException e) {
+            return false;
+        }
+    }
+
+    private boolean isExpired(BusinessVo b) {
+        return sessionMb.isMembershipExpired(b);
+    }
+
+    /** The rows of the table after the plan filter (the search box filters on top of these). */
+    public List<BusinessVo> getPlanRows() {
+        List<BusinessVo> rows = new ArrayList<>();
+        for (BusinessVo b : affiliates) {
+            String plan = planOf(b);
+            boolean keep;
+            switch (planFilter) {
+                case "COURTESY": keep = "COURTESY".equals(plan); break;
+                case "MONTHLY": keep = "MONTHLY".equals(plan); break;
+                case "ANNUAL": keep = "ANNUAL".equals(plan); break;
+                case "UNPAID": keep = "UNPAID".equals(plan) || isExpired(b); break;
+                case "EXPIRING": keep = expiresWithin(b, 30); break;
+                default: keep = true;
+            }
+            if (keep) {
+                rows.add(b);
+            }
+        }
+        return rows;
+    }
+
+    private int count(String plan) {
+        int n = 0;
+        for (BusinessVo b : affiliates) {
+            if (plan.equals(planOf(b)) && !isExpired(b)) {
+                n++;
+            }
+        }
+        return n;
+    }
+
+    public int getCourtesyCount() {
+        return count("COURTESY");
+    }
+
+    public int getMonthlyCount() {
+        return count("MONTHLY");
+    }
+
+    public int getAnnualCount() {
+        return count("ANNUAL");
+    }
+
+    /** Never paid, or whose membership / courtesy already expired. */
+    public int getUnpaidCount() {
+        int n = 0;
+        for (BusinessVo b : affiliates) {
+            if ("UNPAID".equals(planOf(b)) || isExpired(b)) {
+                n++;
+            }
+        }
+        return n;
+    }
+
+    /** Memberships (paid or courtesy) that end within the next 30 days. */
+    public int getExpiringCount() {
+        int n = 0;
+        for (BusinessVo b : affiliates) {
+            if (expiresWithin(b, 30)) {
+                n++;
+            }
+        }
+        return n;
+    }
+
+    public void setPlanFilter(String planFilter) {
+        this.planFilter = planFilter != null ? planFilter : "ALL";
+        filtered = null;
+    }
+
+    public String getPlanFilter() {
+        return planFilter;
     }
 }

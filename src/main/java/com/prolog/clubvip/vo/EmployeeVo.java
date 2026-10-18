@@ -30,6 +30,8 @@ public class EmployeeVo implements Serializable {
     private String phone;
 
     private String photoBase64;
+    /** True when the employee has a photo (lists omit photoBase64 to stay light). */
+    private Boolean hasPhoto;
 
     private String payScheme;
 
@@ -38,6 +40,12 @@ public class EmployeeVo implements Serializable {
     private BigDecimal salaryAmount;
 
     private String payFrequency;
+
+    /** WEEKLY 1..7 (Monday..Sunday), BIWEEKLY 1..15 (first of the two), MONTHLY 1..31; null for DAILY. */
+    private Integer payDay;
+
+    /** Next pay date (yyyy-MM-dd); null without a pay day. */
+    private String nextPayDate;
 
     private String workStartTime;
 
@@ -52,6 +60,9 @@ public class EmployeeVo implements Serializable {
     private List<String> dateOffs = new ArrayList<>();
 
     private List<Integer> serviceIds = new ArrayList<>();
+
+    /** Special commission per service; services not listed use commissionPercent. */
+    private List<ServiceCommissionVo> serviceCommissions = new ArrayList<>();
 
 
     private String email;
@@ -146,6 +157,22 @@ public class EmployeeVo implements Serializable {
 
     public void setSalaryAmount(BigDecimal salaryAmount) {
         this.salaryAmount = salaryAmount;
+    }
+
+    public Integer getPayDay() {
+        return payDay;
+    }
+
+    public void setPayDay(Integer payDay) {
+        this.payDay = payDay;
+    }
+
+    public String getNextPayDate() {
+        return nextPayDate;
+    }
+
+    public void setNextPayDate(String nextPayDate) {
+        this.nextPayDate = nextPayDate;
     }
 
     public String getPayFrequency() {
@@ -284,5 +311,21 @@ public class EmployeeVo implements Serializable {
 
     public void setOwnHours(Boolean ownHours) {
         this.ownHours = ownHours;
+    }
+
+    public Boolean getHasPhoto() {
+        return hasPhoto;
+    }
+
+    public void setHasPhoto(Boolean hasPhoto) {
+        this.hasPhoto = hasPhoto;
+    }
+
+    public List<ServiceCommissionVo> getServiceCommissions() {
+        return serviceCommissions;
+    }
+
+    public void setServiceCommissions(List<ServiceCommissionVo> serviceCommissions) {
+        this.serviceCommissions = serviceCommissions;
     }
 }

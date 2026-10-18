@@ -92,4 +92,36 @@ public final class BusinessLogo {
         }
         return "application/octet-stream";
     }
+
+    /**
+     * "light" when the logo artwork is mostly light on a transparent background (white lettering,
+     * pastel icons), so it is shown on an ink card; "dark" otherwise (white card). An opaque logo
+     * brings its own background and gets "dark" too: the card never shows behind it.
+     */
+    public static String tone(byte[] bytes) {
+        try {
+            java.awt.image.BufferedImage img = bytes != null && bytes.length > 0
+                    ? javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(bytes)) : null;
+            if (img == null || !img.getColorModel().hasAlpha()) {
+                return "dark";
+            }
+            long opaque = 0;
+            double lum = 0;
+            int step = Math.max(1, img.getWidth() / 200);
+            for (int y = 0; y < img.getHeight(); y += step) {
+                for (int x = 0; x < img.getWidth(); x += step) {
+                    int argb = img.getRGB(x, y);
+                    if ((argb >>> 24) > 40) {
+                        opaque++;
+                        lum += (0.299 * ((argb >> 16) & 0xFF) + 0.587 * ((argb >> 8) & 0xFF) + 0.114 * (argb & 0xFF)) / 255;
+                    }
+                }
+            }
+            long sampled = (long) ((img.getHeight() + step - 1) / step) * ((img.getWidth() + step - 1) / step);
+            boolean transparentBackground = opaque < sampled * 0.85;
+            return transparentBackground && opaque > 0 && lum / opaque > 0.55 ? "light" : "dark";
+        } catch (java.io.IOException | RuntimeException e) {
+            return "dark";
+        }
+    }
 }

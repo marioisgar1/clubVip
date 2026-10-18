@@ -187,8 +187,9 @@ public class MyPageMb extends BaseMb {
 
     // ------------------------------------------------------------------ view helpers
 
+    /** Lightest to darkest page, so the owner compares them side by side. */
     public List<PageTheme> getTemplates() {
-        return PageTheme.ALL;
+        return PageTheme.BY_LIGHTNESS;
     }
 
     public PageTheme getTheme() {

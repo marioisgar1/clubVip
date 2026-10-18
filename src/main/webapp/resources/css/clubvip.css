@@ -570,3 +570,12 @@ a.cons-result:hover { border-color: var(--vip-gold); background: rgba(240,199,86
 .pos-points-earned { display: flex; align-items: center; gap: .6rem; padding: .7rem .9rem; border-radius: 10px; margin-bottom: .8rem;
     background: rgba(240,199,86,.18); border-left: 4px solid var(--vip-gold-deep); }
 .pos-points-earned i { color: var(--vip-gold-deep); }
+
+/* Sale: product search results dialog */
+.pos-search-dialog .ui-inputgroup { display: flex; width: 100%; }
+.pos-search-dialog .ui-inputgroup .ui-inputfield { flex: 1; min-width: 0; }
+.pos-search-dialog .ui-datatable, .pos-search-dialog .ui-datatable table { width: 100%; }
+.pos-search-dialog .ui-dialog-content { overflow: visible; }
+.pos-search-list .ui-datatable-tablewrapper { max-height: min(55vh, 460px); overflow-y: auto; }
+.pos-search-list thead th { position: sticky; top: 0; z-index: 1; }
+.pos-in-cart { display: block; margin-top: .3rem; font-size: .78rem; font-weight: 600; color: var(--vip-gold-deep); }

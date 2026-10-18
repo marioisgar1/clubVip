@@ -3,14 +3,15 @@
                 xmlns:ui="jakarta.faces.facelets"
                 template="/WEB-INF/template.xhtml">
     <ui:define name="content">
-        <div class="card">
-            <div class="page-header">
-                <span class="page-icon"><i class="pi pi-lock"></i></span>
-                <h2>#{msg['accessDenied.title']}</h2>
-            </div>
+        <div class="page-header">
+            <span class="page-icon"><i class="pi pi-lock"></i></span>
+            <h2>#{msg['accessDenied.title']}</h2>
+        </div>
+        <div class="card cv-denied">
+            <span class="cv-denied-icon"><i class="pi pi-lock"></i></span>
             <p>#{msg['accessDenied.text']}</p>
-            <h:outputLink value="#{request.contextPath}/pages/dashboard.xhtml" styleClass="ui-button ui-button-secondary">
-                <span class="ui-button-text">#{msg['action.back']}</span>
+            <h:outputLink value="#{request.contextPath}/pages/dashboard.xhtml" styleClass="cv-pill">
+                <i class="pi pi-home"></i>#{msg['action.back']}
             </h:outputLink>
         </div>
     </ui:define>

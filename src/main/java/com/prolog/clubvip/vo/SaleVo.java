@@ -19,6 +19,8 @@ public class SaleVo implements Serializable {
     private String originFolio;
     private Date saleDate;
     private Integer userId;
+    /** Name of the user who sold (owner, seller or employee). */
+    private String sellerName;
 
     /** Buyer. Optional on a cash ticket, required when the payment method is the credit one. */
     private Integer customerId;
@@ -39,10 +41,21 @@ public class SaleVo implements Serializable {
     private BigDecimal commissionPercent;
     private BigDecimal commissionAmount;
     private BigDecimal total;
+
+    /** Tip for the seller (answer); not part of total. */
+    private BigDecimal tipAmount;
+
+    /** Tip asked when registering: PERCENT (of the subtotal) or AMOUNT; empty / 0 = none. */
+    private String tipMode;
+
+    private BigDecimal tipValue;
     private String saleStatus;
     private String cancelledReason;
 
     private List<SaleItemVo> items = new ArrayList<>();
+
+    /** Barcodes of the ticket's products, space separated (sale/getSales): history search. */
+    private String barcodes;
 
     /** Present when some line was oversold (stock left negative); empty/null otherwise. */
     private List<SaleStockWarningVo> stockWarnings = new ArrayList<>();
@@ -54,6 +67,15 @@ public class SaleVo implements Serializable {
      */
     private CreditPlanVo credit;
 
+    /** Negocio que vendió: el propio o la tienda aliada (consignación) */
+    private String businessName;
+    /** Venta de mis prendas en una tienda aliada: sólo mis renglones, sin datos del cliente */
+    private boolean consignment;
+    /** Consignación: comisión que se queda la tienda */
+    private BigDecimal consignmentCommission;
+    /** Consignación: lo que me toca */
+    private BigDecimal consignmentNet;
+
     public Integer getId() {
         return id;
     }
@@ -64,6 +86,19 @@ public class SaleVo implements Serializable {
 
     public String getFolio() {
         return folio;
+    }
+
+    public String getBarcodes() {
+        return barcodes;
+    }
+
+    public void setBarcodes(String barcodes) {
+        this.barcodes = barcodes;
+    }
+
+    /** Folio plus the product barcodes: what the history's folio column filters on. */
+    public String getFolioSearch() {
+        return (folio != null ? folio : "") + (barcodes != null ? " " + barcodes : "");
     }
 
     public void setFolio(String folio) {
@@ -108,6 +143,14 @@ public class SaleVo implements Serializable {
 
     public void setUserId(Integer userId) {
         this.userId = userId;
+    }
+
+    public String getSellerName() {
+        return sellerName;
+    }
+
+    public void setSellerName(String sellerName) {
+        this.sellerName = sellerName;
     }
 
     public Integer getCustomerId() {
@@ -252,5 +295,61 @@ public class SaleVo implements Serializable {
 
     public void setCredit(CreditPlanVo credit) {
         this.credit = credit;
+    }
+
+    public String getBusinessName() {
+        return businessName;
+    }
+
+    public void setBusinessName(String businessName) {
+        this.businessName = businessName;
+    }
+
+    public boolean isConsignment() {
+        return consignment;
+    }
+
+    public void setConsignment(boolean consignment) {
+        this.consignment = consignment;
+    }
+
+    public BigDecimal getConsignmentCommission() {
+        return consignmentCommission;
+    }
+
+    public void setConsignmentCommission(BigDecimal consignmentCommission) {
+        this.consignmentCommission = consignmentCommission;
+    }
+
+    public BigDecimal getConsignmentNet() {
+        return consignmentNet;
+    }
+
+    public void setConsignmentNet(BigDecimal consignmentNet) {
+        this.consignmentNet = consignmentNet;
+    }
+
+    public BigDecimal getTipAmount() {
+        return tipAmount;
+    }
+
+    public void setTipAmount(BigDecimal tipAmount) {
+        this.tipAmount = tipAmount;
+    }
+
+    public String getTipMode() {
+        return tipMode;
+    }
+
+    public void setTipMode(String tipMode) {
+        this.tipMode = tipMode;
+    }
+
+    public BigDecimal getTipValue() {
+        return tipValue;
+    }
+
+    public void setTipValue(BigDecimal tipValue) {
+        this.tipValue = tipValue;
     }
 }
