@@ -42,6 +42,16 @@ pgrep -d" " -f "wildfly" | xargs kill;
 
 pgrep -d" " -f "java" | xargs kill;
 
+pgrep -af clubVipGps.jar        # sin salida = ya no corre
+ss -ltnp | grep 8885            # el puerto del servicio debe quedar libre
+
+
+pgrep -af clubVipServices.jar        # sin salida = ya no corre
+ss -ltnp | grep 8885            # el puerto del servicio debe quedar libre
+
+pkill -9 -f clubVipGps.jar
+pkill -9 -f clubVipServices.jar
+
 
  --sube wildfly
         scp standalone.conf root@74.208.197.92:/home/trustDeal/wildfly-19.0.0.Final/bin
@@ -57,6 +67,9 @@ scp standalone.xml root@74.208.197.92:/home/server/wildfly-39.0.1.Final/standalo
 
  scp ClubVip.war root@74.208.197.92:/home/server/wildfly-39.0.1.Final/standalone/deployments
  scp clubVipServices.jar root@74.208.197.92:/home/server/microservices
+ scp clubVipGps.jar root@74.208.197.92:/home/server/tcpserver
+ 
+ 
  
  sss
  scp leonisa_ambassador10oct2026.sql root@74.208.197.92:/home/respaldos
@@ -111,6 +124,8 @@ scp root@74.208.197.92:/home/server/wildfly-39.0.1.Final/standalone/configuratio
    
    nohup java -jar clubVipServices.jar
    
+   cd /home/server/tcpserver
+   nohup java -Xmx1g -jar clubVipGps.jar
    
    
    stop wildfly
@@ -164,5 +179,7 @@ password:2Dfg75_@tP-815NviaTu@l
 
 
 openssl pkcs12 -export -out clubvip.club.pfx -inkey _.clubvip.club_private_key.key -in clubvip.club_ssl_certificate.cer
-
 password:2Dfg75_@tP-815NviaTu@l
+
+
+openssl pkcs12 -export -out clubvip.club_full.pfx -inkey _.clubvip.club_private_key.key -in clubvip.club_ssl_certificate.cer -certfile clubvip.club_chain.cer -name clubvip

@@ -1,0 +1,30 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui">
+    <!-- Time zone of the GPS screens (inside the page form). The devices report in UTC: the first
+         time the page asks the browser for the zone of the computer (Intl API) and uses it; the
+         combo lets the viewer pick another. Each page defines p:remoteCommand cvGpsRefresh. -->
+    <span class="gps-zone">
+        <i class="pi pi-globe"></i>
+        <p:selectOneMenu id="gpsZone" value="#{gpsZoneMb.zone}" filter="true" filterMatchMode="contains"
+                         style="min-width:260px" title="#{msg['gps.zone']}">
+            <f:selectItems value="#{gpsZoneMb.zones}"/>
+            <p:ajax listener="#{gpsZoneMb.changed}" oncomplete="cvGpsRefresh()"/>
+        </p:selectOneMenu>
+    </span>
+    <p:remoteCommand name="cvGpsTz" action="#{gpsZoneMb.detect}" process="@this" oncomplete="cvGpsRefresh()"/>
+    <h:panelGroup rendered="#{not gpsZoneMb.detected}">
+        <script type="text/javascript">
+        //<![CDATA[
+        (function () {
+            var tz = '';
+            try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { tz = ''; }
+            var send = function () { cvGpsTz([{name: 'tz', value: tz}]); };
+            if (window.PrimeFaces && document.readyState === 'complete') { send(); } else { window.addEventListener('load', send); }
+        })();
+        //]]>
+        </script>
+    </h:panelGroup>
+</ui:composition>

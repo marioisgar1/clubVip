@@ -1,0 +1,258 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <link rel="stylesheet" href="#{request.contextPath}/resources/css/gps.css?v=20261019c"/>
+        <div class="card">
+            <div class="page-header">
+                <span class="page-icon"><i class="pi pi-car"></i></span>
+                <h2>#{msg['menu.gps.vehicle']}</h2>
+                <span class="page-subtitle">#{msg['gps.vehicle.subtitle']}</span>
+            </div>
+
+            <h:form id="form">
+                <p:remoteCommand name="cvGpsRefresh" actionListener="#{gpsVehicleMb.refresh}" update="@form" process="@this"/>
+                <div class="gps-bar">
+                    <div class="gps-actions">
+                        <p:commandButton value="#{msg['gps.vehicle.new']}" icon="pi pi-plus" actionListener="#{gpsVehicleMb.prepareNew}"
+                                         process="@this" update=":form:dialog" oncomplete="cvGpsResetPhoto();PF('vehicleDialog').show()"/>
+                        <p:commandButton icon="pi pi-refresh" title="#{msg['action.refresh']}" actionListener="#{gpsVehicleMb.refresh}"
+                                         process="@this" update="@form" styleClass="ui-button-secondary"/>
+                    </div>
+                    <ui:include src="/WEB-INF/gps-zone.xhtml"/>
+                </div>
+
+                <h:panelGroup rendered="#{gpsVehicleMb.gpsDown}" layout="block" styleClass="gps-down">
+                    <i class="pi pi-exclamation-triangle"></i>
+                    <div>#{msg['gps.down']}<small>#{msg['gps.down.vehicles']}</small></div>
+                </h:panelGroup>
+
+                <p:dataTable id="table" var="v" value="#{gpsVehicleMb.vehicles}" rows="15" paginator="true"
+                             paginatorPosition="bottom" paginatorAlwaysVisible="false" reflow="true" stripedRows="true"
+                             emptyMessage="#{msg['gps.vehicle.empty']}" rowKey="#{v.id}" widgetVar="vehicleTable"
+                             filteredValue="#{gpsVehicleMb.filtered}" globalFilterOnly="true">
+                    <f:facet name="header">
+                        <div class="flex-between">
+                            <span class="muted">#{gpsVehicleMb.vehicles.size()} #{msg['gps.vehicle.count']}</span>
+                            <p:inputText onkeyup="PF('vehicleTable').filter()" placeholder="#{msg['action.search']}"/>
+                        </div>
+                    </f:facet>
+                    <p:column headerText="#{msg['gps.vehicle']}" sortBy="#{v.name}" filterBy="#{v.name} #{v.plates} #{v.description}">
+                        <div class="gps-veh">
+                            <h:panelGroup rendered="#{v.hasPhoto}">
+                                <img class="gps-thumb" alt="" loading="lazy"
+                                     src="#{request.contextPath}/gpsVehiclePhoto?id=#{v.id}&amp;v=#{gpsVehicleMb.photoVersion}"/>
+                            </h:panelGroup>
+                            <h:panelGroup rendered="#{not v.hasPhoto}" styleClass="gps-thumb"><i class="pi pi-car"></i></h:panelGroup>
+                            <div>
+                                <div class="gps-veh-name">#{v.name}</div>
+                                <h:outputText rendered="#{not empty v.description}" styleClass="gps-veh-desc" value="#{v.description}"/>
+                                <h:outputText rendered="#{not empty v.plates}" styleClass="gps-plates" value="#{v.plates}"/>
+                            </div>
+                        </div>
+                    </p:column>
+                    <p:column headerText="IMEI" sortBy="#{v.imei}" filterBy="#{v.imei}" width="170">
+                        <span class="gps-imei">#{v.imei}</span>
+                    </p:column>
+                    <p:column headerText="#{msg['gps.vehicle.owner']}" sortBy="#{v.ownerName}" filterBy="#{v.ownerName} #{v.ownerEmail} #{v.ownerBusinessName}">
+                        <div style="font-weight:600">#{v.ownerName}</div>
+                        <div class="muted small">#{v.ownerEmail}
+                            <h:outputText rendered="#{not empty v.ownerBusinessName}" value=" &#183; #{v.ownerBusinessName}"/>
+                        </div>
+                    </p:column>
+                    <p:column headerText="#{msg['gps.status']}" width="190" sortBy="#{gpsVehicleMb.status(v.imei)}">
+                        <span class="#{gpsVehicleMb.statusBadge(v.imei)}"><span class="gps-dot"></span>#{gpsVehicleMb.statusText(v.imei)}</span>
+                        <span class="gps-hint">#{gpsVehicleMb.statusHint(v.imei)}</span>
+                    </p:column>
+                    <p:column headerText="#{msg['gps.vehicle.profile']}" width="200" sortBy="#{v.profileName}" filterBy="#{v.profileName}">
+                        <h:panelGroup rendered="#{empty v.profileId}" styleClass="muted small">#{msg['gps.vehicle.noProfile']}</h:panelGroup>
+                        <h:panelGroup rendered="#{not empty v.profileId}">
+                            <span class="gps-profile-name">#{v.profileName}</span>
+                            <h:panelGroup rendered="#{not empty gpsVehicleMb.configStatus(v)}">
+                                <span class="#{gpsVehicleMb.configBadge(v)}">#{gpsVehicleMb.configText(v)}</span>
+                                <span class="gps-hint">#{gpsVehicleMb.configHint(v)}</span>
+                            </h:panelGroup>
+                        </h:panelGroup>
+                    </p:column>
+                    <p:column headerText="#{msg['lbl.actions']}" width="140" styleClass="text-right">
+                        <p:commandButton icon="pi pi-send" title="#{msg['gps.vehicle.resend']}" actionListener="#{gpsVehicleMb.resend(v)}"
+                                         process="@this" update=":form:table :messages" rendered="#{not empty v.profileId}"
+                                         styleClass="ui-button-rounded ui-button-text"/>
+                        <p:commandButton icon="pi pi-pencil" title="#{msg['action.edit']}" actionListener="#{gpsVehicleMb.prepareEdit(v)}"
+                                         process="@this" update=":form:dialog" oncomplete="cvGpsResetPhoto();PF('vehicleDialog').show()"
+                                         styleClass="ui-button-rounded ui-button-text"/>
+                        <p:commandButton icon="pi pi-trash" title="#{msg['action.delete']}" actionListener="#{gpsVehicleMb.delete(v)}"
+                                         process="@this" update=":form:table :messages" styleClass="ui-button-rounded ui-button-text ui-button-danger">
+                            <p:confirm header="#{msg['action.confirm']}" message="#{msg['gps.vehicle.confirmDelete']}" icon="pi pi-exclamation-triangle"/>
+                        </p:commandButton>
+                    </p:column>
+                </p:dataTable>
+
+                <p:dialog id="dialog" header="#{empty gpsVehicleMb.selected.id ? msg['gps.vehicle.new'] : msg['gps.vehicle.edit']}"
+                          widgetVar="vehicleDialog" modal="true" width="640" resizable="false" responsive="true" fitViewport="true"
+                          contentStyle="max-height:78vh;overflow:auto" closeOnEscape="true">
+                    <div class="form-grid">
+                        <div class="field required span-2">
+                            <label for="form:vehName">#{msg['gps.vehicle.name']}</label>
+                            <p:inputText id="vehName" value="#{gpsVehicleMb.selected.name}" maxlength="100"
+                                         placeholder="#{msg['gps.vehicle.name.placeholder']}"/>
+                        </div>
+                        <p:outputPanel id="vehBrandField" layout="block" styleClass="field">
+                            <label for="form:vehBrand">#{msg['gps.vehicle.brand']}</label>
+                            <div class="gps-pick">
+                                <p:selectOneMenu id="vehBrand" value="#{gpsVehicleMb.selected.brandId}" converter="jakarta.faces.Integer"
+                                                 filter="true" filterMatchMode="contains">
+                                    <f:selectItem itemLabel="#{msg['lbl.select']}" itemValue="#{null}" noSelectionOption="true"/>
+                                    <f:selectItems value="#{gpsVehicleMb.brands}" var="b" itemLabel="#{b.name}" itemValue="#{b.id}"/>
+                                    <p:ajax event="change" listener="#{gpsVehicleMb.brandChanged}" process="@this" update="vehModelField"/>
+                                </p:selectOneMenu>
+                                <p:commandButton icon="pi pi-plus" title="#{msg['gps.brand.new']}" actionListener="#{gpsVehicleMb.prepareBrand}"
+                                                 process="@this" update="catalogDialog" oncomplete="PF('catalogDialog').show()"
+                                                 styleClass="ui-button-outlined"/>
+                            </div>
+                        </p:outputPanel>
+                        <p:outputPanel id="vehModelField" layout="block" styleClass="field">
+                            <label for="form:vehModel">#{msg['gps.vehicle.model']}</label>
+                            <div class="gps-pick">
+                                <p:selectOneMenu id="vehModel" value="#{gpsVehicleMb.selected.modelId}" converter="jakarta.faces.Integer"
+                                                 filter="true" filterMatchMode="contains" disabled="#{empty gpsVehicleMb.selected.brandId}">
+                                    <f:selectItem itemLabel="#{empty gpsVehicleMb.selected.brandId ? msg['gps.vehicle.model.pickBrand'] : msg['lbl.select']}"
+                                                  itemValue="#{null}" noSelectionOption="true"/>
+                                    <f:selectItems value="#{gpsVehicleMb.models}" var="m" itemLabel="#{m.name}" itemValue="#{m.id}"/>
+                                </p:selectOneMenu>
+                                <p:commandButton icon="pi pi-plus" title="#{msg['gps.model.new']}" actionListener="#{gpsVehicleMb.prepareModel}"
+                                                 process="@this" update="catalogDialog" oncomplete="PF('catalogDialog').show()"
+                                                 disabled="#{empty gpsVehicleMb.selected.brandId}" styleClass="ui-button-outlined"/>
+                            </div>
+                        </p:outputPanel>
+                        <div class="field">
+                            <label for="form:vehYear">#{msg['gps.vehicle.year']}</label>
+                            <p:selectOneMenu id="vehYear" value="#{gpsVehicleMb.selected.modelYear}" converter="jakarta.faces.Integer"
+                                             filter="true" filterMatchMode="startsWith">
+                                <f:selectItem itemLabel="#{msg['lbl.select']}" itemValue="#{null}" noSelectionOption="true"/>
+                                <f:selectItems value="#{gpsVehicleMb.years}" var="y" itemLabel="#{y}" itemValue="#{y}"/>
+                            </p:selectOneMenu>
+                        </div>
+                        <div class="field">
+                            <label for="form:vehPlates">#{msg['gps.vehicle.plates']}</label>
+                            <p:inputText id="vehPlates" value="#{gpsVehicleMb.selected.plates}" maxlength="20"
+                                         style="text-transform:uppercase" placeholder="ABC-123-D"/>
+                        </div>
+                        <div class="field required span-2">
+                            <label for="form:vehImei">IMEI</label>
+                            <p:inputText id="vehImei" value="#{gpsVehicleMb.selected.imei}" maxlength="20" styleClass="gps-imei"
+                                         placeholder="1340015703"/>
+                            <span class="hint">#{msg['gps.vehicle.imei.hint']}</span>
+                        </div>
+                        <div class="field required span-2">
+                            <label for="form:vehOwner">#{msg['gps.vehicle.owner']}</label>
+                            <p:selectOneMenu id="vehOwner" value="#{gpsVehicleMb.selected.ownerUserId}" converter="jakarta.faces.Integer"
+                                             filter="true" filterMatchMode="contains" style="width:100%">
+                                <f:selectItem itemLabel="#{msg['lbl.select']}" noSelectionOption="true"/>
+                                <f:selectItems value="#{gpsVehicleMb.owners}" var="o" itemLabel="#{gpsVehicleMb.ownerLabel(o)}" itemValue="#{o.id}"/>
+                            </p:selectOneMenu>
+                            <span class="hint">#{msg['gps.vehicle.owner.hint']}</span>
+                        </div>
+                        <div class="field span-2">
+                            <label for="form:vehProfile">#{msg['gps.vehicle.profile']}</label>
+                            <p:selectOneMenu id="vehProfile" value="#{gpsVehicleMb.selected.profileId}" converter="jakarta.faces.Integer" style="width:100%">
+                                <f:selectItem itemLabel="#{msg['gps.vehicle.noProfile']}" itemValue="#{null}" noSelectionOption="true"/>
+                                <f:selectItems value="#{gpsVehicleMb.profiles}" var="pf" itemValue="#{pf.id}"
+                                               itemLabel="#{gpsVehicleMb.profileLabel(pf)}"/>
+                            </p:selectOneMenu>
+                            <span class="hint">#{msg['gps.vehicle.profile.hint']}</span>
+                        </div>
+                        <p:outputPanel id="photoPanel" styleClass="field span-2">
+                            <label>#{msg['gps.vehicle.photo']}</label>
+                            <p:inputTextarea id="vehPhotoB64" value="#{gpsVehicleMb.newPhotoBase64}" styleClass="vehPhotoB64" style="display:none"/>
+                            <div class="gps-photo-field">
+                                <h:panelGroup rendered="#{not empty gpsVehicleMb.selected.photoBase64}">
+                                    <img alt="" class="gps-thumb lg vehPhotoCurrent" src="data:image/jpeg;base64,#{gpsVehicleMb.selected.photoBase64}"/>
+                                </h:panelGroup>
+                                <img id="vehPhotoPreview" alt="" class="gps-thumb lg" style="display:none"/>
+                                <label class="ui-button ui-button-secondary" style="cursor:pointer;padding:.5rem .9rem">
+                                    <i class="pi pi-camera" style="margin-right:.4rem"></i>#{msg['cat.product.choosePhoto']}
+                                    <input type="file" accept="image/*" style="display:none" onchange="cvGpsPickPhoto(this)"/>
+                                </label>
+                                <p:commandButton icon="pi pi-trash" title="#{msg['action.delete']}"
+                                                 actionListener="#{gpsVehicleMb.removePhoto}" process="@this"
+                                                 update="photoPanel" oncomplete="cvGpsResetPhoto()"
+                                                 rendered="#{not empty gpsVehicleMb.selected.photoBase64}"
+                                                 styleClass="ui-button-rounded ui-button-text ui-button-danger"/>
+                            </div>
+                            <span class="hint">#{msg['gps.vehicle.photo.hint']}</span>
+                        </p:outputPanel>
+                    </div>
+                    <f:facet name="footer">
+                        <p:commandButton value="#{msg['action.save']}" icon="pi pi-check" action="#{gpsVehicleMb.save}"
+                                         process="dialog" update="dialog table :messages"/>
+                        <p:commandButton value="#{msg['action.cancel']}" icon="pi pi-times" type="button"
+                                         onclick="PF('vehicleDialog').hide()" styleClass="ui-button-secondary"/>
+                    </f:facet>
+                </p:dialog>
+
+                <p:dialog id="catalogDialog" header="#{gpsVehicleMb.catalogTitle}" widgetVar="catalogDialog" modal="true"
+                          width="380" resizable="false" responsive="true" closeOnEscape="true">
+                    <div class="field required">
+                        <label for="form:catalogName">#{gpsVehicleMb.catalogMode eq 'model' ? msg['gps.vehicle.model'] : msg['gps.vehicle.brand']}</label>
+                        <p:inputText id="catalogName" value="#{gpsVehicleMb.catalogName}" maxlength="60"
+                                     placeholder="#{gpsVehicleMb.catalogMode eq 'model' ? msg['gps.model.placeholder'] : msg['gps.brand.placeholder']}"/>
+                        <h:outputText rendered="#{gpsVehicleMb.catalogMode eq 'model'}" styleClass="hint"
+                                      value="#{msg['gps.model.ofBrand']} #{gpsVehicleMb.selectedBrandName}"/>
+                    </div>
+                    <p:defaultCommand target="catalogSave" scope="catalogDialog"/>
+                    <f:facet name="footer">
+                        <p:commandButton id="catalogSave" value="#{msg['action.save']}" icon="pi pi-check" actionListener="#{gpsVehicleMb.saveCatalog}"
+                                         process="catalogDialog" update="vehBrandField vehModelField :messages"/>
+                        <p:commandButton value="#{msg['action.cancel']}" icon="pi pi-times" type="button"
+                                         onclick="PF('catalogDialog').hide()" styleClass="ui-button-secondary"/>
+                    </f:facet>
+                </p:dialog>
+
+                <p:confirmDialog global="true">
+                    <p:commandButton value="#{msg['action.yes']}" type="button" styleClass="ui-confirmdialog-yes"/>
+                    <p:commandButton value="#{msg['action.no']}" type="button" styleClass="ui-confirmdialog-no ui-button-secondary"/>
+                </p:confirmDialog>
+            </h:form>
+        </div>
+
+        <script type="text/javascript">
+        //<![CDATA[
+        // Vehicle photo: reduced in the browser to at most 1280 px (JPEG) before it travels, kept in
+        // the hidden textarea and previewed in place of the current one.
+        function cvGpsPickPhoto(input) {
+            if (!input.files || !input.files[0]) { return; }
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                var img = new Image();
+                img.onload = function () {
+                    var max = 1280, w = img.width, h = img.height, k = Math.min(1, max / Math.max(w, h));
+                    var c = document.createElement('canvas');
+                    c.width = Math.round(w * k); c.height = Math.round(h * k);
+                    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+                    var data = c.toDataURL('image/jpeg', 0.82);
+                    var ta = document.querySelector('textarea.vehPhotoB64');
+                    if (ta) { ta.value = data; }
+                    var prev = document.getElementById('vehPhotoPreview');
+                    if (prev) { prev.src = data; prev.style.display = ''; }
+                    var cur = document.querySelector('img.vehPhotoCurrent');
+                    if (cur) { cur.style.display = 'none'; }
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(input.files[0]);
+            input.value = '';
+        }
+        function cvGpsResetPhoto() {
+            var ta = document.querySelector('textarea.vehPhotoB64');
+            if (ta) { ta.value = ''; }
+            var prev = document.getElementById('vehPhotoPreview');
+            if (prev) { prev.removeAttribute('src'); prev.style.display = 'none'; }
+        }
+        //]]>
+        </script>
+    </ui:define>
+</ui:composition>

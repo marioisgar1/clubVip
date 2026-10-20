@@ -1,0 +1,108 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <link rel="stylesheet" href="#{request.contextPath}/resources/css/gps.css?v=20261019a"/>
+        <div class="card">
+            <div class="page-header">
+                <span class="page-icon"><i class="pi pi-chart-bar"></i></span>
+                <h2>#{msg['menu.gps.stats']}</h2>
+                <span class="page-subtitle">#{msg['gps.stats.subtitle']}</span>
+            </div>
+
+            <h:form id="form">
+                <p:remoteCommand name="cvGpsRefresh" actionListener="#{gpsStatsMb.refresh}" update="@form" process="@this"/>
+                <p:poll interval="60" listener="#{gpsStatsMb.refresh}" process="@this" update="live"/>
+
+                <div class="gps-bar">
+                    <div class="gps-actions gps-chips" style="margin:0">
+                        <p:commandButton value="15 min" actionListener="#{gpsStatsMb.window(15)}" process="@this" update="@form"
+                                         styleClass="ui-button-outlined #{gpsStatsMb.minutes eq 15 ? 'gps-chip-on' : ''}"/>
+                        <p:commandButton value="1 h" actionListener="#{gpsStatsMb.window(60)}" process="@this" update="@form"
+                                         styleClass="ui-button-outlined #{gpsStatsMb.minutes eq 60 ? 'gps-chip-on' : ''}"/>
+                        <p:commandButton value="3 h" actionListener="#{gpsStatsMb.window(180)}" process="@this" update="@form"
+                                         styleClass="ui-button-outlined #{gpsStatsMb.minutes eq 180 ? 'gps-chip-on' : ''}"/>
+                        <p:commandButton value="24 h" actionListener="#{gpsStatsMb.window(1440)}" process="@this" update="@form"
+                                         styleClass="ui-button-outlined #{gpsStatsMb.minutes eq 1440 ? 'gps-chip-on' : ''}"/>
+                        <p:commandButton icon="pi pi-refresh" title="#{msg['action.refresh']}" actionListener="#{gpsStatsMb.refresh}"
+                                         process="@this" update="live" styleClass="ui-button-secondary"/>
+                    </div>
+                    <ui:include src="/WEB-INF/gps-zone.xhtml"/>
+                </div>
+
+                <p:outputPanel id="live">
+                    <h:panelGroup rendered="#{gpsStatsMb.gpsDown}" layout="block" styleClass="gps-down">
+                        <i class="pi pi-exclamation-triangle"></i>
+                        <div>#{msg['gps.down']}<small>#{gpsStatsMb.gpsError}</small></div>
+                    </h:panelGroup>
+
+                    <h:panelGroup rendered="#{not gpsStatsMb.gpsDown}" layout="block">
+                        <div class="kpi-grid">
+                            <div class="kpi-card kpi-ink">
+                                <span class="kpi-icon"><i class="pi pi-bolt"></i></span>
+                                <span class="kpi-label">#{msg['gps.stats.perMinute']}</span>
+                                <span class="kpi-value">#{gpsStatsMb.avg}</span>
+                                <span class="kpi-hint">#{msg['gps.stats.peak']} #{gpsStatsMb.stats.framesPerMinuteMax} &#183; #{msg['gps.stats.lastMinute']} #{gpsStatsMb.stats.framesLastMinute}</span>
+                            </div>
+                            <div class="kpi-card">
+                                <span class="kpi-icon"><i class="pi pi-inbox"></i></span>
+                                <span class="kpi-label">#{msg['gps.stats.inWindow']}</span>
+                                <span class="kpi-value">#{gpsStatsMb.stats.framesInWindow}</span>
+                                <span class="kpi-hint">#{gpsStatsMb.stats.keepalivesInWindow} #{msg['gps.stats.keepalives']} &#183; #{msg['gps.stats.thisMinute']} #{gpsStatsMb.stats.framesThisMinute}</span>
+                            </div>
+                            <div class="kpi-card gps-kpi-online">
+                                <span class="kpi-icon"><i class="pi pi-wifi"></i></span>
+                                <span class="kpi-label">#{msg['gps.status.ONLINE']}</span>
+                                <span class="kpi-value">#{gpsStatsMb.stats.devicesOnline}</span>
+                                <span class="kpi-hint">#{gpsStatsMb.stats.devicesSilent} #{msg['gps.stats.silent']} &#183; #{gpsStatsMb.stats.devicesOffline} #{msg['gps.stats.offline']} &#183; #{gpsStatsMb.stats.devicesKnown} #{msg['gps.stats.known']}</span>
+                            </div>
+                            <div class="kpi-card #{gpsStatsMb.stats.errorsInWindow gt 0 or gpsStatsMb.stats.droppedInWindow gt 0 ? 'gps-kpi-offline' : ''}">
+                                <span class="kpi-icon"><i class="pi pi-exclamation-circle"></i></span>
+                                <span class="kpi-label">#{msg['gps.stats.errors']}</span>
+                                <span class="kpi-value">#{gpsStatsMb.stats.errorsInWindow + gpsStatsMb.stats.droppedInWindow}</span>
+                                <span class="kpi-hint">#{gpsStatsMb.stats.errorsInWindow} #{msg['gps.stats.unparsed']} &#183; #{gpsStatsMb.stats.droppedInWindow} #{msg['gps.stats.dropped']}</span>
+                            </div>
+                        </div>
+
+                        <h3 class="section-title"><i class="pi pi-chart-line"></i>&#160;#{msg['gps.stats.chart']}
+                            <span class="muted" style="font-size:.8rem;font-weight:400">&#160;#{msg['gps.stats.chart.hint']} (#{gpsZoneMb.offset})</span></h3>
+                        <div class="gps-chart">
+                            <p:lineChart model="#{gpsStatsMb.chart}" style="width:100%;height:100%"/>
+                        </div>
+
+                        <div class="gps-two">
+                            <div>
+                                <h3 class="section-title"><i class="pi pi-list"></i>&#160;#{msg['gps.stats.byHeader']}</h3>
+                                <p:dataTable var="h" value="#{gpsStatsMb.byHeader}" emptyMessage="#{msg['msg.noData']}" stripedRows="true" reflow="true">
+                                    <p:column headerText="#{msg['gps.type']}">#{gpsStatsMb.headerText(h.key)}</p:column>
+                                    <p:column headerText="#{msg['gps.frames']}" styleClass="text-right" width="140">
+                                        <h:outputText value="#{h.value}"><f:convertNumber groupingUsed="true"/></h:outputText>
+                                    </p:column>
+                                </p:dataTable>
+                            </div>
+                            <div>
+                                <h3 class="section-title"><i class="pi pi-server"></i>&#160;#{msg['gps.stats.service']}</h3>
+                                <div class="gps-health">
+                                    <span>#{msg['gps.stats.health']}</span>
+                                    <span><span class="badge #{gpsStatsMb.healthy ? 'badge-success' : 'badge-warning'}">#{gpsStatsMb.healthy ? msg['gps.stats.health.ok'] : msg['gps.stats.health.warn']}</span></span>
+                                    <span>#{msg['gps.stats.startedAt']}</span><span>#{gpsStatsMb.dateTime(gpsStatsMb.stats.startedAt)}</span>
+                                    <span>#{msg['gps.stats.uptime']}</span><span>#{gpsStatsMb.uptime}</span>
+                                    <span>#{msg['gps.stats.queue']}</span><span>#{gpsStatsMb.stats.writeQueue}</span>
+                                    <span>#{msg['gps.stats.connections']}</span><span>#{gpsStatsMb.stats.totalConnections}</span>
+                                    <span>#{msg['gps.stats.totalFrames']}</span><span>#{gpsStatsMb.stats.totalFrames}</span>
+                                    <span>#{msg['gps.stats.totalKeepalives']}</span><span>#{gpsStatsMb.stats.totalKeepalives}</span>
+                                    <span>#{msg['gps.stats.totalErrors']}</span><span>#{gpsStatsMb.stats.totalErrors}</span>
+                                    <span>#{msg['gps.stats.totalDropped']}</span><span>#{gpsStatsMb.stats.totalDropped}</span>
+                                </div>
+                                <p class="muted small" style="margin-top:.6rem">#{msg['gps.stats.service.hint']}</p>
+                            </div>
+                        </div>
+                    </h:panelGroup>
+                </p:outputPanel>
+            </h:form>
+        </div>
+    </ui:define>
+</ui:composition>

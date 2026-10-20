@@ -439,7 +439,7 @@ public class SessionMb implements Serializable {
      *  the modules of sign-up: each module switched on adds its group (database/menu_by_module.sql). */
     private static final List<String> WEB_GROUP_ORDER = List.of(
             "HOME", "APPOINTMENTS", "SALES", "CUSTOMERS", "INVENTORY", "SALES_REPORTS", "TEAM",
-            "BUSINESS", "BACKOFFICE", "SECURITY", "CLIENT",
+            "BUSINESS", "BACKOFFICE", "GPS", "SECURITY", "CLIENT",
             // groups before menu_by_module.sql, kept so an older database still renders in order
             "SETUP", "OPERATION", "CATALOGS", "WAREHOUSE", "RELATION", "ADMIN", "REPORTS");
 
@@ -672,5 +672,15 @@ public class SessionMb implements Serializable {
         } catch (RuntimeException e) {
             return false;
         }
+    }
+
+    /** Absolute URL of the home page, for its link preview (og:url). */
+    public String getSiteUrl() {
+        return PublicLinks.absolute("/");
+    }
+
+    /** Absolute URL of the home page share image (1200x630, og:image) for WhatsApp / Facebook previews. */
+    public String getSiteShareImage() {
+        return PublicLinks.absolute("/resources/img/og-clubvip.jpg?v=20261018");
     }
 }

@@ -10,6 +10,22 @@
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
     <meta name="description" content="#{msg['hm.hero.kicker']}: #{msg['hm.hero.title']}"/>
+    <!-- Link preview (WhatsApp, Facebook, LinkedIn, X): title, text and a 1200x630 image with absolute URLs -->
+    <meta property="og:type" content="website"/>
+    <meta property="og:site_name" content="Club VIP"/>
+    <meta property="og:locale" content="#{sessionMb.language eq 'en' ? 'en_US' : 'es_MX'}"/>
+    <meta property="og:title" content="#{msg['lp.title']}"/>
+    <meta property="og:description" content="#{msg['hm.hero.kicker']}: #{msg['hm.hero.title']}"/>
+    <meta property="og:url" content="#{sessionMb.siteUrl}"/>
+    <meta property="og:image" content="#{sessionMb.siteShareImage}"/>
+    <meta property="og:image:type" content="image/jpeg"/>
+    <meta property="og:image:width" content="1200"/>
+    <meta property="og:image:height" content="630"/>
+    <meta property="og:image:alt" content="#{msg['lp.title']}"/>
+    <meta name="twitter:card" content="summary_large_image"/>
+    <meta name="twitter:title" content="#{msg['lp.title']}"/>
+    <meta name="twitter:description" content="#{msg['hm.hero.kicker']}: #{msg['hm.hero.title']}"/>
+    <meta name="twitter:image" content="#{sessionMb.siteShareImage}"/>
     <link rel="icon" type="image/png" href="#{request.contextPath}/resources/img/favicon.png?v=20261010"/>
     <link rel="preconnect" href="https://fonts.googleapis.com"/>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;display=swap"/>

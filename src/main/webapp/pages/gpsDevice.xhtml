@@ -1,0 +1,178 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <ui:define name="content">
+        <link rel="stylesheet" href="#{request.contextPath}/resources/css/gps.css?v=20261019a"/>
+        <div class="card">
+            <div class="page-header">
+                <span class="page-icon"><i class="pi pi-wifi"></i></span>
+                <h2>#{msg['menu.gps.device']}</h2>
+                <span class="page-subtitle">#{msg['gps.device.subtitle']}</span>
+            </div>
+
+            <h:form id="form">
+                <p:remoteCommand name="cvGpsRefresh" actionListener="#{gpsDeviceMb.refresh}" update="@form" process="@this"/>
+                <!-- Live screen: refreshes itself (only the data, the open dialog stays). -->
+                <p:poll interval="30" listener="#{gpsDeviceMb.refresh}" process="@this" update="live"/>
+
+                <div class="gps-bar">
+                    <div class="gps-actions">
+                        <p:commandButton icon="pi pi-refresh" value="#{msg['action.refresh']}" actionListener="#{gpsDeviceMb.refresh}"
+                                         process="@this" update="live" styleClass="ui-button-secondary"/>
+                        <span class="gps-updated">#{msg['gps.autoRefresh']}</span>
+                    </div>
+                    <ui:include src="/WEB-INF/gps-zone.xhtml"/>
+                </div>
+
+                <p:outputPanel id="live">
+                    <h:panelGroup rendered="#{gpsDeviceMb.gpsDown}" layout="block" styleClass="gps-down">
+                        <i class="pi pi-exclamation-triangle"></i>
+                        <div>#{msg['gps.down']}<small>#{gpsDeviceMb.gpsError}</small></div>
+                    </h:panelGroup>
+
+                    <div class="kpi-grid">
+                        <div class="kpi-card kpi-ink">
+                            <span class="kpi-icon"><i class="pi pi-car"></i></span>
+                            <span class="kpi-label">#{msg['gps.kpi.devices']}</span>
+                            <span class="kpi-value">#{gpsDeviceMb.total}</span>
+                            <span class="kpi-hint">#{msg['gps.updated']} #{gpsDeviceMb.updatedAt}</span>
+                        </div>
+                        <div class="kpi-card gps-kpi-online">
+                            <span class="kpi-icon"><i class="pi pi-check-circle"></i></span>
+                            <span class="kpi-label">#{msg['gps.status.ONLINE']}</span>
+                            <span class="kpi-value">#{gpsDeviceMb.online}</span>
+                            <span class="kpi-hint">#{msg['gps.kpi.online.hint']}</span>
+                        </div>
+                        <div class="kpi-card gps-kpi-silent">
+                            <span class="kpi-icon"><i class="pi pi-volume-off"></i></span>
+                            <span class="kpi-label">#{msg['gps.status.SILENT']}</span>
+                            <span class="kpi-value">#{gpsDeviceMb.silent}</span>
+                            <span class="kpi-hint">#{msg['gps.kpi.silent.hint']}</span>
+                        </div>
+                        <div class="kpi-card gps-kpi-offline">
+                            <span class="kpi-icon"><i class="pi pi-times-circle"></i></span>
+                            <span class="kpi-label">#{msg['gps.status.OFFLINE']}</span>
+                            <span class="kpi-value">#{gpsDeviceMb.offline}</span>
+                            <span class="kpi-hint">#{gpsDeviceMb.never} #{msg['gps.kpi.never']}</span>
+                        </div>
+                    </div>
+
+                    <div class="gps-chips">
+                        <p:commandButton value="#{msg['gps.filter.ALL']} (#{gpsDeviceMb.total})" actionListener="#{gpsDeviceMb.filter('ALL')}"
+                                         process="@this" update="live" styleClass="ui-button-outlined #{gpsDeviceMb.statusFilter eq 'ALL' ? 'gps-chip-on' : ''}"/>
+                        <p:commandButton value="#{msg['gps.status.ONLINE']} (#{gpsDeviceMb.online})" actionListener="#{gpsDeviceMb.filter('ONLINE')}"
+                                         process="@this" update="live" styleClass="ui-button-outlined #{gpsDeviceMb.statusFilter eq 'ONLINE' ? 'gps-chip-on' : ''}"/>
+                        <p:commandButton value="#{msg['gps.status.SILENT']} (#{gpsDeviceMb.silent})" actionListener="#{gpsDeviceMb.filter('SILENT')}"
+                                         process="@this" update="live" styleClass="ui-button-outlined #{gpsDeviceMb.statusFilter eq 'SILENT' ? 'gps-chip-on' : ''}"/>
+                        <p:commandButton value="#{msg['gps.status.OFFLINE']} (#{gpsDeviceMb.offline})" actionListener="#{gpsDeviceMb.filter('OFFLINE')}"
+                                         process="@this" update="live" styleClass="ui-button-outlined #{gpsDeviceMb.statusFilter eq 'OFFLINE' ? 'gps-chip-on' : ''}"/>
+                        <p:commandButton value="#{msg['gps.status.NEVER']} (#{gpsDeviceMb.never})" actionListener="#{gpsDeviceMb.filter('NEVER')}"
+                                         process="@this" update="live" styleClass="ui-button-outlined #{gpsDeviceMb.statusFilter eq 'NEVER' ? 'gps-chip-on' : ''}"/>
+                    </div>
+
+                    <p:dataTable id="table" var="r" value="#{gpsDeviceMb.visibleRows}" rows="20" paginator="true"
+                                 paginatorPosition="bottom" paginatorAlwaysVisible="false" reflow="true" stripedRows="true"
+                                 emptyMessage="#{msg['gps.device.empty']}" rowKey="#{r.imei}" widgetVar="deviceTable"
+                                 filteredValue="#{gpsDeviceMb.filtered}" globalFilterOnly="true">
+                        <f:facet name="header">
+                            <div class="flex-between">
+                                <span class="muted">#{gpsDeviceMb.unregistered} #{msg['gps.device.unregistered']}</span>
+                                <p:inputText onkeyup="PF('deviceTable').filter()" placeholder="#{msg['gps.device.search']}"/>
+                            </div>
+                        </f:facet>
+                        <p:column headerText="#{msg['gps.vehicle']}" filterBy="#{r.search}">
+                            <div class="gps-veh">
+                                <h:panelGroup rendered="#{r.vehicle.hasPhoto}">
+                                    <img class="gps-thumb" alt="" loading="lazy" src="#{request.contextPath}/gpsVehiclePhoto?id=#{r.vehicle.id}"/>
+                                </h:panelGroup>
+                                <h:panelGroup rendered="#{not r.vehicle.hasPhoto}" styleClass="gps-thumb"><i class="pi pi-car"></i></h:panelGroup>
+                                <div>
+                                    <h:panelGroup rendered="#{not empty r.vehicle}">
+                                        <div class="gps-veh-name">#{r.vehicle.name}</div>
+                                        <h:outputText rendered="#{not empty r.vehicle.plates}" styleClass="gps-plates" value="#{r.vehicle.plates}"/>
+                                        <span class="gps-hint">#{r.vehicle.ownerName}
+                                            <h:outputText rendered="#{not empty r.vehicle.ownerBusinessName}" value=" &#183; #{r.vehicle.ownerBusinessName}"/></span>
+                                    </h:panelGroup>
+                                    <h:panelGroup rendered="#{empty r.vehicle}">
+                                        <div class="gps-unregistered"><i class="pi pi-info-circle"></i> #{msg['gps.device.noVehicle']}</div>
+                                    </h:panelGroup>
+                                    <span class="gps-imei gps-hint">IMEI #{r.imei}
+                                        <h:outputText rendered="#{not empty r.device.model}" value=" &#183; #{msg['gps.model']} #{r.device.model} #{r.device.swVersion}"/></span>
+                                </div>
+                            </div>
+                        </p:column>
+                        <p:column headerText="#{msg['gps.status']}" width="200" sortBy="#{r.status}">
+                            <span class="#{gpsDeviceMb.statusBadge(r.status)}"><span class="gps-dot"></span>#{gpsDeviceMb.statusText(r.status)}</span>
+                            <h:panelGroup rendered="#{r.device.connected}">
+                                <span class="gps-hint">#{msg['gps.connectedFor']} #{gpsDeviceMb.duration(r.device.connectedForSeconds)}</span>
+                            </h:panelGroup>
+                            <h:panelGroup rendered="#{not empty r.device and not r.device.connected}">
+                                <span class="gps-hint">#{msg['gps.offlineFor']} #{gpsDeviceMb.duration(r.device.disconnectedForSeconds)}</span>
+                            </h:panelGroup>
+                        </p:column>
+                        <p:column headerText="#{msg['gps.lastFrame']}" width="190">
+                            <h:panelGroup rendered="#{not empty r.device.lastFrameAt}">
+                                <div>#{gpsDeviceMb.dateTime(r.device.lastFrameAt)}</div>
+                                <span class="gps-hint">#{msg['gps.ago']} #{gpsDeviceMb.duration(r.device.secondsSinceLastFrame)} &#183; #{r.device.lastHeader}</span>
+                            </h:panelGroup>
+                            <h:outputText rendered="#{empty r.device.lastFrameAt}" styleClass="muted" value="—"/>
+                        </p:column>
+                        <p:column headerText="#{msg['gps.lastPosition']}" width="230">
+                            <h:panelGroup rendered="#{not empty r.device.lastLatitude}">
+                                <h:outputLink value="#{gpsDeviceMb.mapsUrl(r.device.lastLatitude, r.device.lastLongitude)}" target="_blank">
+                                    <i class="pi pi-map-marker"></i> #{gpsDeviceMb.coords(r.device.lastLatitude, r.device.lastLongitude)}
+                                </h:outputLink>
+                                <span class="gps-hint">#{gpsDeviceMb.speed(r.device.lastSpeed)} &#183; #{msg['gps.gpsTime']} #{gpsDeviceMb.dateTime(r.device.lastGpsTime)}</span>
+                            </h:panelGroup>
+                            <h:outputText rendered="#{empty r.device.lastLatitude}" styleClass="muted" value="—"/>
+                        </p:column>
+                        <p:column headerText="#{msg['gps.frames']}" width="110" styleClass="text-right" sortBy="#{r.device.framesTotal}">
+                            <h:panelGroup rendered="#{not empty r.device}">
+                                <div style="font-weight:600">#{r.device.framesTotal}</div>
+                                <p:commandLink actionListener="#{gpsDeviceMb.showFrames(r)}" process="@this"
+                                               update=":form:framesDialog" oncomplete="PF('framesDialog').show()">
+                                    <span class="gps-hint">#{msg['gps.frames.view']}</span>
+                                </p:commandLink>
+                            </h:panelGroup>
+                        </p:column>
+                    </p:dataTable>
+                </p:outputPanel>
+
+                <p:dialog id="framesDialog" widgetVar="framesDialog" modal="true" width="1100" resizable="false" responsive="true"
+                          fitViewport="true" closeOnEscape="true" contentStyle="max-height:78vh;overflow:auto"
+                          header="#{msg['gps.frames.title']} #{gpsDeviceMb.selected.vehicle.name} (#{gpsDeviceMb.selected.imei})">
+                    <p:dataTable var="f" value="#{gpsDeviceMb.frames}" rows="15" paginator="true" paginatorAlwaysVisible="false"
+                                 reflow="true" stripedRows="true" emptyMessage="#{msg['msg.noData']}">
+                        <p:column headerText="#{msg['gps.received']}" width="150">#{gpsDeviceMb.dateTime(f.received_at)}</p:column>
+                        <p:column headerText="#{msg['gps.type']}" width="70">
+                            <span class="badge #{f.header eq 'ALT' or f.header eq 'EMG' ? 'badge-warning' : 'badge-muted'}">#{f.header}</span>
+                            <h:panelGroup rendered="#{not empty f.alert_id}"><span class="gps-hint">id #{gpsDeviceMb.num(f.alert_id)}</span></h:panelGroup>
+                        </p:column>
+                        <p:column headerText="#{msg['gps.gpsTime']}" width="150">
+                            #{gpsDeviceMb.dateTime(f.gps_time)}
+                            <h:panelGroup rendered="#{not gpsDeviceMb.isTrue(f.real_time) and not empty f.real_time}">
+                                <span class="gps-hint">#{msg['gps.buffered']}</span></h:panelGroup>
+                        </p:column>
+                        <p:column headerText="#{msg['gps.position']}" width="200">
+                            <h:outputLink rendered="#{not empty f.latitude}" value="#{gpsDeviceMb.mapsUrl(f.latitude, f.longitude)}" target="_blank">
+                                #{gpsDeviceMb.coords(f.latitude, f.longitude)}</h:outputLink>
+                            <span class="gps-hint">#{gpsDeviceMb.num(f.satellites)} sat &#183; #{gpsDeviceMb.isTrue(f.gps_fix) ? msg['gps.fix.ok'] : msg['gps.fix.no']}</span>
+                        </p:column>
+                        <p:column headerText="#{msg['gps.speed']}" width="90">#{gpsDeviceMb.speed(f.speed)}</p:column>
+                        <p:column headerText="#{msg['gps.power']}" width="110">
+                            #{gpsDeviceMb.volts(f.power_volt)}<span class="gps-hint">#{msg['gps.battery']} #{gpsDeviceMb.volts(f.backup_volt)}</span>
+                        </p:column>
+                        <p:column headerText="#{msg['gps.odometer']}" width="120">#{gpsDeviceMb.km(f.odometer)}</p:column>
+                        <p:column headerText="#{msg['gps.raw']}">
+                            <h:outputText rendered="#{not empty f.parse_error}" styleClass="badge badge-danger" value="#{f.parse_error}"/>
+                            <div class="gps-raw">#{f.raw_frame}</div>
+                        </p:column>
+                    </p:dataTable>
+                </p:dialog>
+            </h:form>
+        </div>
+    </ui:define>
+</ui:composition>

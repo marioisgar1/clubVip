@@ -12,6 +12,12 @@ public final class Constants {
     /** Backend base URL (clubVipServices). */
     public static final String BASE_URL = "http://localhost:8884/api/v1/";
 
+    /**
+     * GPS service (clubVipGps: Suntech receiver + device status). Same server as the web, so it is
+     * reached through localhost; the JVM property {@code clubvip.gpsBaseUrl} overrides it.
+     */
+    public static final String GPS_BASE_URL = System.getProperty("clubvip.gpsBaseUrl", "http://localhost:8885/api/v1/gps/");
+
     /** Gateway HTTP Basic credentials (must match gateway.user / gateway.password in the backend). */
     public static final String GATEWAY_USER = "developer";
     public static final String GATEWAY_PASSWORD = "Club.Vip.Dev";

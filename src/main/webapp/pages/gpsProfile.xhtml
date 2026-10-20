@@ -1,0 +1,218 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="jakarta.faces.html"
+                xmlns:f="jakarta.faces.core"
+                xmlns:ui="jakarta.faces.facelets"
+                xmlns:p="http://primefaces.org/ui"
+                template="/WEB-INF/template.xhtml">
+    <!-- GPS › Perfiles: how often and why the Suntech devices report. Saving a profile in use sends it
+         to every vehicle that has it (gpsVehicle.xhtml shows whether each device confirmed it). -->
+    <ui:define name="content">
+        <link rel="stylesheet" href="#{request.contextPath}/resources/css/gps.css?v=20261019b"/>
+        <div class="card">
+            <div class="page-header">
+                <span class="page-icon"><i class="pi pi-sliders-h"></i></span>
+                <h2>#{msg['menu.gps.profile']}</h2>
+                <span class="page-subtitle">#{msg['gps.profile.subtitle']}</span>
+            </div>
+
+            <h:form id="form">
+                <div class="gps-bar">
+                    <div class="gps-actions">
+                        <p:commandButton value="#{msg['gps.profile.new']}" icon="pi pi-plus" actionListener="#{gpsProfileMb.prepareNew}"
+                                         process="@this" update=":form:dialog" oncomplete="PF('profileDialog').show()"/>
+                    </div>
+                </div>
+
+                <h:panelGroup rendered="#{empty gpsProfileMb.profiles}" layout="block" styleClass="empty-state">
+                    <i class="pi pi-sliders-h"></i>
+                    <b>#{msg['gps.profile.empty']}</b>
+                </h:panelGroup>
+
+                <!-- one card per profile: the parameters said in plain words -->
+                <div class="gpf-grid">
+                    <ui:repeat var="p" value="#{gpsProfileMb.profiles}">
+                        <div class="gpf-card">
+                            <div class="gpf-head">
+                                <div class="gpf-title">
+                                    <b>#{p.name}</b>
+                                    <h:outputText rendered="#{not empty p.description}" styleClass="muted small" value="#{p.description}"/>
+                                </div>
+                                <span class="#{p.vehicleCount gt 0 ? 'badge badge-info' : 'badge badge-muted'}">
+                                    <i class="pi pi-car"></i>&#160;#{p.vehicleCount}</span>
+                            </div>
+                            <div class="gpf-rates">
+                                <div class="gpf-rate">
+                                    <i class="pi pi-play"></i>
+                                    <span><small>#{msg['gps.profile.moving.short']}</small>#{gpsProfileMb.every(p.movingIntervalSec)}</span>
+                                </div>
+                                <div class="gpf-rate">
+                                    <i class="pi pi-pause"></i>
+                                    <span><small>#{msg['gps.profile.parked.short']}</small>#{gpsProfileMb.every(p.parkedIntervalSec)}</span>
+                                </div>
+                            </div>
+                            <div class="gpf-chips">
+                                <h:panelGroup rendered="#{p.distanceM gt 0}" styleClass="gpf-chip"><i class="pi pi-arrows-h"></i><h:outputFormat value="#{msg['gps.profile.chip.distance']}"><f:param value="#{p.distanceM}"/></h:outputFormat></h:panelGroup>
+                                <h:panelGroup rendered="#{p.angleDeg gt 0}" styleClass="gpf-chip"><i class="pi pi-replay"></i><h:outputFormat value="#{msg['gps.profile.chip.angle']}"><f:param value="#{p.angleDeg}"/></h:outputFormat></h:panelGroup>
+                                <h:panelGroup rendered="#{p.speedLimitKmh gt 0}" styleClass="gpf-chip gpf-alert"><i class="pi pi-bolt"></i><h:outputFormat value="#{msg['gps.profile.chip.speed']}"><f:param value="#{p.speedLimitKmh}"/></h:outputFormat></h:panelGroup>
+                                <h:panelGroup rendered="#{p.idleAlertMin gt 0}" styleClass="gpf-chip gpf-alert"><i class="pi pi-clock"></i><h:outputFormat value="#{msg['gps.profile.chip.idle']}"><f:param value="#{p.idleAlertMin}"/></h:outputFormat></h:panelGroup>
+                                <h:panelGroup rendered="#{p.ignitionReport}" styleClass="gpf-chip"><i class="pi pi-key"></i>#{msg['gps.profile.chip.ignition']}</h:panelGroup>
+                                <h:panelGroup rendered="#{p.harshDriving}" styleClass="gpf-chip gpf-alert"><i class="pi pi-exclamation-triangle"></i>#{msg['gps.profile.chip.harsh']}</h:panelGroup>
+                                <h:panelGroup rendered="#{p.sleepWhenParked}" styleClass="gpf-chip"><i class="pi pi-moon"></i>#{msg['gps.profile.chip.sleep']}</h:panelGroup>
+                                <h:panelGroup rendered="#{p.keepAliveMin gt 0}" styleClass="gpf-chip"><i class="pi pi-wifi"></i><h:outputFormat value="#{msg['gps.profile.chip.keepAlive']}"><f:param value="#{p.keepAliveMin}"/></h:outputFormat></h:panelGroup>
+                            </div>
+                            <div class="gpf-actions">
+                                <p:commandButton value="#{msg['action.edit']}" icon="pi pi-pencil" actionListener="#{gpsProfileMb.prepareEdit(p)}"
+                                                 process="@this" update=":form:dialog" oncomplete="PF('profileDialog').show()"
+                                                 styleClass="ui-button-secondary ui-button-sm"/>
+                                <p:commandButton icon="pi pi-copy" title="#{msg['gps.profile.copy']}" actionListener="#{gpsProfileMb.prepareCopy(p)}"
+                                                 process="@this" update=":form:dialog" oncomplete="PF('profileDialog').show()"
+                                                 styleClass="ui-button-rounded ui-button-text"/>
+                                <p:commandButton icon="pi pi-trash" title="#{msg['action.delete']}" actionListener="#{gpsProfileMb.delete(p)}"
+                                                 process="@this" update="@form :messages" disabled="#{p.vehicleCount gt 0}"
+                                                 styleClass="ui-button-rounded ui-button-text ui-button-danger">
+                                    <p:confirm header="#{msg['action.confirm']}" message="#{msg['gps.profile.confirmDelete']}" icon="pi pi-exclamation-triangle"/>
+                                </p:commandButton>
+                            </div>
+                        </div>
+                    </ui:repeat>
+                </div>
+
+                <!-- ============================ edit dialog ============================ -->
+                <p:dialog id="dialog" header="#{empty gpsProfileMb.selected.id ? msg['gps.profile.new'] : msg['gps.profile.edit']}"
+                          widgetVar="profileDialog" modal="true" width="720" resizable="false" responsive="true" fitViewport="true"
+                          contentStyle="max-height:76vh;overflow:auto" closeOnEscape="true">
+                    <h:panelGroup rendered="#{gpsProfileMb.selected.vehicleCount gt 0}" layout="block" styleClass="gpf-notice">
+                        <i class="pi pi-info-circle"></i>
+                        <span><h:outputFormat value="#{msg['gps.profile.appliesTo']}"><f:param value="#{gpsProfileMb.selected.vehicleCount}"/></h:outputFormat></span>
+                    </h:panelGroup>
+
+                    <div class="form-grid">
+                        <div class="field required">
+                            <label for="form:pfName">#{msg['gps.profile.name']}</label>
+                            <p:inputText id="pfName" value="#{gpsProfileMb.selected.name}" maxlength="80"
+                                         placeholder="#{msg['gps.profile.name.placeholder']}"/>
+                        </div>
+                        <div class="field">
+                            <label for="form:pfDesc">#{msg['gps.profile.description']}</label>
+                            <p:inputText id="pfDesc" value="#{gpsProfileMb.selected.description}" maxlength="255"/>
+                        </div>
+                    </div>
+
+                    <!-- frequency -->
+                    <div class="gpf-section">
+                        <div class="gpf-section-title"><i class="pi pi-clock"></i>#{msg['gps.profile.sec.frequency']}</div>
+                        <div class="form-grid">
+                            <p:outputPanel id="movingPanel" styleClass="field required" layout="block">
+                                <label>#{msg['gps.profile.moving.label']}</label>
+                                <div class="gpf-interval">
+                                    <p:spinner value="#{gpsProfileMb.movingValue}" min="1" max="1440" size="4">
+                                        <p:ajax event="change" process="@this" update="movingHint"/>
+                                    </p:spinner>
+                                    <p:selectOneButton value="#{gpsProfileMb.movingUnit}" unselectable="false">
+                                        <f:selectItem itemValue="s" itemLabel="#{msg['gps.unit.s']}"/>
+                                        <f:selectItem itemValue="min" itemLabel="#{msg['gps.unit.min']}"/>
+                                        <p:ajax process="@this" update="movingHint"/>
+                                    </p:selectOneButton>
+                                </div>
+                                <h:outputText id="movingHint" styleClass="hint" value="#{gpsProfileMb.movingHint}"/>
+                            </p:outputPanel>
+                            <p:outputPanel id="parkedPanel" styleClass="field required" layout="block">
+                                <label>#{msg['gps.profile.parked.label']}</label>
+                                <div class="gpf-interval">
+                                    <p:spinner value="#{gpsProfileMb.parkedValue}" min="1" max="1440" size="4">
+                                        <p:ajax event="change" process="@this" update="parkedHint"/>
+                                    </p:spinner>
+                                    <p:selectOneButton value="#{gpsProfileMb.parkedUnit}" unselectable="false">
+                                        <f:selectItem itemValue="min" itemLabel="#{msg['gps.unit.min']}"/>
+                                        <f:selectItem itemValue="h" itemLabel="#{msg['gps.unit.h']}"/>
+                                        <p:ajax process="@this" update="parkedHint"/>
+                                    </p:selectOneButton>
+                                </div>
+                                <h:outputText id="parkedHint" styleClass="hint" value="#{gpsProfileMb.parkedHint}"/>
+                            </p:outputPanel>
+                        </div>
+                    </div>
+
+                    <!-- extra reports -->
+                    <div class="gpf-section">
+                        <div class="gpf-section-title"><i class="pi pi-map-marker"></i>#{msg['gps.profile.sec.extra']}</div>
+                        <p:outputPanel id="distRow" styleClass="gpf-row" layout="block">
+                            <p:toggleSwitch value="#{gpsProfileMb.distanceOn}"><p:ajax update="distRow"/></p:toggleSwitch>
+                            <div class="gpf-row-text"><b>#{msg['gps.profile.distance.label']}</b><small>#{msg['gps.profile.distance.hint']}</small></div>
+                            <div class="gpf-row-value">
+                                <p:spinner value="#{gpsProfileMb.distanceM}" min="50" max="10000" stepFactor="50" size="5" disabled="#{not gpsProfileMb.distanceOn}"/>
+                                <span>m</span>
+                            </div>
+                        </p:outputPanel>
+                        <p:outputPanel id="angleRow" styleClass="gpf-row" layout="block">
+                            <p:toggleSwitch value="#{gpsProfileMb.angleOn}"><p:ajax update="angleRow"/></p:toggleSwitch>
+                            <div class="gpf-row-text"><b>#{msg['gps.profile.angle.label']}</b><small>#{msg['gps.profile.angle.hint']}</small></div>
+                            <div class="gpf-row-value">
+                                <p:spinner value="#{gpsProfileMb.angleDeg}" min="5" max="180" stepFactor="5" size="4" disabled="#{not gpsProfileMb.angleOn}"/>
+                                <span>°</span>
+                            </div>
+                        </p:outputPanel>
+                    </div>
+
+                    <!-- alerts -->
+                    <div class="gpf-section">
+                        <div class="gpf-section-title"><i class="pi pi-bell"></i>#{msg['gps.profile.sec.alerts']}</div>
+                        <p:outputPanel id="speedRow" styleClass="gpf-row" layout="block">
+                            <p:toggleSwitch value="#{gpsProfileMb.speedOn}"><p:ajax update="speedRow"/></p:toggleSwitch>
+                            <div class="gpf-row-text"><b>#{msg['gps.profile.speed.label']}</b><small>#{msg['gps.profile.speed.hint']}</small></div>
+                            <div class="gpf-row-value">
+                                <p:spinner value="#{gpsProfileMb.speedKmh}" min="20" max="250" stepFactor="5" size="4" disabled="#{not gpsProfileMb.speedOn}"/>
+                                <span>km/h</span>
+                            </div>
+                        </p:outputPanel>
+                        <p:outputPanel id="idleRow" styleClass="gpf-row" layout="block">
+                            <p:toggleSwitch value="#{gpsProfileMb.idleOn}"><p:ajax update="idleRow"/></p:toggleSwitch>
+                            <div class="gpf-row-text"><b>#{msg['gps.profile.idle.label']}</b><small>#{msg['gps.profile.idle.hint']}</small></div>
+                            <div class="gpf-row-value">
+                                <p:spinner value="#{gpsProfileMb.idleMin}" min="1" max="240" size="4" disabled="#{not gpsProfileMb.idleOn}"/>
+                                <span>min</span>
+                            </div>
+                        </p:outputPanel>
+                        <div class="gpf-row">
+                            <p:toggleSwitch value="#{gpsProfileMb.selected.ignitionReport}"/>
+                            <div class="gpf-row-text"><b>#{msg['gps.profile.ignition.label']}</b><small>#{msg['gps.profile.ignition.hint']}</small></div>
+                        </div>
+                        <div class="gpf-row">
+                            <p:toggleSwitch value="#{gpsProfileMb.selected.harshDriving}"/>
+                            <div class="gpf-row-text"><b>#{msg['gps.profile.harsh.label']}</b><small>#{msg['gps.profile.harsh.hint']}</small></div>
+                        </div>
+                    </div>
+
+                    <!-- connection and battery -->
+                    <div class="gpf-section">
+                        <div class="gpf-section-title"><i class="pi pi-wifi"></i>#{msg['gps.profile.sec.connection']}</div>
+                        <p:outputPanel id="alvRow" styleClass="gpf-row" layout="block">
+                            <p:toggleSwitch value="#{gpsProfileMb.keepAliveOn}"><p:ajax update="alvRow"/></p:toggleSwitch>
+                            <div class="gpf-row-text"><b>#{msg['gps.profile.keepAlive.label']}</b><small>#{msg['gps.profile.keepAlive.hint']}</small></div>
+                            <div class="gpf-row-value">
+                                <p:spinner value="#{gpsProfileMb.keepAliveMin}" min="1" max="1440" size="4" disabled="#{not gpsProfileMb.keepAliveOn}"/>
+                                <span>min</span>
+                            </div>
+                        </p:outputPanel>
+                        <div class="gpf-row">
+                            <p:toggleSwitch value="#{gpsProfileMb.selected.sleepWhenParked}"/>
+                            <div class="gpf-row-text"><b>#{msg['gps.profile.sleep.label']}</b><small>#{msg['gps.profile.sleep.hint']}</small></div>
+                        </div>
+                    </div>
+
+                    <f:facet name="footer">
+                        <p:commandButton value="#{msg['action.cancel']}" type="button" onclick="PF('profileDialog').hide()"
+                                         styleClass="ui-button-secondary ui-button-flat"/>
+                        <p:commandButton value="#{gpsProfileMb.selected.vehicleCount gt 0 ? msg['gps.profile.saveApply'] : msg['action.save']}"
+                                         icon="pi pi-check" action="#{gpsProfileMb.save}" process="dialog" update="@form :messages"/>
+                    </f:facet>
+                </p:dialog>
+
+                <p:confirmDialog global="true">
+                    <p:commandButton value="#{msg['action.yes']}" type="button" styleClass="ui-confirmdialog-yes"/>
+                    <p:commandButton value="#{msg['action.no']}" type="button" styleClass="ui-confirmdialog-no ui-button-secondary"/>
+                </p:confirmDialog>
+            </h:form>
+        </div>
+    </ui:define>
+</ui:composition>

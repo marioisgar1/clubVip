@@ -1,0 +1,93 @@
+/* GPS screens (gpsVehicle, gpsDevice, gpsStats): Club VIP back office. */
+.gps-zone { display: inline-flex; align-items: center; gap: .45rem; color: var(--vip-text-muted); }
+.gps-zone .pi-globe { font-size: 1rem; }
+.gps-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; margin-bottom: 1rem; }
+.gps-bar .gps-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.gps-updated { font-size: .78rem; color: var(--vip-text-muted); }
+
+.gps-down { display: flex; gap: .75rem; align-items: flex-start; padding: .9rem 1rem; border-radius: 12px; margin-bottom: 1rem;
+    background: rgba(161,26,42,.08); border: 1px solid rgba(161,26,42,.25); color: var(--vip-danger); }
+.gps-down .pi { font-size: 1.2rem; margin-top: .1rem; }
+.gps-down small { display: block; color: var(--vip-text-muted); margin-top: .2rem; word-break: break-all; }
+
+/* Vehicle: photo + name + plates */
+.gps-veh { display: flex; align-items: center; gap: .75rem; min-width: 0; }
+.gps-thumb { width: 56px; height: 42px; border-radius: 10px; object-fit: cover; flex: none; background: var(--vip-surface-2);
+    border: 1px solid var(--vip-border); display: inline-flex; align-items: center; justify-content: center; color: var(--vip-text-muted); }
+.gps-thumb.lg { width: 220px; height: 150px; border-radius: 14px; }
+.gps-veh-desc { display: block; font-size: .8rem; color: var(--vip-text-muted); }
+.gps-pick { display: flex; gap: .4rem; align-items: stretch; }
+.gps-pick .ui-selectonemenu { flex: 1; min-width: 0; }
+.gps-veh-name { font-weight: 600; color: var(--vip-text); }
+.gps-plates { display: inline-block; margin-top: .15rem; padding: .05rem .5rem; border-radius: 6px; font-size: .74rem; font-weight: 700;
+    letter-spacing: .08em; background: var(--vip-surface-2); border: 1px solid var(--vip-border); color: var(--vip-text); }
+.gps-imei { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .85rem; }
+.gps-hint { display: block; font-size: .76rem; color: var(--vip-text-muted); margin-top: .2rem; }
+.gps-unregistered { font-size: .76rem; color: var(--vip-warning); }
+
+/* Status dot inside the badge */
+.gps-dot { display: inline-block; width: .5rem; height: .5rem; border-radius: 50%; background: currentColor; margin-right: .35rem; vertical-align: middle; }
+
+/* Status filter chips */
+.gps-chips { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: .75rem; }
+.gps-chips .ui-button { border-radius: 999px; }
+.gps-chips .gps-chip-on.ui-button { background: var(--vip-ink); border-color: var(--vip-ink); color: #fff; }
+
+.kpi-card.gps-kpi-online .kpi-value { color: var(--vip-success); }
+.kpi-card.gps-kpi-silent .kpi-value { color: var(--vip-warning); }
+.kpi-card.gps-kpi-offline .kpi-value { color: var(--vip-danger); }
+
+.gps-chart { position: relative; height: 320px; margin-bottom: 1rem; }
+.gps-two { display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; }
+@media (max-width: 900px) { .gps-two { grid-template-columns: 1fr; } }
+.gps-health { display: grid; grid-template-columns: 1fr auto; gap: .4rem .75rem; font-size: .9rem; }
+.gps-health span:nth-child(even) { text-align: right; font-weight: 600; }
+
+.gps-raw { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .72rem; color: var(--vip-text-muted); word-break: break-all; }
+.gps-photo-field { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
+@media (max-width: 640px) {
+    .gps-zone .ui-selectonemenu { min-width: 0 !important; width: 100%; }
+    .gps-zone { width: 100%; }
+    .gps-thumb.lg { width: 100%; height: 180px; }
+}
+
+/* ===== GPS › Perfiles (gpsProfile.xhtml) ===== */
+.gpf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
+.gpf-card { display: flex; flex-direction: column; gap: .8rem; padding: 1.1rem 1.15rem; border: 1px solid var(--vip-border); border-radius: 18px; background: var(--vip-surface); }
+.gpf-head { display: flex; justify-content: space-between; align-items: flex-start; gap: .75rem; }
+.gpf-title { display: flex; flex-direction: column; gap: .15rem; min-width: 0; }
+.gpf-title b { font-size: 1.05rem; color: var(--vip-text); }
+.gpf-rates { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+.gpf-rate { display: flex; align-items: center; gap: .55rem; padding: .6rem .7rem; border-radius: 12px; background: var(--vip-surface-2); }
+.gpf-rate > .pi { width: 1.9rem; height: 1.9rem; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+    background: var(--vip-gold); color: var(--vip-ink); font-size: .8rem; flex: none; }
+.gpf-rate span { display: flex; flex-direction: column; font-weight: 700; font-size: .92rem; color: var(--vip-text); line-height: 1.2; }
+.gpf-rate small { font-weight: 500; font-size: .72rem; color: var(--vip-text-muted); text-transform: uppercase; letter-spacing: .04em; }
+.gpf-chips { display: flex; flex-wrap: wrap; gap: .35rem; min-height: 1.6rem; }
+.gpf-chip { display: inline-flex; align-items: center; gap: .3rem; padding: .18rem .6rem; border-radius: 999px; font-size: .76rem;
+    background: var(--vip-surface-2); border: 1px solid var(--vip-border); color: var(--vip-text); }
+.gpf-chip .pi { font-size: .72rem; color: var(--vip-gold-deep); }
+.gpf-chip.gpf-alert .pi { color: #C0392B; }
+.gpf-actions { display: flex; align-items: center; gap: .25rem; margin-top: auto; padding-top: .3rem; border-top: 1px solid var(--vip-border); }
+.gpf-actions .ui-button:first-child { margin-right: auto; }
+.gpf-notice { display: flex; gap: .6rem; align-items: flex-start; padding: .75rem .9rem; margin-bottom: 1rem; border-radius: 12px;
+    background: var(--vip-accent-soft); color: var(--vip-text); font-size: .88rem; }
+.gpf-notice .pi { color: var(--vip-gold-deep); margin-top: .1rem; }
+.gpf-section { margin-top: 1.1rem; padding-top: .9rem; border-top: 1px solid var(--vip-border); }
+.gpf-section-title { display: flex; align-items: center; gap: .45rem; font-weight: 700; font-size: .78rem; text-transform: uppercase;
+    letter-spacing: .06em; color: var(--vip-gold-deep); margin-bottom: .6rem; }
+.gpf-interval { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.gpf-interval .ui-spinner { width: 6.5rem; }
+.gpf-row { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: .85rem; padding: .55rem 0; }
+.gpf-row + .gpf-row { border-top: 1px dashed var(--vip-border); }
+.gpf-row-text { display: flex; flex-direction: column; gap: .1rem; min-width: 0; }
+.gpf-row-text b { font-size: .92rem; color: var(--vip-text); }
+.gpf-row-text small { font-size: .78rem; color: var(--vip-text-muted); }
+.gpf-row-value { display: flex; align-items: center; gap: .4rem; color: var(--vip-text-muted); font-size: .85rem; }
+.gpf-row-value .ui-spinner { width: 6.5rem; }
+/* profile column of gpsVehicle.xhtml */
+.gps-profile-name { font-weight: 600; color: var(--vip-text); display: block; }
+@media (max-width: 640px) {
+    .gpf-row { grid-template-columns: auto 1fr; }
+    .gpf-row-value { grid-column: 2; }
+}
